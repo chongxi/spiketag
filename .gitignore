@@ -1,0 +1,6 @@
+build/*
+spiketag/*.pyc
+spiketag/__pycache__/*
+dist/*
+*egg-info
+notebooks/.ipynb_checkpoints/*

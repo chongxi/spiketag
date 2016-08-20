@@ -1,0 +1,1276 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"c",
+				"CLU	module"
+			],
+			[
+				"view",
+				"view_lock"
+			],
+			[
+				"glo",
+				"global_idx"
+			],
+			[
+				"highlight",
+				"_highlight_color"
+			],
+			[
+				"tran",
+				"transparency	statement"
+			],
+			[
+				"s",
+				"selected_spk	function"
+			],
+			[
+				"clear",
+				"clear_virtual	function"
+			],
+			[
+				"plot",
+				"plot_virtual	function"
+			],
+			[
+				"sel",
+				"selected_spks"
+			],
+			[
+				"globa",
+				"global_idx	param"
+			],
+			[
+				"sele",
+				"selected_clu	param"
+			],
+			[
+				"merge",
+				"mergelist	param"
+			],
+			[
+				"_se",
+				"_selected_whole_cluster	statement"
+			],
+			[
+				"set",
+				"set_data	function"
+			],
+			[
+				"inde",
+				"index_id	statement"
+			],
+			[
+				"cache",
+				"_cache_color"
+			],
+			[
+				"upda",
+				"update_cluster"
+			],
+			[
+				"up",
+				"update_cluster"
+			],
+			[
+				"index",
+				"index_id"
+			],
+			[
+				"tra",
+				"targeted_clu"
+			],
+			[
+				"targ",
+				"target_clu_No"
+			],
+			[
+				"subset_idx",
+				"subset_idx_to"
+			],
+			[
+				"_ca",
+				"_cache_mask_"
+			],
+			[
+				"tar",
+				"targeted_clu"
+			],
+			[
+				"clu",
+				"clu_1	statement"
+			],
+			[
+				"sca",
+				"scatter_3d_view	class"
+			],
+			[
+				"high",
+				"highlight_color	param"
+			],
+			[
+				"is",
+				"isinstance	function"
+			],
+			[
+				"y",
+				"y_transform	param"
+			],
+			[
+				"glp",
+				"glpos_to_value	function"
+			],
+			[
+				"gap",
+				"gap_value	statement"
+			],
+			[
+				"gl",
+				"glpos_to_value	function"
+			],
+			[
+				"tex",
+				"text_color"
+			],
+			[
+				"cros",
+				"cross_state	statement"
+			],
+			[
+				"sub",
+				"subclu"
+			],
+			[
+				"span",
+				"span_ch	statement"
+			],
+			[
+				"se",
+				"setter	function"
+			],
+			[
+				"clus",
+				"selected_cluster	statement"
+			],
+			[
+				"cum",
+				"clu_cumsum	statement"
+			],
+			[
+				"get",
+				"get_closest_spk	function"
+			],
+			[
+				"inter",
+				"interactive"
+			],
+			[
+				"spk",
+				"spkNolist	param"
+			],
+			[
+				"base",
+				"ch_base	statement"
+			],
+			[
+				"nea",
+				"nearest_spkNo	statement"
+			],
+			[
+				"num",
+				"num_ch"
+			],
+			[
+				"pairwise",
+				"pairwise_distances	function"
+			],
+			[
+				"mat",
+				"matplotlib	module"
+			],
+			[
+				"arg",
+				"argmax	function"
+			],
+			[
+				"byte",
+				"bytes2write"
+			],
+			[
+				"write",
+				"write_conn"
+			],
+			[
+				"read",
+				"read_conn"
+			],
+			[
+				"to",
+				"to_fixed_point"
+			],
+			[
+				"vis_",
+				"vis_plot"
+			],
+			[
+				"vis",
+				"vis_data"
+			],
+			[
+				"scal",
+				"scale_x"
+			],
+			[
+				"l",
+				"load"
+			],
+			[
+				"if",
+				"ifmain	if __name__ == '__main__'"
+			],
+			[
+				"test",
+				"testcase"
+			],
+			[
+				"ini",
+				"ifmain	if __name__ == '__main__'"
+			],
+			[
+				"multimethod",
+				"multimethod"
+			],
+			[
+				"work",
+				"work_3"
+			],
+			[
+				"_",
+				"_nCh"
+			],
+			[
+				"int",
+				"int16"
+			],
+			[
+				"pro",
+				"process1"
+			],
+			[
+				"file",
+				"file_name"
+			],
+			[
+				"bytes",
+				"bytes_to_write"
+			],
+			[
+				"buf",
+				"buf_length"
+			],
+			[
+				"byt",
+				"bytes_to_write"
+			],
+			[
+				"stream",
+				"stream_buf"
+			],
+			[
+				"xil",
+				"xillybus_write_32"
+			],
+			[
+				"chNo",
+				"chNo_out"
+			],
+			[
+				"shared",
+				"shared_arr"
+			],
+			[
+				"as",
+				"astype"
+			],
+			[
+				"_timer",
+				"_timer_read"
+			],
+			[
+				"_tim",
+				"_timer_read"
+			],
+			[
+				"al",
+				"alwaysc	always *"
+			],
+			[
+				"fir",
+				"fir_out"
+			],
+			[
+				"fifo1",
+				"fifo1_din"
+			],
+			[
+				"ST",
+				"STD_LOGIC_VECTOR"
+			],
+			[
+				"el",
+				"elsif	elsif"
+			],
+			[
+				"in_",
+				"in_1"
+			],
+			[
+				"out",
+				"out_1"
+			],
+			[
+				"and",
+				"and2_gate"
+			],
+			[
+				"cl",
+				"clk_1MHz"
+			],
+			[
+				"clk",
+				"clk_20MHz"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Anaconda Python Builder",
+					""
+				],
+				[
+					"Packages/MagicPython/settings/sublime/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/MagicPython/settings/sublime/Python.sublime-build",
+					"Syntax Check"
+				],
+				[
+					"Packages/SublimeREPL/sublimerepl_build_system_hack.sublime-build",
+					""
+				]
+			],
+			[
+				"Packages/MagicPython/settings/sublime/Python.sublime-build",
+				""
+			]
+		],
+		[
+			[
+				[
+					"Packages/AutoHotkey/AutoHotkey.sublime-build",
+					""
+				],
+				[
+					"Packages/AutoHotkey/AutoHotkey.sublime-build",
+					"Run"
+				],
+				[
+					"Packages/SublimeREPL/sublimerepl_build_system_hack.sublime-build",
+					""
+				]
+			],
+			[
+				"Packages/AutoHotkey/AutoHotkey.sublime-build",
+				"Run"
+			]
+		],
+		[
+			[
+				[
+					"Packages/Markdown Preview/Markdown.sublime-build",
+					""
+				],
+				[
+					"Packages/SublimeREPL/sublimerepl_build_system_hack.sublime-build",
+					""
+				]
+			],
+			[
+				"Packages/Markdown Preview/Markdown.sublime-build",
+				""
+			]
+		],
+		[
+			[
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				]
+			],
+			[
+				"Packages/Python/Python.sublime-build",
+				""
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 562.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"can",
+				"Build: Cancel"
+			],
+			[
+				"bui",
+				"Build: Cancel"
+			],
+			[
+				"b",
+				"Build: Cancel"
+			],
+			[
+				"vispy",
+				"Verilog: Show Signal/Variable Type"
+			],
+			[
+				"chine",
+				"Unicode: Unicode To Chinese Characters"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"gutter",
+				"GitGutter: Compare Against Commit"
+			],
+			[
+				"cy",
+				"Set Syntax: Cython"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"remove",
+				"Package Control: Remove Package"
+			],
+			[
+				"pip",
+				"Package Control: Install Package"
+			],
+			[
+				"cython",
+				"Set Syntax: Cython"
+			],
+			[
+				"pip ",
+				"Package Control: Install Package"
+			],
+			[
+				"python",
+				"Set Syntax: MagicPython"
+			],
+			[
+				"binary",
+				"Set Syntax: Binary"
+			],
+			[
+				"text",
+				"Set Syntax: Plain Text"
+			],
+			[
+				"hex",
+				"Set Syntax: Hex"
+			],
+			[
+				"prv",
+				"PackageResourceViewer: Open Resource"
+			],
+			[
+				"de",
+				"File: Delete"
+			],
+			[
+				"delete",
+				"File: Delete"
+			],
+			[
+				"pdf",
+				"Set Syntax: PDF"
+			],
+			[
+				"plan",
+				"Set Syntax: Plain Text"
+			],
+			[
+				"prv ",
+				"PackageResourceViewer: Open Resource"
+			],
+			[
+				"biuld ",
+				"Build: Cancel"
+			],
+			[
+				"markdownpre",
+				"Markdown Preview: Preview in Browser"
+			],
+			[
+				"markdown",
+				"Preferences: MarkdownEditing Settings – User"
+			],
+			[
+				"diff",
+				"FileDiffs: Menu"
+			],
+			[
+				"filediff",
+				"FileDiffs: Menu"
+			],
+			[
+				"project manager ",
+				"Project Manager: Add Project"
+			],
+			[
+				"project:close",
+				"Project: Close"
+			],
+			[
+				"enable",
+				"Package Control: Enable Package"
+			],
+			[
+				"disa",
+				"Package Control: Disable Package"
+			],
+			[
+				"disable",
+				"Package Control: Disable Package"
+			],
+			[
+				"preview",
+				"Markdown Preview: Preview in Browser"
+			],
+			[
+				"markdownp",
+				"Markdown Preview: Preview in Browser"
+			],
+			[
+				"isntal",
+				"Package Control: Install Package"
+			],
+			[
+				"markdownediting:",
+				"MarkdownEditing: New Inline Link"
+			],
+			[
+				"markdownediting",
+				"MarkdownEditing: New Image"
+			],
+			[
+				"markdo",
+				"Snippet: Markdown_header_(mdh3)"
+			],
+			[
+				"mar",
+				"Snippet: Markdown_header_(mdh1)"
+			],
+			[
+				"mark",
+				"Set Syntax: Markdown"
+			],
+			[
+				"auto",
+				"AutoHotkey - Run"
+			],
+			[
+				"bash",
+				"Set Syntax: Shell Script (Bash)"
+			],
+			[
+				"color",
+				"Color Picker"
+			],
+			[
+				"rename",
+				"File: Rename"
+			],
+			[
+				"anaconda: se",
+				"Anaconda: Set Python interpreter"
+			],
+			[
+				"",
+				"Build: Cancel"
+			],
+			[
+				"bc",
+				"Build: Cancel"
+			],
+			[
+				"cancel",
+				"Build: Cancel"
+			],
+			[
+				"m",
+				"Set Syntax: MATLAB"
+			],
+			[
+				"matlab",
+				"Set Syntax: MATLAB"
+			],
+			[
+				"verilog",
+				"Set Syntax: Verilog"
+			],
+			[
+				"VHDL",
+				"Set Syntax: VHDL"
+			],
+			[
+				"syntax ",
+				"Set Syntax: ucfconstraints"
+			],
+			[
+				"py",
+				"Set Syntax: Python"
+			]
+		],
+		"width": 626.0
+	},
+	"console":
+	{
+		"height": 518.0,
+		"history":
+		[
+			"Running python -u \"F:\\PCIE\\Bandwidth_Accuracy_Test\\test_analysis.py\"",
+			"sublime.cache_path()",
+			"import urllib.request,os,hashlib; h = '2915d1851351e5ee549c20394736b442' + '8bc59f460fa1548d1514676163dafc88'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/F/spiketag/spiketag/view/spike_tag.sublime-project",
+		"/F/spiketag/spiketag/view/scatter_view.py",
+		"/F/spiketag/spiketag/view/spike_view.py",
+		"/F/spiketag/.gitignore",
+		"/F/spiketag/requirements.txt",
+		"/F/spiketag/setup.py",
+		"/F/spiketag/spiketag/view/wave_view.py",
+		"/F/spiketag/spiketag/view/__init__.py",
+		"/F/spiketag/spiketag/base/__init__.py",
+		"/F/spiketag/spiketag/Model.py",
+		"/F/spiketag/spiketag/__init__.py",
+		"/F/spiketag/spiketag/base/color_scheme.py",
+		"/F/spiketag/spiketag/base/Model.py",
+		"/F/spiketag/spiketag/quality/__init__.py",
+		"/F/spiketag/spiketag/utils/__init__.py",
+		"/F/spiketag/spiketag/base/CLU.py",
+		"/F/spiketag/spiketag/base/MUA.py",
+		"/F/spiketag/spiketag/view/widgets.py",
+		"/F/spiketag/spiketag/utils/utils.py",
+		"/F/clustering/hdbscan/setup.py",
+		"/F/spiketag/LICENSE",
+		"/F/clustering/hdbscan/requirements.txt",
+		"/F/clustering/metric-learn/metric_learn/__init__.py",
+		"/F/clustering/metric-learn/metric_learn/constraints.py",
+		"/F/clustering/metric-learn/metric_learn/base_metric.py",
+		"/F/clustering/metric-learn/test/metric_learn_test.py",
+		"/F/clustering/metric-learn/test/__init__.py",
+		"/F/clustering/metric-learn/examples/sandwich.py",
+		"/F/clustering/metric-learn/setup.cfg",
+		"/F/clustering/metric-learn/setup.py",
+		"/C/Users/labadmin/Downloads/LMNN notebook.txt",
+		"/F/mua/mua.sublime-project",
+		"/S/shank32.log",
+		"/F/spyking-circus/circus/scripts/python_gui.py",
+		"/S/shank32.params",
+		"/s/shank32.prb",
+		"/F/spyking-circus/circus/clustering.py",
+		"/S/.phy/joblib/phycontrib/template/gui/TemplateController/get_waveforms/func_code.py",
+		"/F/PyViewer/PyViewer.py",
+		"/F/PyViewer/MyWaveVisual.py",
+		"/S/kampff_32.prb",
+		"/S/shank2.params",
+		"/S/shank2.log",
+		"/F/mua/base/MyWaveVisual.py",
+		"/F/mua/base/spike_view.py",
+		"/F/mua/base/simple_timer.py",
+		"/F/mua/base/new_spike_view.py",
+		"/C/Users/labadmin/Documents/Tencent Files/1832427590/FileRecv/06-17 更新14.txt",
+		"/C/Users/labadmin/Documents/Tencent Files/1832427590/FileRecv/06-13 更新18.txt",
+		"/f/clustering/hdbscan/hdbscan/hdbscan_.py",
+		"/F/mua/base/fet.npy",
+		"/C/Anaconda/lib/site-packages/sklearn/base.py",
+		"/F/mua/base/fet.fet.py",
+		"/F/simulation_framework/dana-master/examples/turing.py",
+		"/F/mua/base/xview.copy.py",
+		"/F/mua/base/line_view.py",
+		"/F/mua/base/Vis.py",
+		"/F/mua/qt_example.py",
+		"/f/pyviewer/vispy-master/vispy/visuals/text/text.py",
+		"/f/pyviewer/vispy-master/vispy/visuals/axis.py",
+		"/f/pyviewer/vispy-master/vispy/scene/widgets/axis.py",
+		"/f/pyviewer/vispy-master/vispy/scene/widgets/widget.py",
+		"/F/mua/base/lview.py",
+		"/f/pyviewer/vispy-master/vispy/visuals/line/line.py",
+		"/f/pyviewer/vispy-master/vispy/scene/visuals.py",
+		"/f/pyviewer/vispy-master/vispy/scene/cameras/base_camera.py",
+		"/f/pyviewer/vispy-master/vispy/scene/widgets/viewbox.py",
+		"/f/pyviewer/vispy-master/vispy/scene/canvas.py",
+		"/C/Users/labadmin/Documents/Tencent Files/1832427590/FileRecv/5月新专辑　新节目26集.txt",
+		"/F/mua/base/xview.py",
+		"/F/mua/base/testmua.ipynb",
+		"/F/clustering/OPTICS-Automatic-Clustering-master/demo/OpticsClusterArea.py",
+		"/C/Users/labadmin/Desktop/git.txt",
+		"/F/mua/base/MUA.py",
+		"/F/mua/test.py",
+		"/F/mua/optics.py",
+		"/F/clustering/OPTICS-Automatic-Clustering-master/demo/demo.py",
+		"/F/clustering/OPTICS-master/testing_may6.txt",
+		"/F/clustering/OPTICS-master/OPTICS.py",
+		"/C/Users/labadmin/.babun/cygwin/home/labadmin/.jupyter/custom/costom.js",
+		"/F/mua/__init__.py",
+		"/F/mua/base/__init__.py",
+		"/F/clustering/hdbscan/hdbscan/hdbscan_.py",
+		"/F/phy/phy/gui/gui.py",
+		"/F/phy/phy/plot/visuals.py",
+		"/F/phy/phy/plot/interact.py",
+		"/F/phy/phy/__init__.py",
+		"/F/clustering/hdbscan/hdbscan/plots.py",
+		"/F/clustering/hdbscan/hdbscan/_hdbscan_tree.pyx",
+		"/F/PyViewer/vispy-master/vispy/visuals/xyz_axis.py",
+		"/F/PyViewer/vispy-master/vispy/scene/visuals.py",
+		"/F/phy/phy/plot/plot.py",
+		"/F/clustering/hdbscan/hdbscan/_hdbscan_tree.pyd",
+		"/F/phy/phy/traces/tests/test_filter.py",
+		"/F/phy/phy/plot/tests/test_visuals.py",
+		"/C/Users/labadmin/Downloads/vispy-master/build/lib/vispy/visuals/axis.py",
+		"/C/Users/labadmin/Downloads/vispy-master/build/lib/vispy/scene/widgets/axis.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/demo/gloo/primitive_mesh_viewer_qt.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/demo/scene/picking.py",
+		"/C/Users/labadmin/Downloads/vispy-master/build/lib/vispy/scene/cameras/panzoom.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/basics/scene/isocurve_for_trisurface_qt.py",
+		"/C/Users/labadmin/Downloads/vispy-master/build/lib/vispy/visuals/line/line.py",
+		"/C/Users/labadmin/Downloads/vispy-master/build/lib/vispy/visuals/polygon.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/basics/visuals/transparent_blend.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/basics/visuals/polygon_visual.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/demo/gloo/atom.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/demo/gloo/ndscatter.py",
+		"/F/phy/example/test_GUI.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/basics/scene/sphere.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/basics/scene/isocurve.py",
+		"/C/Users/labadmin/Downloads/vispy-master/build/lib/vispy/visuals/rectangle.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/basics/visuals/dynamic_polygon.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/basics/gloo/display_points.py",
+		"/F/phy/phy/plot/base.py",
+		"/F/phy/phy/plot/__init__.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/demo/gloo/cloud.py",
+		"/F/Viz/phygui/tests/test_gui.py",
+		"/F/Viz/phygui/__init__.py",
+		"/F/phy/phy/gui/__init__.py",
+		"/F/phy/setup.py",
+		"/F/PyViewer/vis_plot_wav.py",
+		"/C/Users/labadmin/Downloads/vispy-master/build/lib/vispy/scene/visuals.py",
+		"/C/Users/labadmin/Downloads/vispy-master/build/lib/vispy/gloo/gl/tests/test_basics.py",
+		"/C/Users/labadmin/Downloads/vispy-master/vispy/visuals/line_plot.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/basics/visuals/line_prototype.py",
+		"/C/Users/labadmin/Downloads/vispy-master/examples/basics/visuals/line_transform.py",
+		"/C/Users/labadmin/Downloads/vispy-master/build/lib/vispy/visuals/ellipse.py",
+		"/C/Users/labadmin/Downloads/vispy-master/build/lib/vispy/visuals/regular_polygon.py"
+	],
+	"find":
+	{
+		"height": 60.0
+	},
+	"find_in_files":
+	{
+		"height": 138.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+			"palette",
+			"color_scheme",
+			"FET",
+			"update_param",
+			"signal_objet_changed",
+			"multiwave_view",
+			"scatter_3d_view",
+			"ne.",
+			"ne",
+			"prepare_constraints",
+			"ev",
+			"emit",
+			"ch_span",
+			"get_near_ch",
+			"slice",
+			"highlight",
+			"with Timer(",
+			"With",
+			"target_clu_No",
+			"self.highlight(spkNolist=self._spkNolist, cluNo=self._selected_cluster)",
+			"on_select",
+			"spkNolist=self._spkNolist",
+			"self.highlight(spkNolist=self._spkNolist, cluNo=box[1])",
+			"on_select",
+			"emit",
+			"TODO",
+			"with",
+			"selected_spk",
+			"self.select_spk",
+			"select_spk",
+			"view_lock",
+			"_view_lock",
+			"self.view_lock",
+			"_view_lock",
+			"self._view_lock",
+			"_selected_cluster",
+			"target_clu_No",
+			"_selected_cluster",
+			"selected_spk",
+			"_glo_id",
+			"fet",
+			"self._cache_color",
+			"transparency",
+			"size",
+			"transparency",
+			"self.transparency",
+			"press",
+			"selected_spk",
+			"self.selected_spk",
+			"plot_virtual",
+			"highlight",
+			"selected_spk",
+			"selected_spks",
+			"_highlight_color",
+			"self._highlight_color",
+			"clear()",
+			"highlight",
+			"visual[0]",
+			"visual[0",
+			"_items",
+			"_get_array",
+			"visual",
+			"update",
+			"spkNolist",
+			"_get_closest_spk",
+			"subset_idx",
+			"subset",
+			"selected_clu",
+			"_",
+			"selected_clu",
+			"corr",
+			"surface_type",
+			"Hyperplanes",
+			"predict",
+			"TemplateController",
+			"_spkNolist",
+			"close_spkNolist",
+			"_membership_undo_stack",
+			"make_id_contineous",
+			"counts_per_clu",
+			"_move_spikes",
+			"emit",
+			"color",
+			"_highlight_color",
+			"highlight",
+			"transparency",
+			"CLU",
+			"highlight",
+			"np.intersect1d(list(self._spkNolist), list(close_spkNolist))",
+			"self.clu",
+			"update_cluster",
+			"set_data",
+			"update",
+			"_transformed",
+			"self._transformed",
+			"spks_per_clu",
+			"with Timer",
+			"set_data",
+			"self.nclu",
+			"_clu_cumsum",
+			"self._clu_cumsum",
+			"clu",
+			"self._selected_cluster",
+			"clu",
+			"self.clu",
+			"ptime",
+			"_spkNolist_in_targetclu",
+			"_spkNolist",
+			"self._spkNolist = self._spkNolist.union(close_spkNolist)",
+			"selected_spk",
+			"_idx_fulclu",
+			"_idx_subclu",
+			"selected_clu",
+			"_selected_cluster",
+			"selected_spk",
+			"self.clu",
+			"_cache_mask_",
+			"view_mask",
+			"self._spkNolist",
+			"_cache_mask_",
+			"_cache_view_mask",
+			"highlight",
+			"self.color",
+			"self.depth",
+			"depth",
+			"highlight",
+			"mask",
+			"clu_offset"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 44.0
+	},
+	"input":
+	{
+		"height": 60.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 631.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.hex_viewer_inspector":
+	{
+		"height": 190.0
+	},
+	"output.markdown":
+	{
+		"height": 218.0
+	},
+	"pinned_build_system": "Packages/MagicPython/settings/sublime/Python.sublime-build",
+	"project": "spike_tag.sublime-project",
+	"replace":
+	{
+		"height": 84.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"re",
+				"requirements.txt"
+			],
+			[
+				"wave",
+				"base\\wave_view.py"
+			],
+			[
+				"",
+				"base\\new_spike_view.py"
+			],
+			[
+				"wav",
+				"base\\wave_view.py"
+			],
+			[
+				"mua",
+				"base\\MUA.py"
+			],
+			[
+				"utils",
+				"base\\utils.py"
+			],
+			[
+				"sca",
+				"base\\scatter_view.py"
+			],
+			[
+				"new",
+				"base\\new_spike_view.py"
+			],
+			[
+				"util",
+				"base\\utils.py"
+			],
+			[
+				"xview",
+				"base\\xview.py"
+			],
+			[
+				"sview",
+				"base\\sview.py"
+			],
+			[
+				"gl_point",
+				"examples\\basics\\gloo\\display_points.py"
+			],
+			[
+				"widget",
+				"vispy\\scene\\widgets\\widget.py"
+			],
+			[
+				"scenecanvas",
+				"vispy\\scene\\canvas.py"
+			],
+			[
+				"fig",
+				"vispy\\plot\\fig.py"
+			],
+			[
+				"binload",
+				"Binload.py"
+			],
+			[
+				"test_write",
+				"test_write.py"
+			],
+			[
+				"test_ana",
+				"test_analysis.py"
+			],
+			[
+				"test",
+				"test_read.py"
+			],
+			[
+				"write",
+				"test_write.py"
+			],
+			[
+				"projec",
+				"Bandwidth_Accuracy_Test.sublime-project"
+			],
+			[
+				"test_read",
+				"F:\\PCIE\\Bandwidth_Accuracy_Test\\test_read.py"
+			],
+			[
+				"pcie",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\pcie_rd_wavevisual.py"
+			],
+			[
+				"bin",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\Binload.py"
+			],
+			[
+				"pcie._rd",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\pcie_rd_wavevisual.py"
+			],
+			[
+				"vis",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\vis_plot_wav.py"
+			],
+			[
+				"acq",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\data_acq.py"
+			],
+			[
+				"daq",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\data_acq.py"
+			],
+			[
+				"pcie_rd",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\pcie_rd_wavevisual.py"
+			],
+			[
+				"speed",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\speed_test.py"
+			],
+			[
+				"spee",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\speed_test.py"
+			],
+			[
+				"pcierd",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\pcie_rd_wavevisual.py"
+			],
+			[
+				"xi",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\verilog\\src\\xillydemo.v"
+			],
+			[
+				"pcie_mem",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\pcie_mem_32.py"
+			],
+			[
+				"xil",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\verilog\\src\\xillydemo.v"
+			],
+			[
+				"pcie.py",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\PCIE.py"
+			],
+			[
+				"pcie.rd",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\pcie_rd_wavevisual.py"
+			],
+			[
+				"xilly",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\verilog\\src\\xillydemo.v"
+			],
+			[
+				"visp",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\vis_plot.py"
+			],
+			[
+				"my",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\MyWaveVisual.py"
+			],
+			[
+				"xill",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\verilog\\src\\xillydemo.v"
+			],
+			[
+				"f",
+				"F:\\PCIE\\Xillybus\\xillybus-eval-kintex7-1.2c\\host_python\\real_tim_sig.py"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 750.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"spike",
+				"F:\\spiketag\\spiketag\\view\\spike_tag.sublime-workspace"
+			],
+			[
+				"vispy",
+				"F:\\PCIE\\vispy.sublime-project"
+			],
+			[
+				"",
+				"F:\\PCIE\\Test_Case_V4\\SpkDet_Ch32.sublime-project"
+			],
+			[
+				"phy",
+				"C:\\Users\\labadmin\\Downloads\\vispy-master\\build\\lib\\vispy\\visuals\\phy.sublime-project"
+			],
+			[
+				"xike",
+				"F:\\Xike\\xike.sublime-project"
+			],
+			[
+				"mua",
+				"F:\\mua\\mua.sublime-project"
+			],
+			[
+				"py",
+				"F:\\PyViewer\\Pyviewer.sublime-project"
+			],
+			[
+				"pyv",
+				"F:\\PyViewer\\Pyviewer.sublime-project"
+			],
+			[
+				"mem",
+				"F:\\PCIE\\Test_Case_V1\\Mem_Test\\mem_test.sublime-project"
+			]
+		],
+		"width": 570.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 370.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
