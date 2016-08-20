@@ -2,5 +2,6 @@ build/*
 spiketag/*.pyc
 spiketag/__pycache__/*
 dist/*
+*.pyc
 *egg-info
 notebooks/.ipynb_checkpoints/*
