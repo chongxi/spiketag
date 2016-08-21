@@ -122,6 +122,9 @@ class CLU(EventEmitter):
                 subset_idx += np.arange(len(subset_idx))
             return subset_idx
 
+    def select(self, selectlist):
+        self.selectlist = selectlist # update selectlist
+        self.emit('select', action='select')
 
     def merge(self, mergelist):
         '''

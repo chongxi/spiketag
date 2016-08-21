@@ -71,6 +71,10 @@ class scatter_3d_view(scene.SceneCanvas):
         def on_cluster(*args, **kwargs):
             self._render()
 
+        @self.clu.connect
+        def on_select(*args, **kwargs):
+            self.highlight(self.clu.selectlist)
+
     def _render(self):
         #######################################################
         ### step1: set the color for clustering
@@ -103,7 +107,7 @@ class scatter_3d_view(scene.SceneCanvas):
 
     def highlight(self, mask, refresh=True):
         """
-        highlight the nth index points with _highlight_color
+        highlight the nth index points (mask) with _highlight_color
         refresh is False means it will append
         """
 

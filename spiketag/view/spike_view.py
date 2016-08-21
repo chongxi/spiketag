@@ -19,7 +19,7 @@ class spike_view(View):
         self._data_bound = (-2, -1, 2, 1)
         self.interactive = interactive
         self._selected_cluster = 0
-        self._view_lock = False
+        self._view_lock = True
         self._spkNolist = set()
         self._selected_whole_cluster = False
         self._event     = EventEmitter()
@@ -41,32 +41,37 @@ class spike_view(View):
         return y
 
     def _get_data(self, data_bound):
-        self._xsig = np.linspace(-0.5, 0.5, self.n_samples)
         new_data_list=[]
+        y=[]
         for chNo in range(self.n_ch):
             for cluNo in self.clu.index_id:
-                y           = list(self.spk[self.clu[cluNo],:,chNo].squeeze())
                 # x           = [self._xsig for i in y]
-                n           = len(y)
+                # y           = list(self.spk[self.clu[cluNo],:,chNo].squeeze())
+                s           = self.spk[self.clu.index[cluNo],:,chNo].squeeze()
+                if s.ndim == 1:
+                    s = s[np.newaxis,:]
+                n = s.shape[0]
+                y.append(np.asarray(s))
                 transparency= np.tile(self._transparency, (n,1))
-                color       = np.hstack((np.asarray([self.palette[cluNo] for i in y]), transparency)).astype(np.float32)
+                color       = np.hstack((np.asarray([self.palette[cluNo] for i in s]), transparency)).astype(np.float32)
                 # depth       = np.zeros((n,1))
                 # data_bounds = np.tile((data_bound), (n,1))
                 box_index   = np.tile((chNo, cluNo), ((n*self.n_samples,1))).astype(np.float32)
-                new_data_list.append({'y': y,
+                new_data_list.append({# 'y': y,
                                       # 'x': x,
                                       'color': color,
                                       # 'depth': depth,
                                       # 'data_bounds': data_bounds,
                                       'box_index': box_index})
-        self.data = _accumulate(new_data_list, ('y'))
+        self.data = _accumulate(new_data_list)
+        self._xsig = np.linspace(-0.5, 0.5, self.n_samples)
+        self.x = np.tile(self._xsig, self.n_ch*self.n_signals)
+        self.y = np.vstack(y).ravel()
 
     def _build(self):
         self.grid.shape = (self.n_ch, self.clu.nclu)
         data = self.data
         self.box_index = data.pop('box_index')
-        self.y = np.asarray(data['y']).ravel()
-        self.x = np.tile(self._xsig, self.n_ch*self.n_signals)
         self.depth = np.c_[self.x, self.y, np.zeros(*self.x.shape)].astype(np.float32)
         self.color = np.repeat(data['color'], self.n_samples, axis=0)
         self._cache_depth = self.depth.copy()
@@ -270,6 +275,7 @@ class spike_view(View):
                 self.visuals[0].program['a_color']    = self.color
                 self.visuals[0].program['a_position'] = self.depth  # pos include depth
                 self.update()
+
         except Exception, e:
             pass
 
@@ -373,7 +379,8 @@ class spike_view(View):
                         self._spkNolist = (spkNo,)
                         self._selected_cluster = box[1]
                         self.highlight(spkNolist=self._spkNolist, cluNo=self._selected_cluster)
-                        self.on_select()
+                        # self.on_select()
+                        self.clu.select(self.selected_spk)
                     else:
                         if len(self._spkNolist) > 0: # there are spikes are selected
                             # self._spkNolist = set()
@@ -392,7 +399,8 @@ class spike_view(View):
                         self.highlight(spkNolist=close_spkNolist, cluNo=self._selected_cluster, refresh=False)   
                         intersect_spks  = np.intersect1d(self._spkNolist, list(close_spkNolist))
                         self._spkNolist = set(self._spkNolist).union(set(close_spkNolist))
-                        self.on_select()
+                        # self.on_select()
+                        self.clu.select(self.selected_spk)
                     
                     elif len(modifiers) ==1 and modifiers[0].name == 'Control':
                         '''
@@ -405,7 +413,8 @@ class spike_view(View):
                         # with Timer('highlight'):
                         self.highlight(spkNolist=self._spkNolist, cluNo=self._selected_cluster)
                         # with Timer('on_select'):
-                        self.on_select()
+                        # self.on_select()
+                        self.clu.select(self.selected_spk)
                     
                     elif len(modifiers) ==1 and modifiers[0].name == 'Shift':
                         '''
@@ -420,7 +429,8 @@ class spike_view(View):
                             for spkNo in intersect_spks:
                                 self._spkNolist.remove(spkNo)
                         self.highlight(spkNolist=self._spkNolist, cluNo=self._selected_cluster) 
-                        self.on_select()
+                        # self.on_select()
+                        self.clu.select(self.selected_spk)
 
         except Exception, e:
             pass
@@ -459,7 +469,7 @@ class spike_view(View):
             self.highlight(spkNolist=all_spkNolist, cluNo=self._selected_cluster, refresh=True)   
             self._spkNolist = set(all_spkNolist)
             self._selected_whole_cluster = True
-
+            self.clu.select(self.selected_spk)
 
         if e.text == 's':
             if len(self._spkNolist)>0:
