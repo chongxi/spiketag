@@ -119,7 +119,7 @@ class MainModel(object):
         self.kd = []
         for clu_id, value in self.clu[chNo].index.items():
             fet = self.fet[chNo][value]
-            self.kd.append(KDTree(fet, p=2))
+            self.kd.append(KDTree(fet))
 
 
     def predict(self, chNo, X, method='knn', k=10):

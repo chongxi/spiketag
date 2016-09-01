@@ -48,23 +48,33 @@ class Sorter(object):
 		# Will update the manmual modification to spktag structured numpy array
 		self.model.tofile(filename)
 
-
 	@property
 	def selected(self):
 		self._selected = self.view.spk_view.selected_spk
 		return self._selected
 	
 	@property
-	def fet(self):
-		return self.model.fet[self.ch]   # ndarray
-
-	@property
 	def spk(self):
 		return self.model.spk[self.ch]   # ndarray
 
 	@property
+	def fet(self):
+		return self.model.fet[self.ch]   # ndarray
+
+	@fet.setter
+	def fet(self, fet_value):
+		self.model.fet.fet[self.ch] = fet_value
+		self.refresh()
+
+	@property
 	def clu(self):
 		return self.model.clu[self.ch]   # CLU
+
+	@clu.setter
+	def clu(self, clu_membership):
+		self.clu.membership = clu_membership
+		self.clu.__construct__()
+		self.refresh()
 
 
 	def update_ch(self):
