@@ -1,7 +1,5 @@
 import numpy as np
-import seaborn as sns
 from vispy import scene, app
-# from xview import scatter_3d_view
 from .MyWaveVisual import MyWaveVisual
 from .color_scheme import palette
 
@@ -138,7 +136,18 @@ class Cross(object):
 
 
 class wave_view(scene.SceneCanvas):
-    def __init__(self, data, color=None, fs=25000.0, ncols=1, gap_value=0.5*0.95):
+    '''
+    Example1(Amplitude View): Show single Trace as dots with x,y axis tick:
+        mua_view = wave_view(mua.data[:64000,26], ls='.')
+        mua_view.view2.camera.set_range(x=[-1,1],y=[-0.9,0.5])
+        mua_view.cross.enable_tick(axis=1)  # enable y axis tick
+        mua_view.show()
+    
+    Example2(Multi-trace View): show all Trace with x axis:
+        mua_view = wave_view(mua.data[:64000,:])
+        mua_view.show()
+    '''
+    def __init__(self, data, color=None, fs=25000.0, ncols=1, gap_value=0.5*0.95, ls='-'):
         scene.SceneCanvas.__init__(self, keys=None)
         self.unfreeze()
         self.grid1 = self.central_widget.add_grid(spacing=0, bgcolor='gray',
@@ -148,7 +157,7 @@ class wave_view(scene.SceneCanvas):
         self.view1.camera = scene.cameras.PanZoomCamera()
         self.view1.camera.set_range()
         self.view1.camera.interactive = False
-        self.view2 = self.grid1.add_view(row=0, col=1, col_span=8, margin=10, bgcolor=(0, 0, 0, 1),
+        self.view2 = self.grid1.add_view(row=0, col=1, col_span=36, margin=10, bgcolor=(0, 0, 0, 1),
                               border_color=(0, 1, 0))
 
         self.view2.camera = scene.cameras.PanZoomCamera()
@@ -179,7 +188,7 @@ class wave_view(scene.SceneCanvas):
             self._gap_value=0
         self.nCh = nCh
         self.waves1 = wav_visual(data, nrows, ncols, npts, 
-                                 ls='-', parent=self.view2.scene, 
+                                 ls=ls, parent=self.view2.scene, 
                                  color=color,
                                  gap=self._gap_value)
         self.set_range()
