@@ -46,15 +46,19 @@ class SPK():
                     fet[i] = spk[:,method,:]
                 else:
                     fet[i] = np.array([])
+
         elif method == 'peak':
             for i in range(len(self.spk)):
                 spk = self.spk[i]
                 if spk.shape[0] > 0:
                     # TODO: 9:13?
-                    fet[i] = spk[:,9:13,:].min(axis=1).squeeze()  
+                    temp_fet = spk[:,8:15,:].min(axis=1).squeeze()  
+                    temp_fet = temp_fet - np.mean(temp_fet, axis=0)
+                    fet[i] = temp_fet/(temp_fet.max()-temp_fet.min())
                 else:
                     fet[i] = np.array([])
             self.fet = fet
+
         elif method == 'pca':
             from sklearn.decomposition import PCA
             for i, spk in self.spk.items():
@@ -64,10 +68,11 @@ class SPK():
                     # X = np.concatenate((spk[:,:,:].transpose(2,1,0)),axis=0).T   #
                     X = spk.transpose(0,2,1).ravel().reshape(-1, spk.shape[1]*spk.shape[2])
                     temp_fet = pca.fit_transform(X)
-                    fet[i] = temp_fet/(temp_fet.max()-temp_fet.min()) # scale down to (-1,1)
+                    fet[i] = temp_fet/(temp_fet.max()-temp_fet.min()) 
                 else:
                     fet[i] = np.array([])
             self.fet = fet
+
         elif method == 'weighted-pca':
             ne.set_num_threads(32)
             from sklearn.decomposition import PCA
@@ -81,11 +86,43 @@ class SPK():
                     W = self.W
                     X = ne.evaluate('X*W')
                     temp_fet = pca.fit_transform(X)
-                    fet[i] = temp_fet/(temp_fet.max()-temp_fet.min()) # scale down to (-1,1)
+                    fet[i] = temp_fet/(temp_fet.max()-temp_fet.min()) 
                 else:
                     fet[i] = np.array([])
-            self.fet = fet            
+            self.fet = fet
+
+        elif method == 'ica':
+            from sklearn.decomposition import FastICA
+            for i, spk in self.spk.items():
+                # TODO: 6?
+                ica = FastICA(n_components=3, whiten=True)  # ICA must be whitened
+                if spk.shape[0] > 0:
+                    # X = np.concatenate((spk[:,:,:].transpose(2,1,0)),axis=0).T   #
+                    X = spk.transpose(0,2,1).ravel().reshape(-1, spk.shape[1]*spk.shape[2])
+                    temp_fet = ica.fit_transform(X)
+                    fet[i] = temp_fet/(temp_fet.max()-temp_fet.min()) 
+                else:
+                    fet[i] = np.array([])
+            self.fet = fet
+
+        elif method == 'weighted-ica':
+            ne.set_num_threads(32)
+            from sklearn.decomposition import FastICA
+            for i in range(len(self.spk)):
+                # TODO: 6?
+                ica = FastICA(n_components=3, whiten=True)  # ICA must be whitened
+                spk = self.spk[i]
+                if spk.shape[0] > 0:
+                    # X = np.concatenate((spk[:,:,:].transpose(2,1,0)),axis=0).T   #
+                    X = spk.transpose(0,2,1).ravel().reshape(-1, spk.shape[1]*spk.shape[2])
+                    W = self.W
+                    X = ne.evaluate('X*W')
+                    temp_fet = ica.fit_transform(X)
+                    fet[i] = temp_fet/(temp_fet.max()-temp_fet.min()) 
+                else:
+                    fet[i] = np.array([])
+            self.fet = fet
 
         else:
-            print 'method = {peak, pca or some integer}'
+            print 'method = {peak, pca, weighted-pca, ica, weighted-ica}'
         return FET(fet)

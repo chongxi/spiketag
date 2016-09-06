@@ -13,6 +13,7 @@ class scatter_3d_view(scene.SceneCanvas):
 
         self._n = 0
         self._transparency = 0.3
+        self._size = 3
         self._highlight_color = np.array([1,0,0,1]).astype('float32')
         self.color = np.array([])
         self._cache_mask_ = np.array([])
@@ -96,7 +97,7 @@ class scatter_3d_view(scene.SceneCanvas):
         self.color = edge_color
         self._cache_mask_ = np.array([])
         self._cache_color = self.color.copy()
-        self.scatter.set_data(self.fet[:, :3], size=3, edge_color=self.color, face_color=self.color)
+        self.scatter.set_data(self.fet[:, :3], size=self._size, edge_color=self.color, face_color=self.color)
 
     def set_range(self):
         self.view.camera.set_range()

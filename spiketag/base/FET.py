@@ -34,7 +34,7 @@ class FET(object):
         
         chNo = kwargs['chNo'] if 'chNo' in kwargs.keys() else None
         fall_off_size = kwargs['fall_off_size'] if 'fall_off_size' in kwargs.keys() else None
-        print 'clustering method: {0}, chNo: {1}, fall_off_size: {2}'.format(method, chNo, fall_off_size)
+        # print 'clustering method: {0}, chNo: {1}, fall_off_size: {2}'.format(method, chNo, fall_off_size)
 
         if method == 'hdbscan':
             min_cluster_size = self.hdbscan_hyper_param['min_cluster_size']
