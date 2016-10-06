@@ -7,12 +7,12 @@ from .Binload import bload
 
 
 @jit(cache=True)
-def _to_spk(data, pos, chlist, spklen=25, ch_span=1):
+def _to_spk(data, pos, chlist, spklen=19, prelen=8, ch_span=1):
     n = len(pos)
     spk = np.empty((n, spklen, 2*ch_span+1), dtype=np.float32)
     for i in range(n):
         # i spike in chlist
-        spk[i, ...]  = data[pos[i]-10:pos[i]+15, chlist]
+        spk[i, ...]  = data[pos[i]-prelen:pos[i]-prelen+spklen, chlist]
     _nan = np.where(chlist==-1)[0]
     spk[..., _nan] = 0
     return spk
@@ -33,8 +33,8 @@ class MUA():
         self.t    = bf.t
 
         self.npts = bf._npts
-        self.pre = int(4e-4 * fs)
-        self.post = int(4e-4 * fs)
+        self.spklen = 19
+        self.prelen = 8
         spk_meta = np.fromfile(filename+'.spk', dtype='<i4')
         self.pivotal_pos = spk_meta.reshape(-1,2).T
 
@@ -53,14 +53,15 @@ class MUA():
         spkdict = {}
         for ch in range(self.nCh):
             pos = self.pivotal_pos[0, self.pivotal_pos[1]==ch]
-            spkdict[ch] = _to_spk(data   =self.data, 
+            spkdict[ch] = _to_spk(data   = self.data, 
                                   pos    = pos, 
-                                  chlist =self.ch_hash[ch], 
-                                  spklen =25,
-                                  ch_span=ch_span)
+                                  chlist = self.ch_hash[ch], 
+                                  spklen = self.spklen,
+                                  prelen = self.prelen,
+                                  ch_span= ch_span)
         return SPK(spkdict)
 
-    def get_nid(self, corr_cutoff=0.95):
+    def get_nid(self, corr_cutoff=0.95):  # get noisy spk id
         # 1. dump spikes file (binary)
         piv = self.pivotal_pos.T
         nspk = self.pivotal_pos.shape[1]

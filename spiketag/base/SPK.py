@@ -8,13 +8,11 @@ class SPK():
         self.spk = spkdict
         self.nCh = len(spkdict)
         self.ch_span = self.spk[0].shape[-1]
-        self.spklen = 25
-        weight_vector = np.array([ 0.02989419,  0.0426025 ,  0.07831115,  0.07639907,  0.0971761 ,
-                                   0.10907732,  0.23485107,  0.414169  ,  0.55485229,  0.71183021,
-                                   0.80639082,  0.83206653,  0.79556892,  0.65092225,  0.47119953,
-                                   0.23515538,  0.08119973,  0.25243462,  0.44097719,  0.43911416,
-                                   0.48874702,  0.48230024,  0.38475716,  0.37505245,  0.23355913 ],
-                                   dtype=np.float32)
+        self.spklen = 19
+        weight_vector = np.array([0.2871761 , 0.2871761 , 0.3571761 , 0.45907732, 0.45485107, 
+                                  0.664169  , 0.85485229, 0.91183021, 0.83639082, 0.83206653, 
+                                  0.79556892, 0.55092225, 0.57119953, 0.67515538, 0.68811997,  
+                                  0.62243462, 0.34097719, 0.38911416, 0.33874702], dtype=np.float32)
         weight_channel = self.weight_channel_saw(np.arange(self.ch_span))
         W = weight_channel * weight_vector.reshape(-1,1)
         self.W = W.T.ravel()
@@ -39,6 +37,10 @@ class SPK():
     
     def tofet(self, method='weighted-pca', ncomp=6, whiten=False):
         fet = {}
+        pca_comp = {}
+        shift = {}
+        scale = {}
+
         if isinstance(method, int):
             for i in range(len(self.spk)):
                 spk = self.spk[i]
@@ -52,7 +54,7 @@ class SPK():
                 spk = self.spk[i]
                 if spk.shape[0] > 0:
                     # TODO: 9:13?
-                    temp_fet = spk[:,8:15,:].min(axis=1).squeeze()  
+                    temp_fet = spk[:,4:7,:].min(axis=1).squeeze()  
                     temp_fet = temp_fet - np.mean(temp_fet, axis=0)
                     fet[i] = temp_fet/(temp_fet.max()-temp_fet.min())
                 else:
@@ -81,15 +83,31 @@ class SPK():
                 pca = PCA(n_components=ncomp, whiten=whiten)
                 spk = self.spk[i]
                 if spk.shape[0] > 0:
-                    # X = np.concatenate((spk[:,:,:].transpose(2,1,0)),axis=0).T   #
+                    # step 0
                     X = spk.transpose(0,2,1).ravel().reshape(-1, spk.shape[1]*spk.shape[2])
                     W = self.W
                     X = ne.evaluate('X*W')
-                    temp_fet = pca.fit_transform(X)
-                    fet[i] = temp_fet/(temp_fet.max()-temp_fet.min()) 
+                    # step 1
+                    temp_fet = pca.fit(X)
+                    # pca_comp[i] = pca.components_.T
+                    pca_comp[i] = np.floor(pca.components_.T*(2**7))/(2**7)
+                    temp_fet = np.dot(X, pca_comp[i])
+                    # pca_comp[i] = pca.components_.T
+                    # step 2
+                    shift[i] = -np.dot(X.mean(axis=0), pca.components_.T)
+                    temp_fet += shift[i]
+                    # step 3
+                    scale[i] = temp_fet.max()-temp_fet.min()
+                    temp_fet /= scale[i]
+                    # quantization for FPGA
+                    fet[i] = temp_fet
+                    # fet[i] = np.floor(temp_fet*2**8)/(2**8)
                 else:
                     fet[i] = np.array([])
             self.fet = fet
+            self.pca_comp = pca_comp
+            self.shift = shift
+            self.scale = scale
 
         elif method == 'ica':
             from sklearn.decomposition import FastICA
