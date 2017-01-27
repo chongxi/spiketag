@@ -18,9 +18,8 @@ class spike_view(View):
         self._highlight_color = np.array([1,0,0,1]).astype('float32')
         self._data_bound = (-2, -1, 2, 1)
         self.interactive = interactive
-        self._selected_cluster = 0
+        self._selected = {}
         self._view_lock = True
-        self._spkNolist = set()
         self._selected_whole_cluster = False
         self._event     = EventEmitter()
         self._performance_measure = False
@@ -243,8 +242,20 @@ class spike_view(View):
             return np.array([])
 
     # ---------------------------------------------
+    def highlight(self,selected, refresh=True):
+        """
+        highlight the selected spikes:
+        the selected is dist, eg: {cluNo:[spikelist]}, the spike list is local idx in the clu, and the num of clu could be one or more
+        """
+        if refresh:
+            self._clear_highlight()
 
-    def highlight(self, spkNolist, cluNo, refresh=True):
+        for k,v in selected.iteritems():
+            self._highlight(v,k,refresh=False)
+
+    # ---------------------------------------------
+
+    def _highlight(self, spkNolist, cluNo, refresh=True):
         """
         highlight the nth spike in cluNo, nth is local id
         only local ids and cluNo is needed
@@ -279,6 +290,14 @@ class spike_view(View):
         except Exception, e:
             pass
 
+    def _clear_highlight(self):
+          if len(self._cache_mask_) > 0:
+                self._cache_color[:,-1] = self.transparency
+                _cache_out(self._cache_mask_, self._cache_color, self.color)
+                _cache_out(self._cache_mask_, self._cache_depth, self.depth)
+                self._cache_mask_ = np.array([])
+
+
     def _data_in_box(self, box):
         ch_No = box[0]
         clu_No = box[1]
@@ -302,13 +321,40 @@ class spike_view(View):
         return close_spkNolist
 
     @property
-    def selected_clu(self):
-        return self._selected_cluster
+    def selected_clus(self):
+        return self._selected.keys()
 
     @property
     def selected_spk(self):
-        selected_spk = self.clu._glo_id(self._selected_cluster, self._spkNolist)
+        selected_spk = self.clu.local2global(self._selected)
         return selected_spk
+    
+    @property
+    def is_single_mode(self):
+        '''
+            if only have one cluster selected, return True, otherwise return False 
+        '''
+        return len(self._selected) == 1
+
+    @property
+    def selected_cluster(self):
+        '''
+            if on single mode, return the only cluster no we have
+        '''
+        if self.is_single_mode:
+            return self._selected.keys()[0]
+
+    @property
+    def is_spk_empty(self):
+        if len(self._selected) > 0:
+            for k,v in self._selected.iteritems():
+                if len(v) > 0:
+                    return False
+        return True
+
+    def _reset_cluster(self):
+        for k,v in self._selected.iteritems():
+            self._selected[k] = np.array([])
 
     def on_select(self):
         self._event.emit('select', global_idx=self.selected_spk)
@@ -319,43 +365,43 @@ class spike_view(View):
     def unconnect_(self, *args, **kwargs):
         self._event.unconnect(*args, **kwargs)
 
-    def _move_spikes(self, target_clu_No):
-        if len(self._spkNolist) > 0 and self._selected_cluster != target_clu_No:
+    def _move_spikes(self, target_clu_no):
+        if not self.is_spk_empty and self.selected_cluster != target_clu_no:
             # cluster takes 100 ms + on_cluster event handler take 700ms
 
             if self._selected_whole_cluster is False:  # move
                 with Timer('move', verbose=self._performance_measure):
-                    self._spkNolist = self.clu.move(self._selected_cluster,
-                                                    self._spkNolist,
-                                                    target_clu_No)
-                self._selected_cluster = target_clu_No
+                    target_local_idx = self.clu.move(self._selected,
+                                                    target_clu_no)
+                    self._selected = {target_clu_no:target_local_idx}
 
             if self._selected_whole_cluster is True:   # merge
-                global_idx = self.clu._glo_id(self._selected_cluster, self._spkNolist)
+                global_idx = self.clu.local2global(self._selected)
                 with Timer('merge', verbose=self._performance_measure):
-                    self.clu.merge([self._selected_cluster, target_clu_No])
-                self._selected_cluster, self._spkNolist = self.clu._sub_id(global_idx)
+                    self.clu.merge(np.append(self._selected.keys(),target_clu_no))
+                self._selected = self.clu.global2local(global_idx)
 
             with Timer('highlight', verbose=self._performance_measure):
-                self.highlight(spkNolist=self._spkNolist, cluNo=self._selected_cluster) 
+                self.highlight(selected=self._selected) 
 
     def on_mouse_press(self, e):
         if e.button == 1:
             ndc = self.panzoom.get_mouse_pos(e.pos)
             box = self.interact.get_closest_box(ndc)
 
-            if len(self._spkNolist)>0:
+            if not self.is_spk_empty:
                 if self.view_lock is True:
                     target_clu_No = box[1]
                     self._move_spikes(target_clu_No)  
 
-            if len(self._spkNolist) == 1:
-                if self.view_lock is False:
-                    self._event.emit('click', global_idx=self.selected_spk)     
+            # TODO can not find the where is listener
+            #  if len(self._spkNolist) == 1:
+                #  if self.view_lock is False:
+                    #  self._event.emit('click', global_idx=self.selected_spk)     
 
         if e.button == 3:
             self.clear_virtual()
-            self._spkNolist=set() 
+            self._reset_cluster()
 
     def on_mouse_move(self, e):
         '''
@@ -376,19 +422,18 @@ class spike_view(View):
                         self.clear_virtual()
                         self._selected_whole_cluster = False
                         spkNo = self._get_closest_spk(box, tpos) # one number
-                        self._spkNolist = (spkNo,)
-                        self._selected_cluster = box[1]
-                        self.highlight(spkNolist=self._spkNolist, cluNo=self._selected_cluster)
+                        self._selected = {box[1]:(spkNo,)}
+                        self.highlight(selected=self._selected)
                         # self.on_select()
                         self.clu.select(self.selected_spk)
                     else:
-                        if len(self._spkNolist) > 0: # there are spikes are selected
+                        if len(self._selected) > 0: # there are spikes are selected
                             # self._spkNolist = set()
                             self.plot_virtual(cluNo=box[1])
 
 
                 if modifiers is not ():
-                    self._selected_cluster = box[1]
+                    selected_cluster = box[1]
                     if len(modifiers) ==2 and modifiers[0].name == 'Shift' and modifiers[1].name == 'Control':
                         '''
                         spikes selection mode
@@ -396,9 +441,8 @@ class spike_view(View):
                         self.clear_virtual()
                         self._selected_whole_cluster = False
                         close_spkNolist = self._get_close_spks(box, tpos)
-                        self.highlight(spkNolist=close_spkNolist, cluNo=self._selected_cluster, refresh=False)   
-                        intersect_spks  = np.intersect1d(self._spkNolist, list(close_spkNolist))
-                        self._spkNolist = set(self._spkNolist).union(set(close_spkNolist))
+                        self.highlight(selected={selected_cluster:close_spkNolist},refresh=False)
+                        self._selected[selected_cluster] = set(self._selected.get(selected_cluster,np.array([]))).union(set(close_spkNolist))
                         # self.on_select()
                         self.clu.select(self.selected_spk)
                     
@@ -409,9 +453,9 @@ class spike_view(View):
                         # with Timer('get_closest_spikes'):
                         self.clear_virtual()
                         self._selected_whole_cluster = False
-                        self._spkNolist = self._get_close_spks(box, tpos)
-                        # with Timer('highlight'):
-                        self.highlight(spkNolist=self._spkNolist, cluNo=self._selected_cluster)
+                        self._selected = {selected_cluster:self._get_close_spks(box,tpos)}
+                       # with Timer('highlight'):
+                        self.highlight(selected=self._selected)
                         # with Timer('on_select'):
                         # self.on_select()
                         self.clu.select(self.selected_spk)
@@ -423,12 +467,12 @@ class spike_view(View):
                         self.clear_virtual()
                         self._selected_whole_cluster = False
                         close_spkNolist = self._get_close_spks(box, tpos)
-                        intersect_spks  = np.intersect1d(list(self._spkNolist), list(close_spkNolist))
+                        intersect_spks  = np.intersect1d(list(self._selected[selected_cluster]), list(close_spkNolist))
                             
                         if len(intersect_spks)>0:
                             for spkNo in intersect_spks:
-                                self._spkNolist.remove(spkNo)
-                        self.highlight(spkNolist=self._spkNolist, cluNo=self._selected_cluster) 
+                                self._selected[selected_cluster].remove(spkNo)
+                        self.highlight(selected=self._selected) 
                         # self.on_select()
                         self.clu.select(self.selected_spk)
 
@@ -442,7 +486,7 @@ class spike_view(View):
 
     @view_lock.setter
     def view_lock(self, v):
-        self._spkNolist = set()
+        self._reset_cluster()
         self._view_lock = v
 
 
@@ -458,21 +502,22 @@ class spike_view(View):
 
         if e.text == 'c':
             self.view_lock = not self.view_lock
-            if len(self._spkNolist) > 0:
-                self.highlight(spkNolist=self._spkNolist, cluNo=self._selected_cluster) 
+            if self.is_single_mode and not self.is_spk_empty:
+                self.highlight(selected=self._selected) 
 
         if e.text == 'z':
             self.clu.undo()
 
         if e.text == 'a':
-            all_spkNolist = np.arange(self.clu[self.selected_clu].size)
-            self.highlight(spkNolist=all_spkNolist, cluNo=self._selected_cluster, refresh=True)   
-            self._spkNolist = set(all_spkNolist)
-            self._selected_whole_cluster = True
-            self.clu.select(self.selected_spk)
+            if self.is_single_mode:
+                all_spkNolist = np.arange(self.clu[self.selected_cluster].size)
+                self._selected[self.selected_cluster] = all_spkNolist
+                self.highlight(selected=self._selected)   
+                self._selected_whole_cluster = True
+                self.clu.select(self.selected_spk)
 
         if e.text == 's':
-            if len(self._spkNolist)>0:
+            if not self.is_spk_empty:
                 target_clu_No = max(self.clu.index_id) + 1
                 self._move_spikes(target_clu_No)
 
@@ -483,13 +528,13 @@ class spike_view(View):
                 self._move_spikes(target_clu_No)
 
         if e.modifiers is not () and e.modifiers[0].name == 'Control' and e.key == 'Left':
-            if len(self._spkNolist)>0:
-                target_clu_No = self._selected_cluster-1 if self._selected_cluster>=1 else 0
+            if self.is_single_mode and (not self.is_spk_empty):           
+                target_clu_No = self.selected_cluster-1 if self.selected_cluster>=1 else 0
                 self._move_spikes(target_clu_No)
 
         elif e.modifiers is not () and e.modifiers[0].name == 'Control' and e.key == 'Right':
-            if len(self._spkNolist)>0:
-                target_clu_No = self._selected_cluster+1 if self._selected_cluster<max(self.clu.index_id)+1 else max(self.clu.index_id)+1
+            if self.is_single_mode and (not self.is_spk_empty):           
+                target_clu_No = self.selected_cluster+1 if self.selected_cluster<max(self.clu.index_id)+1 else max(self.clu.index_id)+1
                 self._move_spikes(target_clu_No)
 
 

@@ -54,6 +54,38 @@ class CLU(EventEmitter):
                 self.membership[self.membership==self.index_id[i]] = i
             self.index_id    = np.unique(self.membership)
             self.index_id.sort()
+    
+    def global2local(self,global_idx):
+        '''
+            get the local id and clu_no from the global idx, the result is dist,eg:
+            {0:[1,2,3],1:[1,2,3]}
+        '''
+        local_idx = {}
+        clus_nos = np.unique(self.membership[global_idx])
+        
+        for clus_no in clus_nos:
+            clus_no = int(clus_no)
+            local_global_idx = np.intersect1d(self.index[clus_no],global_idx,assume_unique=True)
+            sub_local_idx = np.searchsorted(self.index[clus_no], local_global_idx)
+            sub_local_idx.sort()
+            local_idx[clus_no] = sub_local_idx
+        
+        return local_idx
+ 
+        
+    def local2global(self,local_idx):
+        '''
+            get the global id from the clus, the clus is a dict, including the clu_no and sub_idex,eg:
+            {0:[1,2,3],1:[1,2,3]}
+        '''
+        global_idx = np.array([],dtype='int')
+
+        for clu_no, local_idx in local_idx.iteritems():
+            global_idx = np.append(global_idx,self._glo_id(clu_no, local_idx))
+        global_idx.sort()
+
+        return global_idx
+            
 
     def _is_id_discontineous(self):
         if any(np.unique(self.index_id[1:]-self.index_id[:-1]) > 1):
@@ -95,32 +127,6 @@ class CLU(EventEmitter):
         else:
             print('goes to more than one cluster')
 
-    def _subset_idx(self, selected_clu, subset, targeted_clu=None):
-        '''
-        get the global id of a subset in selected_clu if targeted_clu is None
-        or
-        get the local  id of a subset in selected_clu in targeted_clu
-        '''
-        if targeted_clu == None:
-            '''
-            get the global id of a subset in selected cluster
-            '''
-            return self._glo_id(selected_clu, subset)
-
-        else:
-            '''
-            get the local id in targeted cluster of a subset in selected cluster
-            The solved problem is:
-            subset in selected cluster, if such subset is in targeted cluster, what is
-            the idx?
-            '''
-            targeted_idx = np.where(self.membership==targeted_clu)[0]
-            selected_idx = np.where(self.membership==selected_clu)[0][subset]
-            subset_idx  = np.searchsorted(targeted_idx, selected_idx)
-            subset_idx.sort()
-            if selected_clu != targeted_clu:
-                subset_idx += np.arange(len(subset_idx))
-            return subset_idx
 
     def select(self, selectlist):
         self.selectlist = selectlist # update selectlist
@@ -138,30 +144,24 @@ class CLU(EventEmitter):
         self.__construct__()
         self.emit('cluster', action='merge')
 
-
-    def move(self, clu_from, subset, clu_to):
+    def move(self,clus_from,clu_to):
         '''
-        move subset from clu_from to clu_to
-        move(2, [2,3,4,5,6], 1): move the subset [2,3,4,5,6]
-                                 from clu2
-                                 to clu1
+          move subsets from clus_from to clu_to, the clus_from is dict which including at least one clu and the subset in this clu,eg:
+          clus_from = {1:[1,2,3,4],2:[2,3,4,5]}, move these all spk to the clu_to 1
         '''
-        with Timer('get_subset', verbose=False):
-            subset_idx_from   = list(subset)
-            subset_idx_global = self._subset_idx(clu_from, subset_idx_from)
-            subset_idx_to     = self._subset_idx(clu_from, subset_idx_from, clu_to)
-        with Timer('reassign membership', verbose=False):
-            self.membership[subset_idx_global] = clu_to
-        with Timer('reconstruct', verbose=False):
-            self.__construct__()
-        with Timer('emit move signal', verbose=False):
-            self.emit('cluster', action = 'move')
-        return subset_idx_to
+        selected_global_idx = self.local2global(clus_from)
 
+        self.membership[selected_global_idx] = clu_to
+        self.__construct__()
+        
+        self.emit('cluster', action = 'move')
+        
+        return self.global2local(selected_global_idx)[clu_to]
+    
 
-    def split(self, clu_from, subset):
+    def split(self, clus_from):
         clu_to = self.index_id.max()+1
-        self.move(clu_from, subset, clu_to)
+        self.move(clus_from, clu_to)
 
 
     def undo(self):
