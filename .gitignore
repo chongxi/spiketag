@@ -1,7 +1,20 @@
+# general
 build/*
-spiketag/*.pyc
-spiketag/__pycache__/*
 dist/*
+*.swp
+*.swo
+
+# python
 *.pyc
 *egg-info
-notebooks/.ipynb_checkpoints/*
+*.py[cod]
+__pycache__/
+
+# jupyter notebook
+.ipynb_checkpoints
+
+# IDE
+.idea
+
+# personal 
+spiketag_test_data/*
