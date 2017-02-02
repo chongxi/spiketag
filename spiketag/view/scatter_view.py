@@ -2,11 +2,15 @@ import numpy as np
 from vispy import scene, app
 from .color_scheme import palette
 from ..base.CLU import CLU
+from matplotlib import path
+from ..utils.utils import Picker
+
 
 
 class scatter_3d_view(scene.SceneCanvas):
     def __init__(self, show=False):
         scene.SceneCanvas.__init__(self, keys=None)
+
         self.unfreeze()
         self.view = self.central_widget.add_view()
         self.view.camera = 'turntable'
@@ -24,6 +28,10 @@ class scatter_3d_view(scene.SceneCanvas):
         self._timer = app.Timer(0.5 / 60)
         self._timer.connect(self.on_timer)
         # self._timer.start()
+
+        # for Picker
+        self._picker = Picker(self.scene,self.view,self.scatter)
+        self.key_option = 0
 
         # Add a 3D axis to keep us oriented
         scene.visuals.XYZAxis(parent=self.view.scene)
@@ -118,11 +126,12 @@ class scatter_3d_view(scene.SceneCanvas):
             self.color[_cache_mask_,-1] = self._transparency
             self._cache_mask_ = np.array([])
 
-        if len(mask)>=0:
+        if len(mask)>0:
             self.color[mask, :] = self._highlight_color
             self.color[mask,-1] = 1
             self._cache_mask_ = np.hstack((self._cache_mask_, mask)).astype('int64')
-            self._update()
+
+        self._update()
 
     # ---------------------------------
     def on_timer(self, event):
@@ -134,3 +143,40 @@ class scatter_3d_view(scene.SceneCanvas):
         if modifiers is not ():
             if modifiers[0].name == 'Control':
                 self.transparency *= np.exp(e.delta[1]/4)
+
+    """
+      all of method follows is used for picker
+      alt + 1 Rectangle
+      alt + 2 Lasso
+    """
+    def on_mouse_press(self,e):
+        modifiers = e.modifiers
+        if modifiers is not ():
+            if modifiers[0].name == 'Alt':
+                if self.key_option in ['1','2']:
+                    self._picker.origin_point(e.pos)
+
+
+
+    def on_mouse_move(self,e):
+        modifiers = e.modifiers
+        if modifiers is not () and e.is_dragging:
+            if modifiers[0].name == 'Alt':
+                if self.key_option == '1':
+                    self._picker.cast_net(e.pos,ptype='rectangle')
+                if self.key_option == '2':
+                    self._picker.cast_net(e.pos,ptype='lasso')
+
+    def on_mouse_release(self,e):
+        modifiers = e.modifiers
+        if modifiers is not () and e.is_dragging:
+            if modifiers[0].name == 'Alt' and self.key_option in ['1','2']:
+                    mask = self._picker.pick(self.fet[:, :3])
+                    self.highlight(mask)
+                    self.clu.select(mask)
+
+    def on_key_press(self,e):
+        self.key_option = e.text
+
+    def on_key_release(self,e):
+        self.key_option = 0

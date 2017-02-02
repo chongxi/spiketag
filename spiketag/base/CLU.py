@@ -61,14 +61,16 @@ class CLU(EventEmitter):
             {0:[1,2,3],1:[1,2,3]}
         '''
         local_idx = {}
-        clus_nos = np.unique(self.membership[global_idx])
+
+        if len(global_idx):
+            clus_nos = np.unique(self.membership[global_idx])
         
-        for clus_no in clus_nos:
-            clus_no = int(clus_no)
-            local_global_idx = np.intersect1d(self.index[clus_no],global_idx,assume_unique=True)
-            sub_local_idx = np.searchsorted(self.index[clus_no], local_global_idx)
-            sub_local_idx.sort()
-            local_idx[clus_no] = sub_local_idx
+            for clus_no in clus_nos:
+                clus_no = int(clus_no)
+                local_global_idx = np.intersect1d(self.index[clus_no],global_idx,assume_unique=True)
+                sub_local_idx = np.searchsorted(self.index[clus_no], local_global_idx)
+                sub_local_idx.sort()
+                local_idx[clus_no] = sub_local_idx
         
         return local_idx
  
