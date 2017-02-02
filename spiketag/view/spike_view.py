@@ -257,8 +257,6 @@ class spike_view(View):
         for k,v in selected.iteritems():
             self._highlight(v,k,refresh=False)
 
-    # ---------------------------------------------
-
     def _highlight(self, spkNolist, cluNo, refresh=True):
         """
         highlight the nth spike in cluNo, nth is local id
@@ -528,9 +526,8 @@ class spike_view(View):
 
         if e.text == 's':
             if not self.is_spk_empty:
-                target_clu_no = max(self.clu.index_id) + 1
-                print("target_clu_no is %s" % target_clu_no)
-                self._move_spikes(target_clu_no)
+                target_clu_No = max(self.clu.index_id) + 1
+                self._move_spikes(target_clu_No)
 
         if _representsInt(e.text):
             ### assign selected spikes to cluster number ###
