@@ -21,6 +21,7 @@ class Axis(scene.AxisWidget):
         t = (xn + self._time_slice * self._time_span) / self.fs
         return t
 
+
     def glpos_to_value(self, gl_pos):
         '''
         get value from the y postion of y_axis
@@ -147,7 +148,7 @@ class wave_view(scene.SceneCanvas):
         mua_view = wave_view(mua.data[:64000,:])
         mua_view.show()
     '''
-    def __init__(self, data, color=None, fs=25000.0, ncols=1, gap_value=0.5*0.95, ls='-'):
+    def __init__(self, color=None, fs=25000.0, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
         scene.SceneCanvas.__init__(self, keys=None)
         self.unfreeze()
         self.grid1 = self.central_widget.add_grid(spacing=0, bgcolor='gray',
@@ -176,39 +177,119 @@ class wave_view(scene.SceneCanvas):
                                       border_color=(0, 0, 0, 0),
                                       parent=self.view2.scene)
         self.cursor_rect.visible = False
-
+        self.fs = fs
+        self.palette = palette
         self._gap_value = gap_value
+        self._locate_buffer = 100
         wav_visual = scene.visuals.create_visual_node(MyWaveVisual)
-        if data.ndim == 1:
-            data = data.reshape(-1,1)
-        npts = data.shape[0]  # Number of samples per channel.
-        nCh = data.shape[1]  # 32 channel number
-        nrows = nCh / ncols
-        if nCh==1:
-            self._gap_value=0
-        self.nCh = nCh
-        self.waves1 = wav_visual(data, nrows, ncols, npts, 
-                                 ls=ls, parent=self.view2.scene, 
+        self.waves1 = wav_visual(ls=ls, parent=self.view2.scene, 
                                  color=color,
                                  gap=self._gap_value)
-        self.set_range()
 
         self.grid2 = self.view2.add_grid(spacing=0, bgcolor=(0, 0, 0, 0), border_color='k')
 
         self.cross = Cross(cursor_color=self.cursor_color)
-        self.cross.set_params(nCh, npts, fs, 0, 0, self.waves1._scale)
+
+        self.timer_cursor = app.Timer(connect=self.update_cursor, interval=0.01, start=False)
+
+
+    def render(self, data):
+        '''
+          For now,wave_visual is the best place  where store the view information,
+          and wave_view should get from it, otherwise,there are two copy of information,
+          it is redundancy
+        '''
+        self.waves1.set_data(data)
+
+        ####### get basic info from wave visual
+        self.npts = self.waves1.npts
+        
+        ####### update cross #########
+        self.cross.set_params(self.nCh, self.npts, self.fs, 0, 0, self.waves1._scale)
+
+        ####### trigger timer ######
+        self.timer_cursor.start()
+
+    def set_data(self, ch, clu, time_slice=0):
+        self.ch = ch
+        self.clu = clu
+        self.chlist = self.get_near_ch(self.ch, self.spktag.nCh, self.spktag.ch_span)
+        self.nCh = len(self.chlist)
+
+        self.set_range()
+
+        @self.clu.connect
+        def on_select(*args, **kwargs):
+            if len(self.clu.selectlist) == 1:
+                self.locate_and_highlight(self.clu.selectlist)
+
+    def bind(self, ch, data, spktag, clu):
+        self.clu = clu
+        self.ch = ch
+        self.data = data
+        self.spktag = spktag
+
+        self.chlist = self.get_near_ch(self.ch, self.spktag.nCh, self.spktag.ch_span)
+        self.nCh = len(self.chlist)
+
+        if self.nCh == 1:
+            self._gap_value = 0
+        self.set_range()
+
+        self.render(data[0:200,self.chlist])
+
         self.cross.attach(self.grid2)
         self.cross.link_view(self.view2)
 
-        self.timer_cursor = app.Timer(connect=self.update_cursor, interval=0.01, start=True)
-        self.timer_cursor.start()
+    def locate_and_highlight(self, global_idx):
 
+        ###### basic info ########
+        pos = self.spktag.t[self.spktag.ch==self.ch][global_idx][0]
+ 
+        locate_start = pos - self.locate_buffer if (pos - self.locate_buffer) > 0 else 0
+        locate_end = pos + self.locate_buffer if (pos + self.locate_buffer) < self.data.shape[0] else self.data.shape[0]
+        locate_sagment = self.data[locate_start:locate_end,self.chlist]
+        self.render(locate_sagment)
+        #print "####locate between : (%s,%s) " % (locate_start,locate_end)
 
-    def set_data(self, data, time_slice=0):
-        self.cross.time_slice = time_slice
-        self.waves1.set_data(data.astype('float32'))
-        self.set_range()
+        all_pos = self.get_near_pos(self.ch, global_idx[0], (locate_start, locate_end))
+        #  print "position and index %s" % (all_pos)
+        for (p,i) in all_pos:
+            highlight_start = p - locate_start - 8
+            highlight_end = highlight_start + self.spktag.spklen
+            highlight_sagment = [[highlight_start,highlight_end]]
+            highlight_color = np.hstack((self.palette[self.clu.global2local(i).keys()[0]],1))
+            self.waves1.highlight(self.chlist-self.chlist.min(),highlight_sagment, highlight_color)
+            #print "####highlight %s betwwen : (%s,%s)" % (chlist,highlight_start,highlight_end)
 
+    @property
+    def locate_buffer(self):
+        return self._locate_buffer
+    
+    @locate_buffer.setter
+    def locate_buffer(self,v):
+        self._locate_buffer = v
+        if len(self.clu.selectlist) == 1:
+            self.locate_and_highlight(self.clu.selectlist)
+
+    def get_near_ch(self, ch, nCh, ch_span):
+        chmax = nCh - 1
+        start = ch-ch_span # if ch-span>=0 else 0
+        end   = ch+ch_span # if ch+span<chmax else chmax
+        near_ch = np.arange(start, end+1, 1)
+        near_ch[near_ch>chmax] = -1
+        near_ch[near_ch<0] = -1
+        return near_ch[near_ch>=0]
+
+    def get_near_pos(self, ch, global_idx, data_range):
+        point_range = np.arange(data_range[0],data_range[1] + 1)
+        idx_buffer = 10
+        idx_start = global_idx - idx_buffer if (global_idx - idx_buffer) > 0 else 0
+        idx_end = global_idx + idx_buffer
+        all_spikes = self.spktag.t[self.spktag.ch == self.ch]
+        selected_spikes_pos = np.intersect1d(point_range,all_spikes[idx_start:idx_end])
+        selected_spikes_idx = np.where(np.in1d(all_spikes,selected_spikes_pos))[0]
+        return np.column_stack((selected_spikes_pos,selected_spikes_idx))
 
     @property
     def gap_value(self):
@@ -237,6 +318,7 @@ class wave_view(scene.SceneCanvas):
         self.view2.camera.set_range(x=(-1,1), y=(bottom, top))
         self.view2.camera.set_default_state()
         self.view2.camera.reset()
+
 
     def attach(self, gui):
         self.unfreeze()
