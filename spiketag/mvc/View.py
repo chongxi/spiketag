@@ -32,8 +32,8 @@ class MainView(object):
 		# if fet is not None and clu is not None:
 		# 	self.scatter_view.set_data(fet[self.ch], clu[self.ch])
 
-        def bind_data(self, ch=None, data=None, clu=None, spktag=None):
-                self.wave_view.bind(ch,data,spktag,clu)
+        def bind_data(self, data=None, spktag=None):
+                self.wave_view.bind(data,spktag)
 
 	def show(self):
 		self.gui.show()

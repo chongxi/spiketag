@@ -30,7 +30,7 @@ class scatter_3d_view(scene.SceneCanvas):
         # self._timer.start()
 
         # for Picker
-        self._picker = Picker(self.scene,self.view,self.scatter)
+        self._picker = Picker(self.scene,self.scatter.node_transform(self.view))
         self.key_option = 0
 
         # Add a 3D axis to keep us oriented

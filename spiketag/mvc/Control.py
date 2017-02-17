@@ -25,9 +25,7 @@ class Sorter(object):
 		self.vq['scores'] = {}
 		self._vq_npts = 100  # size of codebook to download to FPGA, there are many codebooks
 		#  self.set_model(self.model)
-                self.view.bind_data(ch=self.ch,
-                                        data=self.model.mua.data,
-                                        spktag=self.model.spktag)
+                self.view.bind_data(data=self.model.mua.data, spktag=self.model.spktag)
 
 
 

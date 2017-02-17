@@ -2,6 +2,7 @@ import numpy as np
 from vispy import scene, app
 from .MyWaveVisual import MyWaveVisual
 from .color_scheme import palette
+from ..utils.utils import Picker
 
 
 class Axis(scene.AxisWidget):
@@ -139,13 +140,15 @@ class Cross(object):
 class wave_view(scene.SceneCanvas):
     '''
     Example1(Amplitude View): Show single Trace as dots with x,y axis tick:
-        mua_view = wave_view(mua.data[:64000,26], ls='.')
+        mua_view = wave_view()
         mua_view.view2.camera.set_range(x=[-1,1],y=[-0.9,0.5])
         mua_view.cross.enable_tick(axis=1)  # enable y axis tick
+        mua_view.set_data(mua.data[:64000,26], ls='.')
         mua_view.show()
     
     Example2(Multi-trace View): show all Trace with x axis:
-        mua_view = wave_view(mua.data[:64000,:])
+        mua_view = wave_view()
+        mua_view.set_data(mua.data[:64000])
         mua_view.show()
     '''
     def __init__(self, color=None, fs=25000.0, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
@@ -153,12 +156,13 @@ class wave_view(scene.SceneCanvas):
         self.unfreeze()
         self.grid1 = self.central_widget.add_grid(spacing=0, bgcolor='gray',
                                                  border_color='k')
-        self.view1 = self.grid1.add_view(row=0, col=0, col_span=1, margin=10, bgcolor=(0, 0, 0, 1),
-                              border_color=(1, 0, 0))
-        self.view1.camera = scene.cameras.PanZoomCamera()
-        self.view1.camera.set_range()
-        self.view1.camera.interactive = False
-        self.view2 = self.grid1.add_view(row=0, col=1, col_span=36, margin=10, bgcolor=(0, 0, 0, 1),
+        #  TODO: For prob view
+        #  self.view1 = self.grid1.add_view(row=0, col=0, col_span=1, margin=10, bgcolor=(0, 0, 0, 1),
+                              #  border_color=(1, 0, 0))
+        #  self.view1.camera = scene.cameras.PanZoomCamera()
+        #  self.view1.camera.set_range()
+        #  self.view1.camera.interactive = False
+        self.view2 = self.grid1.add_view(row=0, col=0, col_span=36, margin=10, bgcolor=(0, 0, 0, 1),
                               border_color=(0, 1, 0))
 
         self.view2.camera = scene.cameras.PanZoomCamera()
@@ -180,7 +184,9 @@ class wave_view(scene.SceneCanvas):
         self.fs = fs
         self.palette = palette
         self._gap_value = gap_value
-        self._locate_buffer = 100
+        self._locate_buffer = 200
+        self._picker = Picker(self.scene, self.view2.camera.transform)
+
         wav_visual = scene.visuals.create_visual_node(MyWaveVisual)
         self.waves1 = wav_visual(ls=ls, parent=self.view2.scene, 
                                  color=color,
@@ -193,7 +199,7 @@ class wave_view(scene.SceneCanvas):
         self.timer_cursor = app.Timer(connect=self.update_cursor, interval=0.01, start=False)
 
 
-    def render(self, data):
+    def _render(self, data):
         '''
           For now,wave_visual is the best place  where store the view information,
           and wave_view should get from it, otherwise,there are two copy of information,
@@ -202,10 +208,12 @@ class wave_view(scene.SceneCanvas):
         self.waves1.set_data(data)
 
         ####### get basic info from wave visual
-        self.npts = self.waves1.npts
-        
+        npts = self.waves1.npts
+        nCh = self.waves1.nCh
+        scale = self.waves1._scale
+
         ####### update cross #########
-        self.cross.set_params(self.nCh, self.npts, self.fs, 0, 0, self.waves1._scale)
+        self.cross.set_params(nCh, npts, self.fs, 0, 0, scale)
 
         ####### trigger timer ######
         self.timer_cursor.start()
@@ -223,47 +231,48 @@ class wave_view(scene.SceneCanvas):
             if len(self.clu.selectlist) == 1:
                 self.locate_and_highlight(self.clu.selectlist)
 
-    def bind(self, ch, data, spktag, clu):
-        self.clu = clu
-        self.ch = ch
+    def bind(self, data, spktag):
+        '''
+            bind the basic data from model when model initialization
+        '''
         self.data = data
         self.spktag = spktag
 
-        self.chlist = self.get_near_ch(self.ch, self.spktag.nCh, self.spktag.ch_span)
-        self.nCh = len(self.chlist)
-
-        if self.nCh == 1:
-            self._gap_value = 0
-        self.set_range()
-
-        self.render(data[0:200,self.chlist])
-
+        # just simple initialization rendering
+        self._render(data[0:200])
+        
+        # init the cross after cross.set_param in self._render,
+        # because cross.link_view need npts, but npts is dynamic changed now
         self.cross.attach(self.grid2)
         self.cross.link_view(self.view2)
 
     def locate_and_highlight(self, global_idx):
-
+        '''
+           locate the segment of wave in wave_view, and highlight all spikes within this segment 
+        '''
         ###### basic info ########
         pos = self.spktag.t[self.spktag.ch==self.ch][global_idx][0]
- 
+        
+        # locate the segment and show
         locate_start = pos - self.locate_buffer if (pos - self.locate_buffer) > 0 else 0
         locate_end = pos + self.locate_buffer if (pos + self.locate_buffer) < self.data.shape[0] else self.data.shape[0]
         locate_sagment = self.data[locate_start:locate_end,self.chlist]
-        self.render(locate_sagment)
-        #print "####locate between : (%s,%s) " % (locate_start,locate_end)
+        self._render(locate_sagment)
 
-        all_pos = self.get_near_pos(self.ch, global_idx[0], (locate_start, locate_end))
-        #  print "position and index %s" % (all_pos)
-        for (p,i) in all_pos:
-            highlight_start = p - locate_start - 8
+        # highlight all spikes within this segment
+        self.all_pos = self.get_near_pos(self.ch, global_idx[0], (locate_start, locate_end))
+        for (p,i) in self.all_pos:
+            highlight_start = p
             highlight_end = highlight_start + self.spktag.spklen
             highlight_sagment = [[highlight_start,highlight_end]]
             highlight_color = np.hstack((self.palette[self.clu.global2local(i).keys()[0]],1))
             self.waves1.highlight(self.chlist-self.chlist.min(),highlight_sagment, highlight_color)
-            #print "####highlight %s betwwen : (%s,%s)" % (chlist,highlight_start,highlight_end)
 
     @property
     def locate_buffer(self):
+        '''
+          the length of segment of wave showed in the window
+        '''
         return self._locate_buffer
     
     @locate_buffer.setter
@@ -282,14 +291,17 @@ class wave_view(scene.SceneCanvas):
         return near_ch[near_ch>=0]
 
     def get_near_pos(self, ch, global_idx, data_range):
+        '''
+            get all spikes with data_range, the pos is local pos
+        '''
         point_range = np.arange(data_range[0],data_range[1] + 1)
         idx_buffer = 10
         idx_start = global_idx - idx_buffer if (global_idx - idx_buffer) > 0 else 0
         idx_end = global_idx + idx_buffer
         all_spikes = self.spktag.t[self.spktag.ch == self.ch]
-        selected_spikes_pos = np.intersect1d(point_range,all_spikes[idx_start:idx_end])
+        selected_spikes_pos = np.intersect1d(point_range,all_spikes[idx_start:idx_end]) 
         selected_spikes_idx = np.where(np.in1d(all_spikes,selected_spikes_pos))[0]
-        return np.column_stack((selected_spikes_pos,selected_spikes_idx))
+        return np.column_stack((selected_spikes_pos - data_range[0] - 8, selected_spikes_idx))
 
     @property
     def gap_value(self):
@@ -380,6 +392,8 @@ class wave_view(scene.SceneCanvas):
             p2 = event.last_event.pos
             if modifiers[0].name == 'Shift':
                 self.cross.ref_enable(p2)
+            if modifiers[0].name == 'Alt':
+                self._picker.cast_net(event.pos,ptype='rectangle')
 
         elif self.cross.cross_state:
             if event.press_event is None:
@@ -393,6 +407,19 @@ class wave_view(scene.SceneCanvas):
                 self.gap_value = self.gap_value + 0.05*event.delta[1]
 
 
+    def on_mouse_press(self,e):
+        modifiers = e.modifiers
+        if modifiers is not ():
+            if modifiers[0].name == 'Alt':
+                self._picker.origin_point(e.pos)
+
+    def on_mouse_release(self,e):
+        modifiers = e.modifiers
+        if modifiers is not () and e.is_dragging:
+            if modifiers[0].name == 'Alt':
+                mask = self._picker.pick(self.waves1.get_gl_pos())
+                selected = [i for (p,i) in self.all_pos if p in mask]
+                self.clu.select(np.array(selected))
 
 # if __name__ == '__main__':
 #     from phy.gui import GUI, create_app, run_app

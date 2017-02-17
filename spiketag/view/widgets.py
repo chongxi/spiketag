@@ -82,7 +82,7 @@ class param_widget(QtGui.QWidget):
         self.wave_view_zoom.setMaximum(400)
         self.wave_view_zoom.setValue(200)
         self.wave_view_zoom.setTickPosition(QtGui.QSlider.TicksBelow)
-        self.wave_view_zoom.setTickInterval(333)
+        self.wave_view_zoom.setTickInterval(3)
         self.wave_view_zoom.valueChanged.connect(self.zoom) 
 
         gbox = QtGui.QGridLayout()

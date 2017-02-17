@@ -186,7 +186,7 @@ class Picker(object):
 
     """
 
-    def __init__(self,cur_scene,cur_view,cur_scatter):
+    def __init__(self,cur_scene,mapping):
         """
            origin: save origin because when we draw rectangle, we need to use origin to calculate the width and height
            vertices, line: vertices is point position which be used to draw a line
@@ -195,7 +195,7 @@ class Picker(object):
         self._origin = (0, 0)
         self._vertices = []
         self._line = None
-        self._mapping = cur_scatter.node_transform(cur_view)
+        self._mapping = mapping 
         self._scene = cur_scene
         self._trigger = False
 
