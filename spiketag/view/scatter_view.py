@@ -119,7 +119,6 @@ class scatter_3d_view(scene.SceneCanvas):
         highlight the nth index points (mask) with _highlight_color
         refresh is False means it will append
         """
-
         if refresh is True and len(self._cache_mask_)>0:
             _cache_mask_ = self._cache_mask_
             self.color[_cache_mask_, :] = self._cache_color[_cache_mask_, :]

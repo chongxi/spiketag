@@ -1,4 +1,4 @@
-import numpy as np
+mport numpy as np
 from PyQt4 import QtGui, QtCore
 from phy.plot import View
 from phy.io.array import _accumulate
@@ -16,13 +16,14 @@ class param_widget(QtGui.QWidget):
     """
     Widget for editing OBJECT parameters
     """
-    signal_objet_changed = QtCore.pyqtSignal(name='objectChanged')
-    signal_ch_changed    = QtCore.pyqtSignal(name='chChanged')
-    signal_get_fet       = QtCore.pyqtSignal(name='getfet')
-    signal_recluster     = QtCore.pyqtSignal(name='recluster')
-    signal_refine        = QtCore.pyqtSignal(name='refine')
-    signal_build_vq      = QtCore.pyqtSignal(name='vq')
-    signal_apply_to_all  = QtCore.pyqtSignal(name='apply2all')
+    signal_objet_changed  = QtCore.pyqtSignal(name='objectChanged')
+    signal_ch_changed     = QtCore.pyqtSignal(name='chChanged')
+    signal_get_fet        = QtCore.pyqtSignal(name='getfet')
+    signal_recluster      = QtCore.pyqtSignal(name='recluster')
+    signal_refine         = QtCore.pyqtSignal(name='refine')
+    signal_build_vq       = QtCore.pyqtSignal(name='vq')
+    signal_apply_to_all   = QtCore.pyqtSignal(name='apply2all')
+    signal_wave_view_zoom = QtCore.pyqtSignal(name='zoom') 
 
 
     def __init__(self, parent=None):
@@ -75,6 +76,14 @@ class param_widget(QtGui.QWidget):
         self.apply_to_all = QtGui.QCheckBox('Apply to all channels')
         self.apply_to_all.stateChanged.connect(self.apply_to_all_changed)
 
+        self.wave_view_zoom_text = QtGui.QLabel("wave_view_zoom:")
+        self.wave_view_zoom = QtGui.QSlider(1)
+        self.wave_view_zoom.setMinimum(200)
+        self.wave_view_zoom.setMaximum(400)
+        self.wave_view_zoom.setValue(200)
+        self.wave_view_zoom.setTickPosition(QtGui.QSlider.TicksBelow)
+        self.wave_view_zoom.setTickInterval(333)
+        self.wave_view_zoom.valueChanged.connect(self.zoom) 
 
         gbox = QtGui.QGridLayout()
         # addWidget (QWidget, int row, int column, int rowSpan, int columnSpan, Qt.Alignment alignment = 0)
@@ -92,6 +101,8 @@ class param_widget(QtGui.QWidget):
         gbox.addWidget(self.clu_param, 6, 0, 1, 2)
         gbox.addWidget(self.vq_btn, 7, 0, 1, 1)
         gbox.addWidget(self.apply_to_all, 8, 0, 1, 2)
+        gbox.addWidget(self.wave_view_zoom_text, 9, 0)
+        gbox.addWidget(self.wave_view_zoom, 10, 0, 1, 2)
 
         vbox = QtGui.QVBoxLayout()
         vbox.addLayout(gbox)
@@ -129,3 +140,6 @@ class param_widget(QtGui.QWidget):
 
     def update_param(self, option):
         self.signal_objet_changed.emit()
+
+    def zoom(self, option):
+        self.signal_wave_view_zoom.emit()

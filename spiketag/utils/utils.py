@@ -208,6 +208,8 @@ class Picker(object):
             2d, screen coordinate,usually the point is the first press of mouse.
     """
     def origin_point(self,point):
+        self.reset()
+
         self._origin = point
         self._line = scene.visuals.Line(color='white', method='gl',
                                        parent=self._scene)

@@ -98,65 +98,29 @@ class MyWaveVisual(visuals.Visual):
 
     # There are no constraints on the signature of the __init__ method; use
     # whatever makes the most sense for your visual.
-    def __init__(self, data, nrows, ncols, npts, color=None, ls='-', gap=1):
+    def __init__(self, ncols=1, color=None, ls='-', gap=1):
         # Initialize the visual with a vertex shader and fragment shader
         visuals.Visual.__init__(self, VERT_SHADER, FRAG_SHADER)
-
-        nCh = nrows*ncols
-        self.unfreeze()
-        self.nCh = nCh
-        self.npts = npts
-        # self._scale = float(2**14)*300.0  # 14 bits binary point (14 bits represent fractional part)
-                                          # -200 uV = -1 unit in this y-axis  
-        # index is (#cols*#rows*#npts, 3)
-        # each row of index is (col_idx, row_idx, npts_idx) 
-        # (col,row):
-        # (0,0)->(0,1)->(0,2)->(0,3)->(0,4)-...->(0,7)->(1,0)->(1,1)-...->(1,7)
-        # index = np.c_[np.repeat(np.repeat(np.arange(ncols), nrows), npts),
-        #               np.repeat(np.tile(np.arange(nrows), ncols), npts),
-        #               np.tile(np.arange(npts), nCh)].astype(np.float32)
-
-        # (col,row):
-        # (0,0)->(1,0)->(0,1)->(1,1)->(0,2)->(1,2)...->(0,7)->(1,7)
-        index = np.c_[np.repeat(np.tile(np.arange(ncols), nrows), npts),
-                      np.repeat(np.arange(nrows), ncols*npts),
-                      np.tile(np.arange(npts), nCh)].astype(np.float32)
-        
-        if color is 'random':
-            self.color = np.repeat(np.random.uniform(size=(nCh, 4), low=.2, high=.9),
-                              npts, axis=0).astype(np.float32)            
-        elif color is None:
-            self.color = np.repeat(np.ones((nCh,4)),
-                              npts, axis=0).astype(np.float32)
-        else:
-            self.color = color
-
-        data = data.astype('float32')
-        self._scale = data.max()-data.min()
-        self.data = data.T.ravel()/self._scale
-        # print 'max:',self.data.max()
-        # print 'min:',self.data.min()
-        self.shared_program['y'] = self.data
-        self.shared_program['a_color'] = self.color
-        self.shared_program['a_index'] = index
-        self.shared_program['u_size'] = (nrows, ncols)
-        self.shared_program['u_npts'] = npts
-        self.shared_program['u_gap'] = gap
-        # self.shared_program['clip'] = 1.0
-
-        # self.shared_program.vert['position'] = self.vbo
-        # self.shared_program.frag['color'] = (0, 1, 0, 1)
-        if ls == '.':
-            self._draw_mode = 'points' 
-        elif ls == '-':
-            self._draw_mode = 'line_strip'
-
+       
+        self.nCh = 0
+        self.npts = 0
+        self.ncols = ncols
+        self.nrows = 0
+        self.index = np.array([])
+        self.data = np.array([])
+        self.color = color
+        self.ls = ls
+        self.gap = gap
+        self._scale = 1
         # self.pcie_open = False
         # self.pcie_read_open()
         # self.timer0 = app.Timer(interval=0, connect=self._timer_data, start=False)
         self.timer1 = app.Timer(interval=0, connect=self._timer_show, start=False)
         # self._last_time = 0
-        self.freeze()
+        if self.ls == '.':
+            self._draw_mode = 'points' 
+        elif self.ls == '-':
+            self._draw_mode = 'line_strip'
 
     def _prepare_transforms(self, view):
         # This method is called when the user or the scenegraph has assigned
@@ -258,15 +222,23 @@ class MyWaveVisual(visuals.Visual):
 
 
     def set_data(self, data):
-        self.data = data.astype('float32')
-        self._scale = data.max()-data.min()
-        self.shared_program['y'] = self.data.T.ravel()/self._scale
-        self.update()
+        
+        self.data = data
+        if self.data.ndim == 1:
+            self.data = self.data.reshape(-1,1)
+     
+        ####### extract meta data from data #######
+        self.nCh = self.data.shape[1]
+        self.npts = self.data.shape[0]
+        self.nrows = self.nCh / self.ncols
+    
+        ####### scale data #######
+        self._scale = self.data.max()-self.data.min()
+        self.data = self.data.T.ravel()/self._scale
+        
         self.highlight_reset()
-        # self.shared_program['a_color'] = np.repeat(np.ones((self.nCh,3)),
-        #                                  self.npts, axis=0).astype(np.float32)
-        self.update()
-
+        
+        self._render()
 
     def append_data(self, data):
         newdata = data.astype('float32')
@@ -275,5 +247,39 @@ class MyWaveVisual(visuals.Visual):
         self.update()
         
     def set_gap(self, gap):
+        self.gap = gap
         self.shared_program['u_gap'] = gap
         self.update()
+
+    def _render(self):
+
+        # index is (#cols*#rows*#npts, 3) # each row of index is (col_idx, row_idx, npts_idx) 
+        # (col,row):
+        # (0,0)->(0,1)->(0,2)->(0,3)->(0,4)-...->(0,7)->(1,0)->(1,1)-...->(1,7)
+        # index = np.c_[np.repeat(np.repeat(np.arange(ncols), nrows), npts),
+        #               np.repeat(np.tile(np.arange(nrows), ncols), npts),
+        #               np.tile(np.arange(npts), nCh)].astype(np.float32)
+
+        # (col,row):
+        # (0,0)->(1,0)->(0,1)->(1,1)->(0,2)->(1,2)...->(0,7)->(1,7)
+        self.index = np.c_[np.repeat(np.tile(np.arange(self.ncols), self.nrows), self.npts),
+                      np.repeat(np.arange(self.nrows), self.ncols*self.npts),
+                      np.tile(np.arange(self.npts), self.nCh)].astype(np.float32)
+        
+        if self.color is 'random':
+            self.color = np.repeat(np.random.uniform(size=(self.nCh, 4), low=.2, high=.9),
+                              self.npts, axis=0).astype(np.float32)            
+        elif self.color is None:
+            self.color = np.repeat(np.ones((self.nCh,4)),
+                              self.npts, axis=0).astype(np.float32)
+        
+        self.shared_program['y'] = self.data
+        self.shared_program['a_color'] = self.color
+        self.shared_program['a_index'] = self.index
+        self.shared_program['u_size'] = (self.nrows, self.ncols)
+        self.shared_program['u_npts'] = self.npts
+        self.shared_program['u_gap'] = self.gap
+        # self.shared_program['clip'] = 1.0
+
+        # self.shared_program.vert['position'] = self.vbo
+        # self.shared_program.frag['color'] = (0, 1, 0, 1)

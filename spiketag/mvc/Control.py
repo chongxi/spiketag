@@ -15,6 +15,7 @@ class Sorter(object):
 		self.view.param_view.signal_refine.connect(self.refine)
 		self.view.param_view.signal_build_vq.connect(self.build_vq)
 		self.view.param_view.signal_apply_to_all.connect(self.check_apply_to_all)
+                self.view.param_view.signal_wave_view_zoom.connect(self.wave_view_zoom)
 
 		self.showmua = False
 		self.ch = 0
@@ -23,7 +24,11 @@ class Sorter(object):
 		self.vq['labels'] = {}
 		self.vq['scores'] = {}
 		self._vq_npts = 100  # size of codebook to download to FPGA, there are many codebooks
-		self.set_model(self.model)
+		#  self.set_model(self.model)
+                self.view.bind_data(ch=self.ch,
+                                        data=self.model.mua.data,
+                                        spktag=self.model.spktag)
+
 
 
 	def check_apply_to_all(self):
@@ -34,24 +39,22 @@ class Sorter(object):
 		if model is not None:
 			self.model = model
 		if self.showmua is False:
-			self.view.set_data(spk=self.model.spk[ch], 
+			self.view.set_data(ch=ch, spk=self.model.spk[ch], 
 				               fet=self.model.fet[ch], 
 				               clu=self.model.clu[ch])
 		else:
-			self.view.set_data(mua=self.model.mua, 
+			self.view.set_data(ch=ch, mua=self.model.mua, 
 							   spk=self.model.spk[ch], 
 							   fet=self.model.fet[ch], 
-							   clu=self.model.clu[ch])
-
+                                                           clu=self.model.clu[ch])
 
 	def refresh(self):
 		self.set_model(self.model)
 
 
 	def run(self):
-		self.view.show()
-		self.update_ch()
-
+	        self.update_ch()
+	        self.view.show()
 
 	def save(self):
 		self.model.tofile()
@@ -161,6 +164,8 @@ class Sorter(object):
 
 		self.view.gui.status_message = str(self.scores)
 
+        def wave_view_zoom(self):
+                self.view.wave_view.locate_buffer = self.view.param_view.wave_view_zoom.value()
 
 	def _validate_vq(self):
 		from sklearn.neighbors import KNeighborsClassifier as KNN
