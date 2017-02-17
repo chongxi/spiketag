@@ -62,6 +62,9 @@ class CLU(EventEmitter):
         '''
         local_idx = {}
 
+        if isinstance(global_idx,int):
+            global_idx = np.array([global_idx])
+
         if len(global_idx):
             clus_nos = np.unique(self.membership[global_idx])
         

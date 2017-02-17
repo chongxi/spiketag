@@ -30,12 +30,13 @@ class SPKTAG(object):
 			self.meta   = {}
 			self.spklen = spk.spklen
 			self.fetlen = fet.fetlen
+                        self.ch_span = ch_span
 			self.dtype  = [('t', 'int32'), 
 			               ('ch','int32'),  
 			               ('spk', 'f4', (self.spklen, self.chlen)), 
 			               ('fet','f4',(self.fetlen,)),
 			               ('clu','int32')]
-			self.build_meta()
+                        self.build_meta()
 			self.build_spktag()
 		else:
 			pass
@@ -47,6 +48,7 @@ class SPKTAG(object):
 		self.meta["fetlen"] = self.fetlen
 		self.meta["spklen"] = self.spklen
 		self.meta["chlen"]  = self.chlen
+                self.meta["ch_span"] = self.ch_span
 
 
 	def build_spktag(self):
@@ -81,6 +83,7 @@ class SPKTAG(object):
 		self.spklen = self.meta['spklen']
 		self.fetlen = self.meta['fetlen']
 		self.chlen  = self.meta['chlen']
+                self.ch_span = self.meta['ch_span']
 		self.dtype = [('t', 'int32'), 
 		              ('ch','int32'),  
 		              ('spk', 'f4', (self.spklen, self.chlen)), 
