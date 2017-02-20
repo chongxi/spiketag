@@ -245,6 +245,21 @@ class MyWaveVisual(visuals.Visual):
         newdata = newdata.T.ravel()/self._scale
         self.shared_program['y'] = np.hstack((self.data, newdata))
         self.update()
+
+    def get_gl_pos(self):
+        '''
+            convert data to opengl position, then we can use this position to transform to other coordinate system, eg:
+            document coordinate system or viewport coordinate system
+        '''
+        x_pos = -1 + 2 * self.index[:,2]/ (self.npts - 1)
+        y_pos = self.data
+        pos = np.column_stack((x_pos,y_pos))
+
+        a = np.array([1.0 / self.ncols,1.0 / self.nrows]) * 0.95
+        b = np.array([(-1 + 2 * (self.index[:,0] + 0.5) / self.ncols),(-1 + 2 * (self.index[:,1] * self.gap
+             + 0.5) / self.nrows)])
+
+        return a * pos + b.T
         
     def set_gap(self, gap):
         self.gap = gap
