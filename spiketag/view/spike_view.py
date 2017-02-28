@@ -186,28 +186,6 @@ class spike_view(View):
                                    data_bounds=self._data_bound )
         self.build()
 
-
-    def _add_item(self, cls, virtual=False, *args, **kwargs):
-        """Add a plot item."""
-        box_index = kwargs.pop('box_index', self._default_box_index)
-
-        data = cls.validate(*args, **kwargs)
-        n = cls.vertex_count(**data)
-
-        if not isinstance(box_index, np.ndarray):
-            k = len(self._default_box_index)
-            box_index = _get_array(box_index, (n, k))
-        data['box_index'] = box_index
-
-        if virtual is True:
-            print 'virtual mode'
-
-        if cls not in self._items:
-            self._items[cls] = []
-        self._items[cls].append(data)
-        return data
-
-
     @property
     def transparency(self):
         return self._transparency
@@ -495,7 +473,7 @@ class spike_view(View):
 
     @view_lock.setter
     def view_lock(self, v):
-        self._reset_cluster()
+        #  self._reset_cluster()
         self._view_lock = v
 
 

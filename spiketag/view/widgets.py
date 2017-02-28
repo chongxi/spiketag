@@ -79,7 +79,7 @@ class param_widget(QtGui.QWidget):
         self.wave_view_zoom_text = QtGui.QLabel("wave_view_zoom:")
         self.wave_view_zoom = QtGui.QSlider(1)
         self.wave_view_zoom.setMinimum(200)
-        self.wave_view_zoom.setMaximum(400)
+        self.wave_view_zoom.setMaximum(800)
         self.wave_view_zoom.setValue(200)
         self.wave_view_zoom.setTickPosition(QtGui.QSlider.TicksBelow)
         self.wave_view_zoom.setTickInterval(3)
