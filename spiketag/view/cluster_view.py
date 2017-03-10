@@ -1,0 +1,35 @@
+import  numpy as np
+from phy.gui.widgets import Table
+
+class cluster_view(Table):
+    '''
+        For now, just show the id of cluster and number of spikes for each cluster
+    '''
+    def __init__(self):
+        super(cluster_view, self).__init__()
+
+    def set_data(self,clu):
+        self._clu = clu
+       
+        # add a column named 'spikes' here
+        @self.add_column
+        def spikes(id):
+            return self._clu.index_count[id]
+
+        # register a listener for element selected
+        @self.connect_
+        def on_select(ids):
+            print "selected ids: %s" % (ids)
+            self._clu.select_clu(ids)
+
+        # !!Attention!! 
+        # set content of column must after add_column and connect_
+        self._render()
+
+    def _render(self):
+        '''
+            set the column of ids, the first column of table
+        '''
+        cluster_ids = self._clu.index_id.tolist()
+        self.set_rows(cluster_ids)
+

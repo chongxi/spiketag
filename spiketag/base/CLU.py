@@ -134,8 +134,18 @@ class CLU(EventEmitter):
 
 
     def select(self, selectlist):
+        '''
+            select global_idx of spikes
+        '''
         self.selectlist = selectlist # update selectlist
         self.emit('select', action='select')
+    
+    def select_clu(self, selected_clu_list):
+        '''
+            select clu_id
+        '''
+        self.select_clu = selected_clu_list
+        self.emit('select', action='select_clu')
 
     def merge(self, mergelist):
         '''

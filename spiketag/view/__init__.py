@@ -6,3 +6,4 @@ from .spike_view import spike_view
 from .scatter_view import scatter_3d_view
 from .wave_view import wave_view
 from .correlogram_view import correlogram_view
+from .cluster_view import cluster_view
