@@ -8,23 +8,40 @@ class cluster_view(Table):
     def __init__(self):
         super(cluster_view, self).__init__()
 
-    def set_data(self,clu):
+    ### ----------------------------------------------
+    ###              public method 
+    ### ----------------------------------------------
+
+    def set_data(self, clu):
         self._clu = clu
        
-        # add a column named 'spikes' here
         @self.add_column
         def spikes(id):
+            '''
+                add a column named 'spikes' here
+            '''
             return self._clu.index_count[id]
 
-        # register a listener for element selected
         @self.connect_
         def on_select(ids):
-            print "selected ids: %s" % (ids)
-            self._clu.select_clu(ids)
+            '''
+                listener the element selected event from view, and emit clu select event.  
+            '''
+            if len(ids) > 0:
+                self._clu.select_clu(np.array(ids))
+
+        @self._clu.connect
+        def on_cluster(*args, **kwargs):
+            self._render()
 
         # !!Attention!! 
         # set content of column must after add_column and connect_
         self._render()
+
+
+    ### ----------------------------------------------
+    ###              private  method 
+    ### ----------------------------------------------
 
     def _render(self):
         '''

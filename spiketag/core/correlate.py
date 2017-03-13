@@ -3,113 +3,83 @@
 #--------------------------------------------------------------
 import numpy as np
 
-def correlate(spike_time, cluster_with_idx, fs=25000, window_size=50, bin_size=1):
+def correlate(spike_time, membership, cluster_ids, fs=25e3, window_bins=50, bin_size=1):
     '''
-        calculte the correlate  for every pair of cluster. The main step is :
-        1. convert target to spike train:
-            r = [2,6]
-            t = [0,3,4,7] ---> [1,0,0,1,1,0,0,1,0,0]
-            window = [1,1,1,1] # window_size = 4, binsize and offset = 1
-        2. iterate the reference where has spike (value = 1):
-            r = [2,6]
-            t = [1,0,0,1,1,0,0,1,0,0]
-                     |       |
-                 x x | x x   |
-                     |       | 
-                [1,1   1,1]  |
-                             |
-                         x x | x x
-                             |
-                        [1,1   1,1]
-               --> counter += [1,0,1,1] * [1,1,1,1] + [1,0,1,0] * [1,1,1,1]
+        Compute cross-correlate for every pair of clusters. Learn this algorithm from phy, but make it accurate and faster.
 
-        return array(shape=[i,j,counter]): counter sum the spikes which happend in every bin respectly
-        
         Parameter
-        ---------------------
-        spike_time : numpy array 
-            this array includes time of spikes
-        cluster_with_idx : dist 
-            key is the clu_no, values are the index of spike time of all spikes belong to this clu_no within spike_time array above, eg:
-            {0:{0,1},1:{2,3}}
-        fs : int
+        ---------
+        spike_time : array-like
+            the time of spikes
+        membership : array-like
+            the cluster of spikes respectly, the len should be equal to spike time
+        cluster_ids : array-like
+            all cluster ids in membership
+        fs : float
             sample rate
-        window_size : int  
-            the unit is ms
-        bin_size : int
-            the unit is ms
-    
+        window_bins : int
+            the number of bins within window
+        bin_size : int 
+            the time range(ms) of a bin
     '''
-    assert window_size % 2 == 0
-    assert window_size % bin_size == 0
-  
-    samples_in_bin  = int(fs / 1e3 * bin_size)
-    samples_in_window = window_size / bin_size * samples_in_bin
-   
-    assert spike_time is not  None
-    assert cluster_with_idx is not None
 
-    clus_nums = len(cluster_with_idx.keys())
-    ccg = np.zeros(shape=(clus_nums, clus_nums, window_size / bin_size), dtype='int32')
+    assert bin_size != 0
+    assert window_bins % 2 == 0
+    assert fs > 0
+    assert spike_time.size == membership.size
+
+    # the offset within the array
+    bin_offset = int(bin_size * fs / 1e3)
+    radius = window_bins // 2
+
+    n_clu = len(cluster_ids)
+    half_ccg = np.zeros([n_clu, n_clu, int(window_bins // 2 + 1)],dtype='int64')
     
-    for i in reversed(range(clus_nums)):
+    # shift = 1 mean calcute the time between current spike to the 1 before
+    # spike, and etc.
+    shift = 1
+    mask = np.ones_like(spike_time, dtype=np.bool)
+
+    # if the time interval is beyond the window, break the loop.
+    while mask[:-shift].any():
         
-        t = spike_time[cluster_with_idx[i]]
-        t_train  = _to_train(t, spike_time[-1] + 1)
+        spike_offsets = _offset_after_shifted(spike_time, shift)
+        # add (bin_offset-1) can make sure bin_offs are right
+        spike_bin_offs = (spike_offsets + (bin_offset - 1)) // bin_offset
         
-        for j in range(i + 1):
-            r = spike_time[cluster_with_idx[j]]
-            ccg[i][j] = ccg[j][i] = _do_correlate(r, t_train, samples_in_window
-                    , samples_in_bin)
+        # mark the offset beyond the window size
+        mask[:-shift][spike_bin_offs > radius] = False
+        m = mask[:-shift].copy()
+        
+        # get all time offs within window size        
+        time_offs = spike_bin_offs[m]
+        # locate the index within ccg matrix
+        idx = np.ravel_multi_index((membership[:-shift][m],membership[shift:][m], time_offs), half_ccg.shape)
+        # increment the number of spikes by index 
+        _increment(half_ccg.ravel(), idx)
 
-    return ccg
-            
-def _do_correlate(reference, target, samples_in_window, samples_in_bin):
-    '''
-        do correlate one by one. plus 1 make the window center the reference
-    '''
-    window = np.ones(samples_in_window + 1, dtype='int32')
-    counter = np.zeros(samples_in_window + 1 , dtype='int32')
-    radius =  samples_in_window / 2
-
-    for r in reference:
-        cliped_t = _clip(target, r, radius)
-        counter += cliped_t * window
+        shift += 1
     
-    counter = np.delete(counter,radius)
-    return counter.reshape(samples_in_window / samples_in_bin, samples_in_bin).sum(axis=1)
+    half_ccg[np.arange(n_clu), np.arange(n_clu), 0] = 0
 
-def _clip(source, center, radius):
-    '''
-       clip the source array from center - radius to center + radius, 
-       automatic left align zero or right align zero if index out of bound
-    '''
-       
-    start,end = center - radius, center + radius + 1
-    cliped = None
+    # symmetrize each correlate by the first column
+    return _symmetrize_ccg(half_ccg)
 
-    if start >= 0 and end <= len(source):
-        cliped = source[start:end]
-    elif start < 0:
-        left_align_zero = np.zeros(abs(start), dtype='int32')
-        cliped = np.hstack((left_align_zero,source[0:end]))
-    elif end > len(source):
-        right_align_zero = np.zeros(end - len(source), dtype='int32')
-        cliped = np.hstack((source[start:len(source)],right_align_zero))
 
-    assert len(cliped) == radius * 2 + 1
-    
-    return cliped
-   
-            
-def _to_train(idx, sample_length):
-    '''
-      according the size of data, raster the absolute pos to relative pos:
-      len(data) = 6
-      r = [1,5] -> [0,1,0,0,0,1]
-    '''
-    t =  np.zeros(sample_length, dtype='int32')
-    t[idx] = 1
-    return t 
 
-  
+def _offset_after_shifted(spike_time, shift):
+    return spike_time[shift:] - spike_time[:-shift]
+
+def _increment(array, idx):
+    counts = np.bincount(idx)
+    array[:len(counts)] += counts 
+    return array
+
+def _symmetrize_ccg(half_ccg):
+    n_clu, _ , n_bin = half_ccg.shape
+
+    half_ccg[..., 0] = np.maximum(half_ccg[..., 0], half_ccg[..., 0].T)
+    sym = half_ccg[..., 1:][..., ::-1]
+    sym = np.transpose(sym, (1, 0, 2))
+
+    return np.dstack((sym, half_ccg[...,1:]))

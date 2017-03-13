@@ -24,8 +24,7 @@ class param_widget(QtGui.QWidget):
     signal_build_vq       = QtCore.pyqtSignal(name='vq')
     signal_apply_to_all   = QtCore.pyqtSignal(name='apply2all')
     signal_wave_view_zoom = QtCore.pyqtSignal(name='zoom') 
-
-
+    
     def __init__(self, parent=None):
         super(param_widget, self).__init__(parent)
 

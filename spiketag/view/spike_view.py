@@ -11,6 +11,7 @@ from ._core import _spkNo2maskNo_numba, _cache_out, _cache_in_vector, _cache_in_
 
 
 class spike_view(View):
+    
     def __init__(self, interactive=True):
         super(spike_view, self).__init__('grid')
         self.palette = palette
