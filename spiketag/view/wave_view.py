@@ -138,6 +138,7 @@ class Cross(object):
 
 
 class wave_view(scene.SceneCanvas):
+
     '''
     Example1(Amplitude View): Show single Trace as dots with x,y axis tick:
         mua_view = wave_view()

@@ -214,6 +214,7 @@ class Picker(object):
         self._line = scene.visuals.Line(color='white', method='gl',
                                        parent=self._scene)
         self._trigger = True
+
     """
         cast a net by rectange or lasso, rectange is default
 
@@ -258,9 +259,9 @@ class Picker(object):
             data = self._mapping.map(samples[:, :3])[:, :2]
             select_path = path.Path(self._vertices, closed=True)
             selected = select_path.contains_points(data)
-            mask = [i for i in range(len(selected)) if selected[i]]
+            mask = np.where(selected)[0]
         self.reset()
-        return np.array(mask)
+        return mask
 
     """
         clear all values

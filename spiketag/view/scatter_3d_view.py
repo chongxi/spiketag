@@ -2,15 +2,12 @@ import numpy as np
 from vispy import scene, app
 from .color_scheme import palette
 from ..base.CLU import CLU
-from matplotlib import path
 from ..utils.utils import Picker
 
 
 
 class scatter_3d_view(scene.SceneCanvas):
     
-    name = 'ScatterView'
-
     def __init__(self, show=False):
         scene.SceneCanvas.__init__(self, keys=None)
 

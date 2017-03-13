@@ -8,6 +8,10 @@ class cluster_view(Table):
     def __init__(self):
         super(cluster_view, self).__init__()
 
+    ### ----------------------------------------------
+    ###              public method 
+    ### ----------------------------------------------
+
     def set_data(self,clu):
         self._clu = clu
        
@@ -19,12 +23,21 @@ class cluster_view(Table):
         # register a listener for element selected
         @self.connect_
         def on_select(ids):
-            print "selected ids: %s" % (ids)
-            self._clu.select_clu(ids)
+            if len(ids) > 0:
+                self._clu.select_clu(np.array(ids))
+
+        @self._clu.connect
+        def on_cluster(*args, **kwargs):
+            self._render()
 
         # !!Attention!! 
         # set content of column must after add_column and connect_
         self._render()
+
+
+    ### ----------------------------------------------
+    ###              private  method 
+    ### ----------------------------------------------
 
     def _render(self):
         '''

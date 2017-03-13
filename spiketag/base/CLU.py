@@ -144,8 +144,8 @@ class CLU(EventEmitter):
         '''
             select clu_id
         '''
-        self.select_clu = selected_clu_list
-        self.emit('select', action='select_clu')
+        self.select_clus = np.sort(selected_clu_list)
+        self.emit('select_clu', action='select_clu')
 
     def merge(self, mergelist):
         '''

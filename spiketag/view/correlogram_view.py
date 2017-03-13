@@ -6,6 +6,7 @@ from ..core.correlate import correlate
 from phy.plot import View
 
 class correlogram_view(View):
+
     '''
         For grid purpose, phy.view is much faster than vispy.grid_view
     '''
@@ -15,7 +16,6 @@ class correlogram_view(View):
         self._window_size = window_size #ms
         self._bin_size = bin_size #ms
         self._fs = fs
-        self._palette = palette
         self._default_color = np.ones(4,dtype='int32')
 
         # inject the function to calculate correlare
@@ -97,6 +97,6 @@ class correlogram_view(View):
 
         with self.building():
             for i,j in self._pair_clusters():
-                color = self._default_color if (i != j) else np.hstack((self._palette[i],1))
+                color = self._default_color if (i != j) else np.hstack((palette[i],1))
                 row, col = self._clu.nclu - 1 - i, j
                 self[row,col].hist(hist=hists[i][j],color=color)
