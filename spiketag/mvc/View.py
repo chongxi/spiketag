@@ -3,11 +3,12 @@ from phy.gui import Actions
 from ..view import *
 import PyQt4
 from PyQt4 import QtGui
+import os
 
 class MainView(object):
 	"""docstring for View"""
 	def __init__(self):
-		self.gui = gui.GUI()
+                self.gui = gui.GUI(config_dir=self.get_config_dir())
 		self.param_view = param_widget()
 		self.spk_view = spike_view()
 		self.scatter_view = scatter_3d_view()
@@ -40,9 +41,28 @@ class MainView(object):
 
         def bind_data(self, data=None, spktag=None):
                 self.wave_view.bind(data, spktag)
-                self.correlogram_view.bind(data, spktag)
+                self.correlogram_view.bind(spktag)
                 self.amplitude_view.bind(data, spktag)
 	def show(self):
 		self.gui.show()
                 # the widget of phy can not show by GUI
                 self.cluster_view.show()
+
+        def get_config_dir(self):
+            '''
+              TODO
+              get the template gui state config dir, this is for temparory now.
+            '''
+            
+            path = ''
+            for fn in os.getcwd().split(os.path.sep):
+                if len(fn) == 0:
+                    path = os.path.join(os.path.sep, path)
+                else:
+                    path = os.path.join(path, fn)
+    
+                if fn == 'spiketag':
+                    break
+
+            return  os.path.join(path, 'spiketag/res')
+

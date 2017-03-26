@@ -12,17 +12,21 @@ class cluster_view(Table):
     ###              public method 
     ### ----------------------------------------------
 
-    def set_data(self,clu):
+    def set_data(self, clu):
         self._clu = clu
        
-        # add a column named 'spikes' here
         @self.add_column
         def spikes(id):
+            '''
+                add a column named 'spikes' here
+            '''
             return self._clu.index_count[id]
 
-        # register a listener for element selected
         @self.connect_
         def on_select(ids):
+            '''
+                listener the element selected event from view, and emit clu select event.  
+            '''
             if len(ids) > 0:
                 self._clu.select_clu(np.array(ids))
 
