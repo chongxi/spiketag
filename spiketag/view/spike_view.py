@@ -103,7 +103,7 @@ class spike_view(View):
         @self.clu.connect
         def on_select(*args, **kwargs):
             self._selected = self.clu.global2local(self.clu.selectlist)
-            self.highlight(self._selected)
+            self.highlight(self._selected, external=True)
 
     def render(self, update=False):
 
@@ -225,11 +225,14 @@ class spike_view(View):
             return np.array([])
 
     # ---------------------------------------------
-    def highlight(self,selected, refresh=True):
+    def highlight(self, selected, external=False, refresh=True):
         """
         highlight the selected spikes:
         the selected is dist, eg: {cluNo:[spikelist]}, the spike list is local idx in the clu, and the num of clu could be one or more
         """
+        if external:
+            self.clear_virtual()
+
         if refresh:
             self._clear_highlight()
 

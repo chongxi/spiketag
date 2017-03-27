@@ -1,125 +1,111 @@
-from vispy import scene, app
 import numpy as np
+from .color_scheme import palette
+from scatter_2d_view import scatter_2d_view
 
+class raster_view(scatter_2d_view):
 
-class raster_view(scene.SceneCanvas):
-    def __init__(self, connect='segments', method='gl'):
-        '''
-        Parameters
-        ----------
-        connect : str or array
-            Determines which vertices are connected by lines.
+    def __init__(self, fs=25e3, time_tick=1):
+        super(raster_view, self).__init__(symbol='|', marker_size=5., edge_width=1e-3)
+        super(raster_view, self).attach_xaxis()
 
-                * "strip" causes the line to be drawn with each vertex
-                  connected to the next.
-                * "segments" causes each pair of vertices to draw an
-                  independent line segment
-                * numpy arrays specify the exact set of segment pairs to
-                  connect.  
-        method : str
-            Mode to use for drawing.
+        self._fs = fs
+        self._time_tick = time_tick 
 
-                * "agg" uses anti-grain geometry to draw nicely antialiased lines
-                  with proper joins and endcaps.
-                * "gl" uses OpenGL's built-in line rendering. This is much faster,
-                  but produces much lower-quality results and is not guaranteed to
-                  obey the requested line width or join/endcap styles.
-        '''
+    ### ----------------------------------------------
+    ###              public method 
+    ### ----------------------------------------------
 
-        scene.SceneCanvas.__init__(self, keys=None)
-        self.unfreeze()
+    def bind(self, spktag):
+        self._spktag = spktag
 
-        self.grid = self.central_widget.add_grid(spacing=0, bgcolor='k',
-                                                  border_color='k')       
-        self.view = self.grid.add_view(row=2, col=3, border_color='k')
+    def set_data(self, ch, clu=None):
+        self._spike_time = self._get_spike_time(ch)
+        self._clu = clu
         
-        # self.view = self.central_widget.add_view()
-        self.view.camera = 'panzoom'
-        self.line = scene.visuals.Line(connect=connect, method=method)
-        self.view.add(self.line)
-        self.add_axis()
-        self.freeze()
+        @self._clu.connect
+        def on_select_clu(*args, **kwargs):
+            self._draw(self._clu.select_clus)
 
-
-        # Add a 3D axis to keep us oriented
-        # scene.visuals.XYZAxis(parent=self.view.scene)
+        @self._clu.connect
+        def on_select(*args, **kwargs):
+            self.highlight(self._clu.selectlist)
         
-    def add_axis(self, ylabel='cell', axis_color=(0,1,1,0.8)):
+        @self._clu.connect
+        def on_cluster(*args, **kwargs):
+            self._clu.select_clu(self._clu.index_id)
+        
+        self._clu.select_clu(self._clu.index_id)
 
-        fg = axis_color
+    @property
+    def binsize(self):
+        return int(self._fs * self._time_tick)
 
-        self.unfreeze()
-        self.yaxis = scene.AxisWidget(orientation='left', text_color=fg,
-                                      axis_color=fg, tick_color=fg)
-        self.yaxis.stretch = (0.05, 0.05)
-        self.grid.add_widget(self.yaxis, row=2, col=2)
-
-        self.ylabel = scene.Label(ylabel, rotation=-90, color=fg)
-        self.ylabel.stretch = (0.01, 0.01)
-        self.grid.add_widget(self.ylabel, row=2, col=1)
-
-        self.xaxis = scene.AxisWidget(orientation='bottom', text_color=fg,
-                                      axis_color=fg, tick_color=fg)
-        self.xaxis.stretch = (0.05, 0.05)
-        self.grid.add_widget(self.xaxis, row=3, col=3)
-
-        self.xlabel = scene.Label("")
-        self.xlabel.stretch = (0.01, 0.01)
-        self.grid.add_widget(self.xlabel, row=4, col=3)
-
-        self.view.camera = 'panzoom'
-        self.camera = self.view.camera
-
-        self.xaxis.link_view(self.view)
-        self.yaxis.link_view(self.view)
-
-        self._configured = True
-        self.freeze()
-
-
-    def set_data(self, timelist, **kwargs):
+    def highlight(self, global_idx):
+        ''' Transform the global idx to the view idx:
+                Listen the select event from other view, and find the intersect spikes in current clus which selected to display within amplitude view. 
         '''
-        timelist : [np.array, np.array, ...]
-            [timelist1, timelist2, timelist3, tmelist4 ...]
-        color : Color, (, , ,) or np.array([ , , ,])
-            The color to use when drawing the line. If an array is given, it
-            must be of shape (..., 4) and provide one rgba color per vertex.
-            Can also be a colormap name, or appropriate `Function`.
-        width: Only for 'agg'
-            The width of the line in px. Line widths > 1px are only
-            guaranteed to work when using 'agg' method.
+        # find the intersect cluster between other view and amplitude view
+        local_idx = self._clu.global2local(global_idx)
+        current_clus = self._clu.select_clus
+        common_clus = np.intersect1d(current_clus, np.array(local_idx.keys()))
+        
+        # the spike idx in parent-class is |cluster1|cluster2|cluster3|....|,
+        # so the local idx in cluster2 is need to plus len(cluster1)
+        view_idx = np.array([],dtype='int64')
+        if len(common_clus) > 0:
+            for clu in common_clus:
+                before = current_clus[np.where(current_clus < clu)]
+                for b in before:
+                    local_idx[clu] += self._clu.index_count[b]
+                view_idx = np.hstack((view_idx, local_idx[clu]))
+        
+        super(raster_view, self)._highlight(view_idx)
+
+    def select(self, view_idx):
+        ''' 
+            Transfrom the view idx to the global idx.
         '''
-
-        # pre-processing
-        cellNo = []
-        for ith, ith_time in enumerate(timelist):
-            t = ith_time
-            y = np.ones(*t.shape)*ith
-            cellNo.append(y)
-        time = np.hstack(timelist)
-        cellNo = np.hstack(cellNo)
-
-        time = np.repeat(time,2)
-        cellNo = np.repeat(cellNo,2)
-        cellNo[::2]-=0.45
-        cellNo[1::2]+=0.45        
-
-        pos = np.vstack((time, cellNo)).T
-        # current_palette = sns.color_palette()
-        self.line.set_data(pos=pos, **kwargs)
-        # recompute the bounds
-        self.view.camera.set_range(x=self.line._compute_bounds(0, self.view),
-                                   y=self.line._compute_bounds(1, self.view))
-        # set the new bounds as default
-        self.view.camera.set_default_state()
-        self.view.camera.reset()
+        # all clusters within the view currently
+        current_clus = self._clu.select_clus
+        local_idx = {}
+        
+        # assign idx to different range |cluster1|cluser2|cluster3|....|
+        # according the length of cluster
+        left = 0
+        for clu in current_clus:
+            right = left + self._clu.index_count[clu]
+            index = view_idx[(view_idx>=left)&(view_idx<right)]
+            if len(index) >  0:
+                local_idx[clu] = index - left
+            left = right
+        global_idx = self._clu.local2global(local_idx)
+        self._clu.select(global_idx)
 
 
-    def attach(self, gui):
-        self.unfreeze()
-        gui.add_view(self)
+ 
+    ### ----------------------------------------------
+    ###              private method 
+    ### ----------------------------------------------
 
+    def _get_spike_time(self, ch):
+        return self._spktag.t[self._spktag.ch == ch]
 
-    def on_key_press(self, e):
-        if e.text=='r':
-            self.view.camera.reset()
+    def _draw(self, clus):
+       
+        poses = None
+        colors = None
+
+        for clu in clus:
+            times = self._spike_time[self._clu.index[clu]]
+            x, y = times / self.binsize, np.full(times.shape, clu, dtype='int32')
+            pos = np.column_stack((x,y))
+            color = np.tile(np.hstack((palette[clu],1)),(pos.shape[0],1))
+
+            if poses is None and colors is None:
+                poses = pos
+                colors = color
+            else:
+                poses = np.concatenate((poses, pos))
+                colors = np.concatenate((colors, color))
+        
+        super(raster_view, self).set_data(pos=poses, colors=colors)
