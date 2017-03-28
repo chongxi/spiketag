@@ -167,7 +167,7 @@ class scatter_2d_view(scene.SceneCanvas):
     ###              private  method 
     ### ----------------------------------------------
     def _get_nearest_spikes(self, mouse_pos):
-        radius = (self._xaxis.axis.domain[1] - self._xaxis.axis.domain[0]) / 2e2 
+        radius = (self._xaxis.axis.domain[1] - self._xaxis.axis.domain[0]) / 1.5e2 
         range = (mouse_pos[0] - radius, mouse_pos[0] + radius)
         x_pos = self._transform2view.map(self._pos)[:, 0]
         return np.where((x_pos >= range[0]) & (x_pos < range[1]))[0]
