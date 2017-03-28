@@ -34,7 +34,8 @@ class raster_view(scatter_2d_view):
         def on_cluster(*args, **kwargs):
             self._clu.select_clu(self._clu.index_id)
         
-        self._clu.select_clu(self._clu.index_id)
+        self._draw(self._clu.index_id)
+
 
     @property
     def binsize(self):
@@ -94,10 +95,11 @@ class raster_view(scatter_2d_view):
        
         poses = None
         colors = None
-
+        span = 5. / len(self._clu.index_id)
+ 
         for clu in clus:
             times = self._spike_time[self._clu.index[clu]]
-            x, y = times / self.binsize, np.full(times.shape, clu, dtype='int32')
+            x, y = times / self.binsize, np.full(times.shape, clu * span)
             pos = np.column_stack((x,y))
             color = np.tile(np.hstack((palette[clu],1)),(pos.shape[0],1))
 

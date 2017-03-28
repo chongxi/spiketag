@@ -39,7 +39,8 @@ class CLU(EventEmitter):
         self.index_id    = np.unique(self.membership)
         self.index_id.sort()
         self.make_id_continuous()
-
+        # all clus are selected default
+        self.select_clus = self.index_id
         self.nclu        = len(self.index_id)
         _counts_per_clu = [0,]
         for cluNo in self.index_id:

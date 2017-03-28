@@ -29,15 +29,12 @@ class line_view(scene.SceneCanvas):
         scene.SceneCanvas.__init__(self, keys=None)
         self.unfreeze()
 
-        self.grid = self.central_widget.add_grid(spacing=0, bgcolor='k',
-                                                  border_color='k')       
-        self.view = self.grid.add_view(row=2, col=3, border_color='k')
+        self.grid = self.central_widget.add_grid(bgcolor='k',
+                                                  border_color='k', margin=10)       
+        self.view = self.grid.add_view(row=0, col=1, border_color='k')
         
-        # self.view = self.central_widget.add_view()
         self.view.camera = 'panzoom'
         self.lines = []
-        self.line = scene.visuals.Line(connect=connect, method=method)
-        self.view.add(self.line)
         self.add_axis()
         self.freeze()
 
@@ -49,24 +46,14 @@ class line_view(scene.SceneCanvas):
         self.unfreeze()
         self.yaxis = scene.AxisWidget(orientation='left', text_color=fg,
                                       axis_color=fg, tick_color=fg)
-        self.yaxis.stretch = (0.015, 0.05)
-        self.grid.add_widget(self.yaxis, row=2, col=2)
+        self.yaxis.stretch = (0.1, 0.9)
+        self.grid.add_widget(self.yaxis, row=0, col=0)
 
-        self.ylabel = scene.Label("", rotation=-90, color=fg)
-        self.ylabel.stretch = (0.01, 0.01)
-        self.grid.add_widget(self.ylabel, row=2, col=1)
 
         self.xaxis = scene.AxisWidget(orientation='bottom', text_color=fg,
                                       axis_color=fg, tick_color=fg)
-        self.xaxis.stretch = (0.05, 0.025)
-        self.grid.add_widget(self.xaxis, row=3, col=3)
-
-        self.xlabel = scene.Label("")
-        self.xlabel.stretch = (0.01, 0.01)
-        self.grid.add_widget(self.xlabel, row=4, col=3)
-
-        self.view.camera = 'panzoom'
-        self.camera = self.view.camera
+        self.xaxis.stretch = (0.9, 0.1)
+        self.grid.add_widget(self.xaxis, row=1, col=1)
 
         self.xaxis.link_view(self.view)
         self.yaxis.link_view(self.view)
@@ -74,7 +61,7 @@ class line_view(scene.SceneCanvas):
         self.freeze()
 
 
-    def set_data(self, x, y, **kwargs):
+    def set_data(self, pos, color):
         '''
         pos : array
             Array of shape (..., 2) or (..., 3) specifying vertex coordinates.
@@ -87,23 +74,33 @@ class line_view(scene.SceneCanvas):
             guaranteed to work when using 'agg' method.
         '''
         # current_palette = sns.color_palette()
-        pos = np.vstack((x,y))
-        if pos.shape[1] != 2:
-            pos = pos.T
+        assert len(pos) == len(color)
 
-        line = scene.visuals.Line(connect='strip', method='gl')
-        line.set_data(pos=pos, **kwargs)
-        self.lines.append(line)
-        self.view.add(line)
+        self.clear()
+
+        
+        #TODO improve the performace here, we can create a line pool when init, then pick a line from pool when use. 
+        for i in range(len(pos)):
+            line = scene.visuals.Line(pos=pos[i], color=color[i])
+            self.view.add(line)
+            self.lines.append(line)
+
+        self.view.camera.set_range()
+
         # self.line.set_data(pos=pos, **kwargs)
         # recompute the bounds
-        self.view.camera.set_range(x=line._compute_bounds(0, self.view),
-                                   y=line._compute_bounds(1, self.view))
-        # set the new bounds as default
-        self.view.camera.set_default_state()
-        self.view.camera.reset()
+        #  self.view.camera.set_range(x=line._compute_bounds(0, self.view),
+                                   #  y=line._compute_bounds(1, self.view))
+        #  # set the new bounds as default
+        #  self.view.camera.set_default_state()
+        #  self.view.camera.reset()
 
+    def clear(self):
+        for l in self.lines:
+            l.parent = None
 
+        self.lines = []
+    
     def attach(self, gui):
         self.unfreeze()
         gui.add_view(self)
@@ -112,3 +109,4 @@ class line_view(scene.SceneCanvas):
     def on_key_press(self, e):
         if e.text=='r':
             self.view.camera.reset()
+            self.view.camera.set_range()

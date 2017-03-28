@@ -45,8 +45,7 @@ class amplitude_view(scatter_2d_view):
         def on_cluster(*args, **kwargs):
             self._clu.select_clu(self._clu.index_id)
 
-        # draw all clusters when ch settled
-        self._clu.select_clu(self._clu.index_id)
+        self._draw(self._clu.index_id)
 
     @property
     def binsize(self):
@@ -101,6 +100,18 @@ class amplitude_view(scatter_2d_view):
     def _get_spike_time(self, ch):
         return self._spktag.t[self._spktag.ch == ch]
 
+    def _locate_amplitude(self, clu):
+        '''
+            locate the peak of amplitude, return index and peak value
+        '''
+        times = self._spike_time[self._clu.index[clu]]
+        # peak always heppenned one offset before
+        # TODO may not use constant
+        amplitudes = self._spk[self._clu.index[clu], 7, 1] / self._scale
+        
+        return  times / self.binsize, amplitudes
+ 
+
     def _draw(self, clus):
         '''
             The x pos is time, the y pos is amplitude, and the color and pos is pairwise.
@@ -110,10 +121,7 @@ class amplitude_view(scatter_2d_view):
         colors = None
         
         for clu in clus:
-            times = self._spike_time[self._clu.index[clu]]
-            # peak always heppenned one offset before
-            amplitudes = self._spk[self._clu.index[clu], 7, 1] / self._scale
-            x, y = times / self.binsize, amplitudes
+            x, y = self._locate_amplitude(clu) 
             pos = np.column_stack((x, y))
             color = np.tile(np.hstack((palette[clu],1)),(pos.shape[0],1))
         
