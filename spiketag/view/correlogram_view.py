@@ -21,12 +21,11 @@ class correlogram_view(View):
         bin_size : int
             the time interval(ms) to sum spikes.
     '''
-    def __init__(self, correlate=correlate, fs=25e3, window_bins=50, bin_size=1, show=False):
+    def __init__(self, correlate=correlate, window_bins=50, bin_size=1, show=False):
         super(correlogram_view, self).__init__('grid')
         
         self._window_bins = window_bins
         self._bin_size = bin_size 
-        self._fs = fs
         self._default_color = np.ones(4,dtype='int32')
 
         # inject the function to calculate correlare
@@ -60,6 +59,7 @@ class correlogram_view(View):
 
     def bind(self, spktag):
         self._spktag = spktag
+        self._fs = spktag.probe.fs
 
     def change_correlate_func(self, func):
         '''

@@ -26,11 +26,15 @@ class SPK():
 
     def weight_channel_saw(self, chlist, a=None, p=None):
         n = len(chlist)
-        if a is None: # a is max value of saw
-            a = float(n)/2 
-        if p is None:
-            p = n/2   # p is the half period of entire saw
-        return (a/p) * (p - abs(chlist % (2*p) - p) ) + 1
+        if n % 2 == 1:
+            if a is None: # a is max value of saw
+                a = float(n)/2 
+            if p is None:
+                p = n/2   # p is the half period of entire saw
+            return (a/p) * (p - abs(chlist % (2*p) - p) ) + 1
+        else:
+            # for tetrode probe , weights are equal
+            return np.ones(n) 
 
     def __getitem__(self,i):
         return self.spk[i]

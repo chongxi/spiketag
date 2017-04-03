@@ -8,7 +8,7 @@ class Sorter(object):
 	"""docstring for Sorter"""
 	def __init__(self, *args, **kwargs):
 		self.model = MainModel(*args, **kwargs)
-		self.view  = MainView()
+		self.view  = MainView(self.model.spktag.probe.n_group)
 		self.view.param_view.signal_ch_changed.connect(self.update_ch)
 		self.view.param_view.signal_get_fet.connect(self.update_fet)
 		self.view.param_view.signal_recluster.connect(self.update_clu)

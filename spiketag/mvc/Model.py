@@ -27,25 +27,21 @@ class MainModel(object):
        -> clu: dict, every item is a CLU on that channel; clu.merge, clu.split, clu.move  etc..
     """
 
-    def __init__(self, filename, spktag_filename=None, 
-                 nCh=32, fs=25000, numbytes=4, binary_radix=14,
-                 ch_span=1, spklen=25,
-                 corr_cutoff=0.9,
+    def __init__(self, filename, probe=None, spktag_filename=None, 
+                 numbytes=4, binary_radix=14, spklen=25,corr_cutoff=0.9,
                  fet_method='weighted-pca', fetlen=6, fet_whiten=False,
                  clu_method='hdbscan', fall_off_size=18, n_jobs=24):
 
         # raw recording param
         self.filename = filename
         self.spktag_filename = spktag_filename
-        self.nCh = nCh
-        self.fs = fs
+        self.probe = probe
         self.numbytes = numbytes
         self.binpoint = binary_radix
 
         # mua param
         self._corr_cutoff = corr_cutoff
-        self._ch_span = ch_span
-        self._spklen = 25
+        self._spklen = spklen 
 
         # fet param
         self.fet_method = fet_method
@@ -67,17 +63,17 @@ class MainModel(object):
         Otherwise, it would assume that there is no stored infomation and 
         everything needs to be calculated from mua
         '''
-        info('load mua data')
-        self.mua = MUA(self.filename, self.nCh, self.fs,
-                       self.numbytes, self.binpoint)
-
-        # The first time
+         # The first time
         if spktag_filename is None:
+
+            info('load mua data')
+            self.mua = MUA(self.filename, self.probe, self.numbytes, self.binpoint)
+
             info('removing high corr noise from spikes pool')
             self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
 
             info('extract spikes from pivital meta data')
-            self.spk = self.mua.tospk(ch_span=self._ch_span)
+            self.spk = self.mua.tospk()
 
             info('extrat features with {}'.format(self.fet_method))
             self.fet = self.spk.tofet(method=self.fet_method, 
@@ -89,13 +85,12 @@ class MainModel(object):
                                       fall_off_size=self._fall_off_size,
                                       njobs=self._n_jobs)
 
-            self.spktag = SPKTAG(self.nCh, 
-                                 self._ch_span,
+            self.spktag = SPKTAG(self.probe,
                                  self.mua.pivotal_pos, 
                                  self.spk, 
                                  self.fet, 
                                  self.clu)
-            info('Model.spktag is generated, ch_span:{}, nspk:{}'.format(self._ch_span, self.spktag.nspk))
+            info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 
         # After first time
         else:
@@ -105,6 +100,10 @@ class MainModel(object):
             self.spk = self.spktag.tospk()
             self.fet = self.spktag.tofet()
             self.clu = self.spktag.toclu()
+
+            info('load mua data for wave view')
+            self.mua = MUA(self.filename, self.spktag.probe, self.numbytes, self.binpoint)
+
 
 
     def cluster(self, method='hdbscan', *args, **kwargs):

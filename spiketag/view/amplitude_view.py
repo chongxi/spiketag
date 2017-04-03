@@ -12,11 +12,10 @@ class amplitude_view(scatter_2d_view):
         time_tick : int
             the unit(s) of time tick in x axis
     '''
-    def __init__(self, fs=25e3, time_tick=1):
+    def __init__(self, time_tick=1):
         super(amplitude_view, self).__init__()
         super(amplitude_view, self).attach_xaxis()
 
-        self._fs = fs
         self._time_tick = time_tick 
 
 
@@ -26,6 +25,7 @@ class amplitude_view(scatter_2d_view):
 
     def bind(self, data, spktag):
         self._spktag = spktag
+        self._fs = spktag.probe.fs
         self._scale = data.max() - data.min()
 
     def set_data(self, ch, spk=None, clu=None):
@@ -35,7 +35,7 @@ class amplitude_view(scatter_2d_view):
         
         @self._clu.connect
         def on_select_clu(*args, **kwargs):
-            self._draw(self._clu.select_clus)
+            self._draw(self._clu.select_clus, delimit=False)
 
         @self._clu.connect
         def on_select(*args, **kwargs):
@@ -112,7 +112,7 @@ class amplitude_view(scatter_2d_view):
         return  times / self.binsize, amplitudes
  
 
-    def _draw(self, clus):
+    def _draw(self, clus, delimit=True):
         '''
             The x pos is time, the y pos is amplitude, and the color and pos is pairwise.
             Draw clu by clu because have to match the color
@@ -132,5 +132,5 @@ class amplitude_view(scatter_2d_view):
                 poses = np.concatenate((poses, pos))
                 colors = np.concatenate((colors, color))
 
-        super(amplitude_view, self).set_data(pos=poses, colors=colors) 
+        super(amplitude_view, self).set_data(pos=poses, colors=colors, delimit=delimit) 
 

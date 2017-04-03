@@ -152,7 +152,7 @@ class wave_view(scene.SceneCanvas):
         mua_view.set_data(mua.data[:64000])
         mua_view.show()
     '''
-    def __init__(self, color=None, fs=25000.0, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
+    def __init__(self, color=None, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
         scene.SceneCanvas.__init__(self, keys=None)
         self.unfreeze()
         self.grid1 = self.central_widget.add_grid(spacing=0, bgcolor='gray',
@@ -182,7 +182,6 @@ class wave_view(scene.SceneCanvas):
                                       border_color=(0, 0, 0, 0),
                                       parent=self.view2.scene)
         self.cursor_rect.visible = False
-        self.fs = fs
         self.palette = palette
         self._gap_value = gap_value
         self._locate_buffer = 200
@@ -222,7 +221,7 @@ class wave_view(scene.SceneCanvas):
     def set_data(self, ch, clu, time_slice=0):
         self.ch = ch
         self.clu = clu
-        self.chlist = self.get_near_ch(self.ch, self.spktag.nCh, self.spktag.ch_span)
+        self.chlist = self.spktag.probe.get_group_ch(self.ch)[::-1]
         self.nCh = len(self.chlist)
 
         self.set_range()
@@ -238,6 +237,7 @@ class wave_view(scene.SceneCanvas):
         '''
         self.data = data
         self.spktag = spktag
+        self.fs = spktag.probe.fs
 
         # just simple initialization rendering
         self._render(data[0:200])
@@ -281,15 +281,6 @@ class wave_view(scene.SceneCanvas):
         self._locate_buffer = v
         if len(self.clu.selectlist) == 1:
             self.locate_and_highlight(self.clu.selectlist)
-
-    def get_near_ch(self, ch, nCh, ch_span):
-        chmax = nCh - 1
-        start = ch-ch_span # if ch-span>=0 else 0
-        end   = ch+ch_span # if ch+span<chmax else chmax
-        near_ch = np.arange(start, end+1, 1)
-        near_ch[near_ch>chmax] = -1
-        near_ch[near_ch<0] = -1
-        return near_ch[near_ch>=0]
 
     def get_near_pos(self, ch, global_idx, data_range):
         '''

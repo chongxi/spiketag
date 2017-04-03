@@ -25,7 +25,7 @@ class param_widget(QtGui.QWidget):
     signal_apply_to_all   = QtCore.pyqtSignal(name='apply2all')
     signal_wave_view_zoom = QtCore.pyqtSignal(name='zoom') 
     
-    def __init__(self, parent=None):
+    def __init__(self, n_group, parent=None):
         super(param_widget, self).__init__(parent)
 
         l_fet_method = QtGui.QLabel("feature")
@@ -51,8 +51,8 @@ class param_widget(QtGui.QWidget):
         l_ch = QtGui.QLabel("Channel")
         self.ch = QtGui.QSpinBox()
         self.ch.setMinimum(0)
-        self.ch.setMaximum(31)
-        self.ch.setValue(26)
+        self.ch.setMaximum(n_group - 1)
+        self.ch.setValue(0)
         self.ch.valueChanged.connect(self.update_ch)
 
         self.clu_param_text = QtGui.QLabel("fall-off-size: 18")

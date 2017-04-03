@@ -7,9 +7,9 @@ import os
 
 class MainView(object):
 	"""docstring for View"""
-	def __init__(self):
+	def __init__(self, n_group):
                 self.gui = gui.GUI(config_dir=self.get_config_dir())
-		self.param_view = param_widget()
+		self.param_view = param_widget(n_group)
 		self.spk_view = spike_view()
 		self.scatter_view = scatter_3d_view()
                 self.wave_view = wave_view()

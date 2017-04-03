@@ -227,8 +227,8 @@ class Picker(object):
     """
     def cast_net(self,pos,ptype='rectangle'):
         if not self._trigger:
-            raise RuntimeError('please do origin_point first!')
-        
+            return 
+
         if ptype == 'rectangle':
             self._cast_rectangle(pos)
         elif ptype == 'lasso':
@@ -252,8 +252,8 @@ class Picker(object):
     """
     def pick(self,samples):
         if not self._trigger:
-            raise RuntimeError('please do origin_point first!')
-        
+            return np.array([])
+
         mask = np.array([])
         if len(self._vertices):
             data = self._mapping.map(samples[:, :3])[:, :2]

@@ -7,9 +7,9 @@ from .Binload import bload
 
 
 @jit(cache=True)
-def _to_spk(data, pos, chlist, spklen=19, prelen=8, ch_span=1):
+def _to_spk(data, pos, chlist, spklen=19, prelen=8):
     n = len(pos)
-    spk = np.empty((n, spklen, 2*ch_span+1), dtype=np.float32)
+    spk = np.empty((n, spklen, len(chlist)), dtype=np.float32)
     for i in range(n):
         # i spike in chlist
         spk[i, ...]  = data[pos[i]-prelen:pos[i]-prelen+spklen, chlist]
@@ -19,16 +19,17 @@ def _to_spk(data, pos, chlist, spklen=19, prelen=8, ch_span=1):
 
 
 class MUA():
-    def __init__(self, filename, nCh=32, fs=25000, numbytes=4, binary_radix=14):
-
+    def __init__(self, filename, probe, numbytes=4, binary_radix=14):
+        
+        self.nCh = probe.n_ch
+        self.ch  = range(self.nCh)
+        self.fs  = probe.fs*1.0
+        self.probe = probe
         self.numbytes = numbytes
         self.dtype = 'i'+str(self.numbytes)
-        bf = bload(nCh, fs)
+        bf = bload(self.nCh, self.fs)
         bf.load(filename, dtype=self.dtype)
         self.filename = filename
-        self.nCh = nCh
-        self.ch  = range(nCh)
-        self.fs  = fs*1.0
         self.data = bf.asarray(binpoint=binary_radix)
         self.t    = bf.t
 
@@ -38,17 +39,8 @@ class MUA():
         spk_meta = np.fromfile(filename+'.spk', dtype='<i4')
         self.pivotal_pos = spk_meta.reshape(-1,2).T
 
-    def get_near_ch(self, ch, ch_span=1):
-        chmax = self.nCh - 1
-        start = ch-ch_span # if ch-span>=0 else 0
-        end   = ch+ch_span # if ch+span<chmax else chmax
-        near_ch = np.arange(start, end+1, 1)
-        near_ch[near_ch>chmax] = -1
-        near_ch[near_ch<0] = -1
-        return near_ch
-
-    def tospk(self, ch_span=1):
-        self.ch_hash = np.asarray([self.get_near_ch(ch, ch_span) 
+    def tospk(self):
+        self.ch_hash = np.asarray([self.probe.get_group_ch(ch) 
                                                 for ch in range(self.nCh)])
         spkdict = {}
         for ch in range(self.nCh):
@@ -57,8 +49,8 @@ class MUA():
                                   pos    = pos, 
                                   chlist = self.ch_hash[ch], 
                                   spklen = self.spklen,
-                                  prelen = self.prelen,
-                                  ch_span= ch_span)
+                                  prelen = self.prelen)
+                                 
         return SPK(spkdict)
 
     def get_nid(self, corr_cutoff=0.95):  # get noisy spk id

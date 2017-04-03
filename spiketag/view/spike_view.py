@@ -458,11 +458,9 @@ class spike_view(View):
                         '''
                         self.clear_virtual()
                         close_spkNolist = self._get_close_spks(box, tpos)
-                        intersect_spks  = np.intersect1d(list(self._selected[selected_cluster]), list(close_spkNolist))
-                            
-                        if len(intersect_spks)>0:
-                            for spkNo in intersect_spks:
-                                self._selected[selected_cluster].remove(spkNo)
+                        intersect_spks_idx = np.where(np.in1d(self._selected[selected_cluster], close_spkNolist))[0]
+                        if len(intersect_spks_idx)>0:
+                            self._selected[selected_cluster] = np.delete(self._selected[selected_cluster], intersect_spks_idx)
                         self.highlight(selected=self._selected) 
                         # self.on_select()
                         self.clu.select(self.selected_spk)

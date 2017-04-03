@@ -4,11 +4,10 @@ from scatter_2d_view import scatter_2d_view
 
 class raster_view(scatter_2d_view):
 
-    def __init__(self, fs=25e3, time_tick=1):
+    def __init__(self, time_tick=1):
         super(raster_view, self).__init__(symbol='|', marker_size=5., edge_width=1e-3)
         super(raster_view, self).attach_xaxis()
 
-        self._fs = fs
         self._time_tick = time_tick 
 
     ### ----------------------------------------------
@@ -17,6 +16,7 @@ class raster_view(scatter_2d_view):
 
     def bind(self, spktag):
         self._spktag = spktag
+        self._fs = spktag.probe.fs
 
     def set_data(self, ch, clu=None):
         self._spike_time = self._get_spike_time(ch)
@@ -24,7 +24,7 @@ class raster_view(scatter_2d_view):
         
         @self._clu.connect
         def on_select_clu(*args, **kwargs):
-            self._draw(self._clu.select_clus)
+            self._draw(self._clu.select_clus, delimit=False)
 
         @self._clu.connect
         def on_select(*args, **kwargs):
@@ -91,7 +91,7 @@ class raster_view(scatter_2d_view):
     def _get_spike_time(self, ch):
         return self._spktag.t[self._spktag.ch == ch]
 
-    def _draw(self, clus):
+    def _draw(self, clus, delimit=True):
        
         poses = None
         colors = None
@@ -110,4 +110,4 @@ class raster_view(scatter_2d_view):
                 poses = np.concatenate((poses, pos))
                 colors = np.concatenate((colors, color))
         
-        super(raster_view, self).set_data(pos=poses, colors=colors)
+        super(raster_view, self).set_data(pos=poses, colors=colors, delimit=delimit)
