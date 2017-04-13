@@ -3,7 +3,7 @@ from vispy import scene, app
 from .MyWaveVisual import MyWaveVisual
 from .color_scheme import palette
 from ..utils.utils import Picker
-
+from ..utils.cameras import YSyncCamera
 
 class Axis(scene.AxisWidget):
     """from scene.AxisWidget"""
@@ -15,11 +15,11 @@ class Axis(scene.AxisWidget):
 
     def glpos_to_time(self, gl_pos):
         '''
-        get time from the x postion of y_axis
+        get time from the x postion of x_axis
         Important: check the affine transformation in MyWaveVisual!
         '''
         xn = np.ceil((gl_pos / 0.95 + 1) * (self.npts - 1) / 2)
-        t = (xn + self._time_slice * self._time_span) / self.fs
+        t = (xn + self._start_index + self._time_slice * self._time_span) / self.fs
         return t
 
 
@@ -65,6 +65,7 @@ class Cross(object):
         self.x_axis.fs = fs
         self.x_axis._time_slice = 0
         self.x_axis._time_span = npts
+        self.x_axis._start_index = 0
         self.x_axis.freeze()
 
         self.y_axis.unfreeze()
@@ -73,6 +74,7 @@ class Cross(object):
         self.y_axis.fs = fs
         self.y_axis._time_slice = 0
         self.y_axis._time_span = npts
+        self.y_axis._start_index = 0
         self.y_axis.yscale = yscale
         self.y_axis.freeze()
 
@@ -83,6 +85,7 @@ class Cross(object):
         self.y_axis_ref._time_slice = 0
         self.y_axis_ref._time_span = npts
         self.y_axis_ref.yscale = yscale
+        self.y_axis_ref._start_index = 0
         self.y_axis_ref.freeze()
 
     def attach(self, parent):
@@ -134,7 +137,14 @@ class Cross(object):
         self.y_axis._time_slice = time_slice_no
         self.y_axis._view_changed()
 
+    def view_changed(self):
+        self.x_axis._view_changed()
+        self.y_axis._view_changed()
 
+    def start_index_changed(self, index):
+        self.x_axis._start_index = index
+        self.y_axis._start_index = index
+        self.y_axis_ref._start_index = index
 
 
 class wave_view(scene.SceneCanvas):
@@ -152,20 +162,16 @@ class wave_view(scene.SceneCanvas):
         mua_view.set_data(mua.data[:64000])
         mua_view.show()
     '''
-    def __init__(self, color=None, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
+    def __init__(self, color=None, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0, fullscreen=False):
         scene.SceneCanvas.__init__(self, keys=None)
         self.unfreeze()
+
+        self._fullscreen = fullscreen
+      
         self.grid1 = self.central_widget.add_grid(spacing=0, bgcolor='gray',
                                                  border_color='k')
-        #  TODO: For prob view
-        #  self.view1 = self.grid1.add_view(row=0, col=0, col_span=1, margin=10, bgcolor=(0, 0, 0, 1),
-                              #  border_color=(1, 0, 0))
-        #  self.view1.camera = scene.cameras.PanZoomCamera()
-        #  self.view1.camera.set_range()
-        #  self.view1.camera.interactive = False
-        self.view2 = self.grid1.add_view(row=0, col=0, col_span=36, margin=10, bgcolor=(0, 0, 0, 1),
+        self.view2 = self.grid1.add_view(row=0, col=(1 if self._fullscreen else 0), col_span=36, margin=10, bgcolor=(0, 0, 0, 1),
                               border_color=(0, 1, 0))
-
         self.view2.camera = scene.cameras.PanZoomCamera()
         self.view2.camera.set_range()
         self.cursor_color = '#0FB6B6'
@@ -193,12 +199,27 @@ class wave_view(scene.SceneCanvas):
                                  gap=self._gap_value)
 
         self.grid2 = self.view2.add_grid(spacing=0, bgcolor=(0, 0, 0, 0), border_color='k')
-
         self.cross = Cross(cursor_color=self.cursor_color)
-
         self.timer_cursor = app.Timer(connect=self.update_cursor, interval=0.01, start=False)
 
+        if self._fullscreen:
+            self.view1 = self.grid1.add_view(row=0, col=0, col_span=1, margin=10, bgcolor=(0, 0, 0, 1),
+                              border_color=(1, 0, 0))
+            self.view1.camera = scene.cameras.PanZoomCamera()
+            self.view1.camera.set_range()
 
+            self._start_index = 0
+            self.flag = 0
+            self._pagesize = 20000
+            self.location = ''
+            y_sync_cam = YSyncCamera()
+            self.view1.camera.link(y_sync_cam)
+            self.view2.camera.link(y_sync_cam)
+    
+    @property
+    def selectchs(self):
+        return self._selectchs[::-1]
+    
     def _render(self, data):
         '''
           For now,wave_visual is the best place  where store the view information,
@@ -208,12 +229,12 @@ class wave_view(scene.SceneCanvas):
         self.waves1.set_data(data)
 
         ####### get basic info from wave visual
-        npts = self.waves1.npts
-        nCh = self.waves1.nCh
+        self.npts = self.waves1.npts
+        self.nCh = self.waves1.nCh
         scale = self.waves1._scale
 
         ####### update cross #########
-        self.cross.set_params(nCh, npts, self.fs, 0, 0, scale)
+        self.cross.set_params(self.nCh, self.npts, self.fs, 0, 0, scale)
 
         ####### trigger timer ######
         self.timer_cursor.start()
@@ -221,7 +242,7 @@ class wave_view(scene.SceneCanvas):
     def set_data(self, ch, clu, time_slice=0):
         self.ch = ch
         self.clu = clu
-        self.chlist = self.spktag.probe.get_group_ch(self.ch)[::-1]
+        self.chlist = self.spktag.probe.get_chs(self.ch)[::-1]
         self.nCh = len(self.chlist)
 
         self.set_range()
@@ -238,21 +259,49 @@ class wave_view(scene.SceneCanvas):
         self.data = data
         self.spktag = spktag
         self.fs = spktag.probe.fs
-
+        self.spikes = self._array2dist(spktag)
         # just simple initialization rendering
-        self._render(data[0:200])
+        #  self._render(data[0:200])
         
         # init the cross after cross.set_param in self._render,
         # because cross.link_view need npts, but npts is dynamic changed now
+        #  self.cross.set_params(data.shape[1], data.shape[0], self.fs, 0 , 0)
+             # display the most 32 channels at first 
+        if self.data.shape[1] <= 32:
+            self._selectchs = np.arange(self.data.shape[1])
+        else:
+            self._selectchs = np.arange(32)
+        
+        if self._fullscreen:
+            self.texts = [scene.Text('', pos=(0, 0), italic=False, bold=True,
+                                 color=self.cursor_color, font_size=15, parent=self.view1.scene) for i in range(data.shape[1])]
+            self._render(data[0:self.pagesize, self.selectchs])
+            self.attach_texts()
+            self.highlight_ch()
+            self.set_range()
+        else:
+            self._render(data[0:200, self.selectchs])
+
+        # initiate the cross 
+        self.cross.set_params(data.shape[1], data.shape[0], self.fs, 0, 0)
         self.cross.attach(self.grid2)
         self.cross.link_view(self.view2)
+
+    def _array2dist(self, spktag):
+        if  getattr(spktag, 't' , None) is None and getattr(spktag, 'ch', None) is  None:
+            return None
+
+        dist = {}
+        for i in np.unique(spktag.ch):
+            dist[i] = spktag.t[spktag.ch == i]
+        return dist
 
     def locate_and_highlight(self, global_idx):
         '''
            locate the segment of wave in wave_view, and highlight all spikes within this segment 
         '''
         ###### basic info ########
-        pos = self.spktag.t[self.spktag.ch==self.ch][global_idx][0]
+        pos = self.spikes[self.ch][global_idx][0]
         
         # locate the segment and show
         locate_start = pos - self.locate_buffer if (pos - self.locate_buffer) > 0 else 0
@@ -268,6 +317,19 @@ class wave_view(scene.SceneCanvas):
             highlight_sagment = [[highlight_start,highlight_end]]
             highlight_color = np.hstack((self.palette[self.clu.global2local(i).keys()[0]],1))
             self.waves1.highlight(self.chlist-self.chlist.min(),highlight_sagment, highlight_color)
+
+    def highlight_ch(self):
+        
+        if self.spikes == None:
+            return
+
+        for idx, val in enumerate(self.selectchs):
+            t = self.spikes[val]
+            times = np.take(t, np.where((t >= self._start_index) & (t < self._start_index + self.pagesize)))[0] - self._start_index
+            #  times = np.intersect1d(np.arange(self._start_index,self._start_index + self.pagesize),self.spks[0][self.spks[1] == val]) -  self._start_index
+            if times.size > 0:
+                spks = np.column_stack((times, np.full(times.shape,idx)))
+                self.waves1.highlight_spikes(spks)
 
     @property
     def locate_buffer(self):
@@ -290,7 +352,7 @@ class wave_view(scene.SceneCanvas):
         idx_buffer = 10
         idx_start = global_idx - idx_buffer if (global_idx - idx_buffer) > 0 else 0
         idx_end = global_idx + idx_buffer
-        all_spikes = self.spktag.t[self.spktag.ch == self.ch]
+        all_spikes = self.spikes[self.ch]
         selected_spikes_pos = np.intersect1d(point_range,all_spikes[idx_start:idx_end]) 
         selected_spikes_idx = np.where(np.in1d(all_spikes,selected_spikes_pos))[0]
         return np.column_stack((selected_spikes_pos - data_range[0] - 8, selected_spikes_idx))
@@ -307,6 +369,7 @@ class wave_view(scene.SceneCanvas):
             value = 0
         self._gap_value = value
         self.waves1.set_gap(self._gap_value)
+        self.attach_texts()
         self.set_range()
 
         if value == 0:
@@ -327,6 +390,66 @@ class wave_view(scene.SceneCanvas):
     def attach(self, gui):
         self.unfreeze()
         gui.add_view(self)
+
+    def slideto(self, to):
+        if to < self.data.shape[0]:
+            self._start_index = int(to) - self.pagesize / 2
+            if self._start_index < 0:
+                self._start_index = 0
+            self._render(self.data[self._start_index:self._start_index + self.pagesize, self.selectchs])
+            self.highlight_ch()
+            self.cross.start_index_changed(self._start_index)
+            self.cross.view_changed()
+
+    def slide(self, offset):
+        tmp = self._start_index + int(offset) * 10
+
+        if tmp  >= 0 and tmp + self.pagesize < self.data.shape[0]:
+            self._start_index = tmp
+            self._render(self.data[self._start_index:self._start_index + self.pagesize, self.selectchs])
+            self.highlight_ch()
+            self.cross.start_index_changed(self._start_index)
+            self.cross.view_changed()
+        elif tmp < 0:
+            self._start_index = 0
+    
+    def select_ch(self, chs):
+        self._selectchs = chs
+        self.nCh = len(self.selectchs)
+        self._render(self.data[self._start_index:self._start_index + self.pagesize, self.selectchs])
+        self.highlight_ch()
+        self.attach_texts()
+        self.cross.start_index_changed(self._start_index)
+        self.cross.view_changed()
+
+        self.set_range()
+
+
+    def select_group(self, groups):
+        chs = np.array([],dtype='int32')
+        for g in groups:
+            chs = np.hstack((chs,self.spktag.probe.get_chs(g)))
+        self._selectchs = np.unique(chs)
+        self.nCh = len(self.selectchs)
+        self._render(self.data[self._start_index:self._start_index + self.pagesize, self.selectchs])
+        self.highlight_ch()
+        self.attach_texts()
+        self.cross.start_index_changed(self._start_index)
+        self.cross.view_changed()
+
+        self.set_range()
+
+    def attach_texts(self):
+        
+        for t in self.texts:
+            t.text  = ''
+
+        y = -1 + 2 * (np.arange(len(self.selectchs)) * self.gap_value + 0.5) / len(self.selectchs) 
+        for idx, val in enumerate(self.selectchs):
+            t = self.texts[idx]
+            t.text = str(val)
+            t.pos = (0,y[idx])
+  
 
     def update_cursor(self, ev):
         pos = (self.cross.y_axis.pos[0], 0)
@@ -374,8 +497,40 @@ class wave_view(scene.SceneCanvas):
         #     print 'next page'
         if event.text == 'r':
             self.view2.camera.reset()
-        if event.text == 'c':
+        elif event.text == 'c':
             self.cross.flip_state()
+        elif event.text.isdigit():
+            self.location += event.text
+        elif event.text == 'g':
+            if self.location.isdigit():
+                second = int(self.location)
+                self.slideto(second * self.fs)
+            self.location = ''
+        elif event.text == 'h' or getattr(event.key, 'name', None) == 'Left':
+            self.slide(-30)        
+        elif event.text == 'l' or getattr(event.key, 'name', None) == 'Right':
+            self.slide(30)
+        elif event.text == '=':
+            location = self._start_index + self.pagesize / 2
+            self.pagesize += int(self.pagesize * 0.01)
+            self.slideto(location)
+        elif event.text == '-':
+            location = self._start_index + self.pagesize / 2
+            self.pagesize -= int(self.pagesize * 0.01)
+            self.slideto(location)
+    
+    @property
+    def pagesize(self):
+        return self._pagesize
+
+    @pagesize.setter
+    def pagesize(self, val):
+        if val <= 1000:
+            self._pagesize = 1000
+        elif val >= 60000:
+            self._pagesize = 60000
+        else:
+           self._pagesize = val
 
     def on_mouse_move(self, event):
         modifiers = event.modifiers
@@ -386,6 +541,8 @@ class wave_view(scene.SceneCanvas):
                 self.cross.ref_enable(p2)
             if modifiers[0].name == 'Alt':
                 self._picker.cast_net(event.pos,ptype='rectangle')
+            if modifiers[0].name == 'Control' and self._fullscreen:
+                self.slide(event.pos[0]-self.last_x)
 
         elif self.cross.cross_state:
             if event.press_event is None:
@@ -404,6 +561,8 @@ class wave_view(scene.SceneCanvas):
         if modifiers is not ():
             if modifiers[0].name == 'Alt':
                 self._picker.origin_point(e.pos)
+            if modifiers[0].name == 'Control':
+                self.last_x = e.pos[0]
 
     def on_mouse_release(self,e):
         modifiers = e.modifiers

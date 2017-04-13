@@ -4,11 +4,12 @@ from ..view import *
 import PyQt4
 from PyQt4 import QtGui
 import os
+from ..utils.utils import get_config_dir
 
 class MainView(object):
 	"""docstring for View"""
 	def __init__(self, n_group):
-                self.gui = gui.GUI(config_dir=self.get_config_dir())
+                self.gui = gui.GUI(name='spiketag', config_dir=get_config_dir())
 		self.param_view = param_widget(n_group)
 		self.spk_view = spike_view()
 		self.scatter_view = scatter_3d_view()
@@ -55,22 +56,4 @@ class MainView(object):
 		self.gui.show()
                 # the widget of phy can not show by GUI
                 self.cluster_view.show()
-
-        def get_config_dir(self):
-            '''
-              TODO
-              get the template gui state config dir, this is for temparory now.
-            '''
-            
-            path = ''
-            for fn in os.getcwd().split(os.path.sep):
-                if len(fn) == 0:
-                    path = os.path.join(os.path.sep, path)
-                else:
-                    path = os.path.join(path, fn)
-    
-                if fn == 'spiketag':
-                    break
-
-            return  os.path.join(path, 'spiketag/res')
 

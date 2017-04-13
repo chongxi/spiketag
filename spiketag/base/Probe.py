@@ -72,10 +72,17 @@ class Probe(object):
         '''
         return self._len_group
 
-    def get_group_ch(self):
+    def get_group(self, ch):
         ''' 
             abstract method, sub class need to implement it:
             get the group which the ch be belonged
+        '''
+        pass
+
+    def get_chs(self, group):
+        '''
+            abstract method, sub class need to implement it:
+            get the chs which group has
         '''
         pass
     
@@ -103,7 +110,7 @@ class LinearProbe(Probe):
     #        public method 
     # -------------------------------
 
-    def get_group_ch(self, ch):
+    def get_group(self, ch):
         chmax = self._n_ch - 1
         start = ch - self._ch_span # if ch-span>=0 else 0
         end   = ch + self._ch_span # if ch+span<chmax else chmax
@@ -111,6 +118,9 @@ class LinearProbe(Probe):
         near_ch[near_ch>chmax] = -1
         near_ch[near_ch<0] = -1
         return near_ch[near_ch>=0]
+
+    def get_chs(self, group):
+        return self.get_group(group)
 
 class TetrodeProbe(Probe):
     ''' tetrode probe
@@ -130,11 +140,14 @@ class TetrodeProbe(Probe):
     #        public method 
     # -------------------------------
 
-    def get_group_ch(self, ch):
-
+    def get_group(self, ch):
         assert ch >= 0 and ch < self._n_ch
         # tetrode: 4
         t = ch/4*4
         return np.arange(t,t + 4)
 
-        
+    def get_chs(self, group):
+        if group >= self._n_group:
+            return np.array([])
+        else:
+            return np.arange(group*4, group*4+4)
