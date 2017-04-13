@@ -11,4 +11,5 @@ from .scatter_2d_view import scatter_2d_view
 from .raster_view import raster_view
 from .amplitude_view import amplitude_view
 from .firing_rate_view import firing_rate_view
+from .trace_view import trace_view
 

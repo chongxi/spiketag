@@ -56,9 +56,9 @@ class bload(object):
         _scale = np.float32(2**binpoint)
         return ne.evaluate('data/_scale')
 
-    def to_threshold(self, k=4.5):
+    def to_threshold(self, data, k=4.5):
         # QQ threshold for spike detection
-        data = self.asarray()[::20,:]
+        data = data[::20,:]
         thres_arr = -np.median(ne.evaluate('abs(data)*k/0.675'), axis=0)
         return thres_arr
 
