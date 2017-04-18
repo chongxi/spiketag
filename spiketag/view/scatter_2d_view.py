@@ -60,11 +60,14 @@ class scatter_2d_view(scene.SceneCanvas):
         self._colors[:,-1] = self._transparency
         self._colour()
 
-    def set_data(self, pos=None, colors=None):
+    def set_data(self, pos=None, colors=None, delimit=True):
         self._pos = pos
         self._colors = colors
         
         self._render()
+
+        if delimit:
+            self._set_range()
     
     def attach_xaxis(self, axis_color=(0,1,1,0.8)):
         '''
@@ -192,10 +195,14 @@ class scatter_2d_view(scene.SceneCanvas):
         self._scatter._vbo.set_data(self._scatter._data)
         self._scatter.update()
 
+    def _set_range(self):
+        # calculate y bound
+        y_bound = (self._pos[:,1].min(), self._pos[:,1].max())
+        self._view.camera.set_range(y = y_bound)
+
     def _render(self):
         self._cache_mask = np.array([])
         self._colors[:,-1] = self._transparency
         self._cache_color = self._colors.copy()
         self._scatter.set_data(self._pos, symbol=self._symbol, size=self._marker_size, edge_color=self._colors, face_color=self._colors, edge_width=self._edge_width)   
-        self._view.camera.set_range()
 

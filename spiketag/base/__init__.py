@@ -4,7 +4,7 @@ from .FET import FET
 from .CLU import CLU
 from .SPKTAG import SPKTAG
 from .Binload import bload
-
+from .Probe import ProbeFactory  
 
 #######################################################################
 # This is just a patch for multiprocessing 

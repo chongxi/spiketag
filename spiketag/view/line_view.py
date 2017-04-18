@@ -55,9 +55,6 @@ class line_view(scene.SceneCanvas):
         self.xaxis.stretch = (0.9, 0.1)
         self.grid.add_widget(self.xaxis, row=1, col=1)
 
-        self.view.camera = 'panzoom'
-        self.camera = self.view.camera
-
         self.xaxis.link_view(self.view)
         self.yaxis.link_view(self.view)
 
@@ -88,7 +85,7 @@ class line_view(scene.SceneCanvas):
             self.view.add(line)
             self.lines.append(line)
 
-        self.camera.set_range()
+        self.view.camera.set_range()
 
         # self.line.set_data(pos=pos, **kwargs)
         # recompute the bounds
@@ -112,3 +109,4 @@ class line_view(scene.SceneCanvas):
     def on_key_press(self, e):
         if e.text=='r':
             self.view.camera.reset()
+            self.view.camera.set_range()

@@ -5,7 +5,7 @@ from time import time
 from vispy import scene, app
 import numpy as np
 from matplotlib import path
-
+import os
 
 #------------------------------------------------------------------------------
 # Simple Timer for performance test
@@ -227,7 +227,7 @@ class Picker(object):
     """
     def cast_net(self,pos,ptype='rectangle'):
         if not self._trigger:
-            raise RuntimeError('please do origin_point first!')
+            return 
         
         if ptype == 'rectangle':
             self._cast_rectangle(pos)
@@ -252,8 +252,8 @@ class Picker(object):
     """
     def pick(self,samples):
         if not self._trigger:
-            raise RuntimeError('please do origin_point first!')
-        
+            return np.array([])
+
         mask = np.array([])
         if len(self._vertices):
             data = self._mapping.map(samples[:, :3])[:, :2]
@@ -305,3 +305,21 @@ class Picker(object):
         rectangle = scene.visuals.Rectangle(height=height,width=width)
         radius = np.array([.0,.0,.0,.0])
         return rectangle._generate_vertices(center=center,radius=radius,height=height,width=width)[1:, ..., :2]
+
+def get_config_dir():
+    '''
+        get the template gui state config dir, this is for temparory now.
+    '''
+            
+    path = ''
+    for fn in os.getcwd().split(os.path.sep):
+        if len(fn) == 0:
+            path = os.path.join(os.path.sep, path)
+        else:
+            path = os.path.join(path, fn)
+    
+        if fn == 'spiketag':
+            break
+
+    return  os.path.join(path, 'spiketag/res')
+
