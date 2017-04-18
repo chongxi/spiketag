@@ -18,7 +18,7 @@ class channel_view(Table):
         @self.connect_
         def on_select(ids):
             if len(ids) > 0:
-                self.wave_view.select_ch(ids)
+                self.wave_view.select_ch(np.array(ids))
 
         self.set_rows(self.channels)
 

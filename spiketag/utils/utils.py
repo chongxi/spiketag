@@ -5,6 +5,7 @@ from time import time
 from vispy import scene, app
 import numpy as np
 from matplotlib import path
+import spiketag
 import os
 
 #------------------------------------------------------------------------------
@@ -310,16 +311,5 @@ def get_config_dir():
     '''
         get the template gui state config dir, this is for temparory now.
     '''
-            
-    path = ''
-    for fn in os.getcwd().split(os.path.sep):
-        if len(fn) == 0:
-            path = os.path.join(os.path.sep, path)
-        else:
-            path = os.path.join(path, fn)
-    
-        if fn == 'spiketag':
-            break
-
-    return  os.path.join(path, 'spiketag/res')
+    return spiketag.__path__[0] + os.path.sep + 'res' 
 

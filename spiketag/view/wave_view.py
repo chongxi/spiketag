@@ -273,8 +273,8 @@ class wave_view(scene.SceneCanvas):
             self._selectchs = np.arange(32)
         
         if self._fullscreen:
-            self.texts = [scene.Text('', pos=(0, 0), italic=False, bold=True,
-                                 color=self.cursor_color, font_size=15, parent=self.view1.scene) for i in range(data.shape[1])]
+            self.ch_no = scene.Text('', pos=(0,0),italic=False, bold=True,
+                                 color=self.cursor_color, font_size=15, parent=self.view1.scene) 
             self._render(data[0:self.pagesize, self.selectchs])
             self.attach_texts()
             self.highlight_ch()
@@ -283,7 +283,6 @@ class wave_view(scene.SceneCanvas):
             self._render(data[0:200, self.selectchs])
 
         # initiate the cross 
-        self.cross.set_params(data.shape[1], data.shape[0], self.fs, 0, 0)
         self.cross.attach(self.grid2)
         self.cross.link_view(self.view2)
 
@@ -441,15 +440,13 @@ class wave_view(scene.SceneCanvas):
 
     def attach_texts(self):
         
-        for t in self.texts:
-            t.text  = ''
-
         y = -1 + 2 * (np.arange(len(self.selectchs)) * self.gap_value + 0.5) / len(self.selectchs) 
-        for idx, val in enumerate(self.selectchs):
-            t = self.texts[idx]
-            t.text = str(val)
-            t.pos = (0,y[idx])
-  
+        poses = np.column_stack((np.zeros(len(self.selectchs)),y))
+        texts = [ str(i) for i in self.selectchs.tolist()] 
+        
+        self.ch_no.text = texts
+        self.ch_no.pos = poses
+
 
     def update_cursor(self, ev):
         pos = (self.cross.y_axis.pos[0], 0)
@@ -512,11 +509,11 @@ class wave_view(scene.SceneCanvas):
             self.slide(30)
         elif event.text == '=':
             location = self._start_index + self.pagesize / 2
-            self.pagesize += int(self.pagesize * 0.01)
+            self.pagesize += int(self.pagesize * 0.1)
             self.slideto(location)
         elif event.text == '-':
             location = self._start_index + self.pagesize / 2
-            self.pagesize -= int(self.pagesize * 0.01)
+            self.pagesize -= int(self.pagesize * 0.1)
             self.slideto(location)
     
     @property
@@ -527,8 +524,8 @@ class wave_view(scene.SceneCanvas):
     def pagesize(self, val):
         if val <= 1000:
             self._pagesize = 1000
-        elif val >= 60000:
-            self._pagesize = 60000
+        elif val >= 500000:
+            self._pagesize = 500000
         else:
            self._pagesize = val
 
