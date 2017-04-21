@@ -13,7 +13,7 @@ class MainView(object):
 		self.param_view = param_widget(n_group)
 		self.spk_view = spike_view()
 		self.scatter_view = scatter_3d_view()
-                self.wave_view = wave_view()
+                self.wave_view = wave_view(fullscreen=False)
                 self.correlogram_view = correlogram_view()
                 self.cluster_view = cluster_view()
                 self.amplitude_view = amplitude_view()
