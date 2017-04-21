@@ -162,7 +162,7 @@ class wave_view(scene.SceneCanvas):
         mua_view.set_data(mua.data[:64000])
         mua_view.show()
     '''
-    def __init__(self, color=None, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0, fullscreen=False):
+    def __init__(self, data=None, fs=25e3, spks=None, color=None, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0, fullscreen=True):
         scene.SceneCanvas.__init__(self, keys=None)
         self.unfreeze()
 
@@ -192,7 +192,10 @@ class wave_view(scene.SceneCanvas):
         self._gap_value = gap_value
         self._locate_buffer = 200
         self._picker = Picker(self.scene, self.view2.camera.transform)
-
+        self.data = data
+        self.fs = fs
+        self.spikes = self._spkarray2dist(spks) 
+        
         wav_visual = scene.visuals.create_visual_node(MyWaveVisual)
         self.waves1 = wav_visual(ls=ls, parent=self.view2.scene, 
                                  color=color,
@@ -215,7 +218,18 @@ class wave_view(scene.SceneCanvas):
             y_sync_cam = YSyncCamera()
             self.view1.camera.link(y_sync_cam)
             self.view2.camera.link(y_sync_cam)
-    
+
+            if data is not None:
+                self.ch_no = scene.Text('', pos=(0,0),italic=False, bold=True,
+                                 color=self.cursor_color, font_size=15, parent=self.view1.scene) 
+                self._selectchs = np.arange(self.data.shape[1])
+                self._render(data[0:self.pagesize, self.selectchs])
+                self.attach_texts()
+                self.highlight_ch()
+                self.set_range()
+                self.cross.attach(self.grid2)
+                self.cross.link_view(self.view2)
+  
     @property
     def selectchs(self):
         return self._selectchs[::-1]
@@ -295,6 +309,15 @@ class wave_view(scene.SceneCanvas):
             dist[i] = spktag.t[spktag.ch == i]
         return dist
 
+    def _spkarray2dist(self, spks):
+        if spks is None:
+            return None
+
+        dist = {}
+        for i in np.unique(spks[1]):
+            dist[i] = spks[0][spks[1] == i]
+        return dist
+
     def locate_and_highlight(self, global_idx):
         '''
            locate the segment of wave in wave_view, and highlight all spikes within this segment 
@@ -319,7 +342,7 @@ class wave_view(scene.SceneCanvas):
 
     def highlight_ch(self):
         
-        if self.spikes == None:
+        if getattr(self, 'spikes', None) is None or self.spikes is None:
             return
 
         for idx, val in enumerate(self.selectchs):
