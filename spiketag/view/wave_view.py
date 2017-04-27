@@ -351,7 +351,7 @@ class wave_view(scene.SceneCanvas):
                 times = np.take(t, np.where((t >= self._start_index) & (t < self._start_index + self.pagesize)))[0] - self._start_index
                 #  times = np.intersect1d(np.arange(self._start_index,self._start_index + self.pagesize),self.spks[0][self.spks[1] == val]) -  self._start_index
                 if times.size > 0:
-                    spks = np.column_stack((times, np.full(times.shape,idx)))
+                    spks = np.column_stack((times, np.full(times.shape,idx, dtype=np.int64)))
                     self.waves1.highlight_spikes(spks)
 
     @property
