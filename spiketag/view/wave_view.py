@@ -346,12 +346,13 @@ class wave_view(scene.SceneCanvas):
             return
 
         for idx, val in enumerate(self.selectchs):
-            t = self.spikes[val]
-            times = np.take(t, np.where((t >= self._start_index) & (t < self._start_index + self.pagesize)))[0] - self._start_index
-            #  times = np.intersect1d(np.arange(self._start_index,self._start_index + self.pagesize),self.spks[0][self.spks[1] == val]) -  self._start_index
-            if times.size > 0:
-                spks = np.column_stack((times, np.full(times.shape,idx)))
-                self.waves1.highlight_spikes(spks)
+            t = self.spikes.get(val, None)
+            if t is not None:
+                times = np.take(t, np.where((t >= self._start_index) & (t < self._start_index + self.pagesize)))[0] - self._start_index
+                #  times = np.intersect1d(np.arange(self._start_index,self._start_index + self.pagesize),self.spks[0][self.spks[1] == val]) -  self._start_index
+                if times.size > 0:
+                    spks = np.column_stack((times, np.full(times.shape,idx)))
+                    self.waves1.highlight_spikes(spks)
 
     @property
     def locate_buffer(self):
