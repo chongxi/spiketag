@@ -223,7 +223,7 @@ class MyWaveVisual(visuals.Visual):
 
     def set_data(self, data):
         
-        self.data = data
+        self.data = data.astype('float32')
         if self.data.ndim == 1:
             self.data = self.data.reshape(-1,1)
      
