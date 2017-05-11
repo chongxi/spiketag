@@ -45,41 +45,32 @@ class offset(object):
 
 
 
-
 class channel_hash(object):
     """
     ch ==> hash_code ==> channel No around ch
     this hash_code is stored in ch_unigroup[ch]
     In this class: the ch_unigroup[ch] is write and read intuitively as python convention
     In FPGA:       the ch_unigroup[ch] is organized as a memory structure in bram_thres module in Xike
-    Currently, the base address shift is 256, because the first 256 slot is used by threshold
+    Currently, the base address shift is 128, because the first 128 slot is used by threshold
     """
     def __init__(self, nCh=32, base_address=256):
         self.nCh  = nCh
         self.base = base_address
         self.ch_unigroup = np.zeros(nCh)
 
-    def enable(self, flag):
-        if flag is True:
-            write_mem_16(self.enable_reg_addres,0b0001)
-        elif flag is False:
-            write_mem_16(self.enable_reg_addres,0b0000)
-
     def __setitem__(self, chNo, ch_group):
         bankNo, ch_nn0, ch_nn1, ch_nn2 = ch_group
-        x = struct.unpack('<i', struct.pack('4b', 
+        print bankNo, ch_nn0, ch_nn1, ch_nn2
+        x = struct.unpack('<I', struct.pack('4B', 
                                             bankNo, 
                                             ch_nn0, ch_nn1, ch_nn2))[0]
         ch = chNo+self.base
-        write_thr_32(ch, x, dtype='<i4', binpoint=0) 
+        write_thr_32(ch, x, dtype='<I4', binpoint=0) 
 
     def __getitem__(self, chNo):
         ch = chNo+self.base
-        x = read_thr_32(ch, dtype='<i', binpoint=0)
- 
-
-
-
+        x = read_thr_32(ch, dtype='<I', binpoint=0)
+        return struct.unpack('4B', struct.pack('<I', x))
 
 
 
