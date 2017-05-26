@@ -3,12 +3,13 @@ from .View import MainView
 from ..view import scatter_3d_view
 from ..base import CLU
 import numpy as np
+import logging
 
 class Sorter(object):
 	"""docstring for Sorter"""
 	def __init__(self, *args, **kwargs):
 		self.model = MainModel(*args, **kwargs)
-		self.view  = MainView(self.model.spktag.probe.n_group)
+		self.view  = MainView(self.model.spktag.probe.n_group, self.model.spktag.probe.get_chs)
 		self.view.param_view.signal_ch_changed.connect(self.update_ch)
 		self.view.param_view.signal_get_fet.connect(self.update_fet)
 		self.view.param_view.signal_recluster.connect(self.update_clu)
@@ -33,10 +34,13 @@ class Sorter(object):
 		self.apply_to_all = self.view.param_view._apply_to_all
 
 	def set_model(self, model):
-		ch = self.ch
+		ch = self.model.spktag.probe.fetch_core_ch(self.ch)
 		if model is not None:
 			self.model = model
-		if self.showmua is False:
+	        if ch not in self.model.clu:
+                    # TODO: find some way to popup this information
+                    logging.warn(" channel {} has no spikes! ".format(ch))
+                elif self.showmua is False:
 			self.view.set_data(ch=ch, spk=self.model.spk[ch], 
 				               fet=self.model.fet[ch], 
 				               clu=self.model.clu[ch])

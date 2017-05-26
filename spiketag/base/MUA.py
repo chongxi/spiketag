@@ -17,54 +17,18 @@ def _to_spk(data, pos, chlist, spklen=19, prelen=8):
     return spk
 
 @jit(cache=True, nopython=True)
-def peakdet(v, delta, x = None):
-    
-    # initiate with .1 because numba doesn't support empty list
-    maxtab = [(.1,.1)]
-    mintab = [(.1,.1)]
-    if x is None:
-        x = np.arange(len(v))
-
-    mn, mx = np.Inf, -np.Inf
-    mnpos, mxpos = np.NaN, np.NaN
-    lookformax = True
-    for i in np.arange(len(v)):
-        this = v[i]
-        if this > mx:
-            mx = this
-            mxpos = x[i]
-        if this < mn:
-            mn = this
-            mnpos = x[i]
-        if lookformax:
-            if this < mx-delta:
-                maxtab.append((mxpos, mx))
-                mn = this
-                mnpos = x[i]
-                lookformax = False
-        else:
-            if this > mn+delta:
-                mintab.append((mnpos, mn))
-                mx = this
-                mxpos = x[i]
-                lookformax = True
-    return np.array(maxtab[1:]), np.array(mintab[1:])	
-
-#  @jit(nopython=True)
-#  def detect_spk(data, threshholds):
-    
-    #  t = np.array([1], dtype=np.int64)
-    #  ch = np.array([1],dtype=np.int32)
-  
-    #  for i in range(data.shape[1]):
-        #  _, mintab = peakdet(data[:,i],.3)    
-        #  spks = mintab[mintab[:,1] < threshholds[i]].astype(np.int64)
-        #  t = np.hstack((t,spks[:,0]))
-        #  ch = np.hstack((ch,np.full(spks[:,0].shape,i,dtype=np.int32)))
-        #  print 'deteck_spk channel {} finished at {}'.format(i, time.ctime())
-    #  print 'detect_spk ends at {}'.format(time.ctime())
-
-    #  return np.array([t[1:], ch[1:]])
+def _broaden_pivotal(origin_pivotal):
+    '''
+        Only for tetrode.
+        The origin pivotal is grouped, but when do sorting, should ungroup the pivotal, the
+        time at every channel is aligned by grouped pivotal value.
+    '''
+    broadening = np.hstack((origin_pivotal, origin_pivotal, origin_pivotal, origin_pivotal))
+    for i in range(origin_pivotal.shape[1]):
+        chs = np.arange(origin_pivotal[1, i]/4*4, origin_pivotal[1, i]/4*4+4)
+        for idx, val in enumerate(chs):
+            broadening[1, (idx*origin_pivotal.shape[1] + i)] = val
+    return broadening
 
 class MUA():
     def __init__(self, filename, probe, numbytes=4, binary_radix=14):
@@ -87,8 +51,11 @@ class MUA():
         spk_meta = np.fromfile(filename+'.spk', dtype='<i4')
         self.pivotal_pos = spk_meta.reshape(-1,2).T
 
+        if self.probe.type == 'tetrode':
+            self.pivotal_pos = _broaden_pivotal(self.pivotal_pos)
+
     def tospk(self):
-        self.ch_hash = np.asarray([self.probe.get_group_ch(ch) 
+        self.ch_hash = np.asarray([self.probe.get_group(ch) 
                                                 for ch in range(self.nCh)])
         spkdict = {}
         for ch in range(self.nCh):
@@ -105,7 +72,9 @@ class MUA():
         # 1. dump spikes file (binary)
         piv = self.pivotal_pos.T
         nspk = self.pivotal_pos.shape[1]
-        rows = np.arange(-10,15).reshape(1,-1) + piv[:,0].reshape(-1,1)
+        # the reason adding mod operation here is if the spike is in the very end ,i.e: within 15 offset to end 
+        # point, this will make self.data[rows, :] out of bound.
+        rows = (np.arange(-10,15).reshape(1,-1) + piv[:,0].reshape(-1,1)) % self.data.shape[0]
         cols = piv[:,1].reshape(-1,1)
         full_spk = self.data[rows, :]
         filename = os.path.dirname(self.filename)+'/.'+os.path.basename(self.filename)+'.spkfull'
@@ -150,27 +119,3 @@ class MUA():
     def remove_high_corr_noise(self, corr_cutoff=0.95):
         nid = self.get_nid(corr_cutoff)
         self.pivotal_pos = np.delete(self.pivotal_pos, nid, axis=1)
-
-
-    def detect_spks(self):
-        '''
-            detect spikes by peakdet and threshhold. (channel by channel)
-            
-            return 
-            -------
-            [0],t  : array-like
-                the time of spikes
-            [1],ch : array-like
-                the channel number of each spikes. so len(t) == len(ch)
-        '''
-        threshholds = self.bf.to_threshold(self.data)
-        t = np.array([], dtype=np.int64)
-        ch = np.array([], dtype=np.int32) 
-  
-        for i in range(self.data.shape[1]):
-            _, mintab = peakdet(self.data[:,i], .3)    
-            spks = mintab[mintab[:,1] < threshholds[i]].astype(np.int64)
-            t = np.hstack((t, spks[:,0]))
-            ch = np.hstack((ch, np.full(spks[:,0].shape, i)))
-        
-        return np.array([t,ch]) 

@@ -150,17 +150,17 @@ class Cross(object):
 class wave_view(scene.SceneCanvas):
 
     '''
-    Example1(Amplitude View): Show single Trace as dots with x,y axis tick:
-        mua_view = wave_view()
-        mua_view.view2.camera.set_range(x=[-1,1],y=[-0.9,0.5])
-        mua_view.cross.enable_tick(axis=1)  # enable y axis tick
-        mua_view.set_data(mua.data[:64000,26], ls='.')
-        mua_view.show()
-    
-    Example2(Multi-trace View): show all Trace with x axis:
-        mua_view = wave_view()
-        mua_view.set_data(mua.data[:64000])
-        mua_view.show()
+    Example1: show trace without spikes
+        wview = wave_view(x[:64000, 0:32], fs=fs, ncols=1)
+        wview.show()
+
+    Example2: show trace with spikes, spikes is an array-like, i.e:
+        
+        _spks = array([[      24,       25,       90, ..., 20029531, 20029562, 20029607],
+               [       9,       16,       12, ...,       31,       25,       25]], dtype=int32)
+
+        wview = wave_view(x[:64000, 0:32], spks=_spks)
+        wview.show()
     '''
     def __init__(self, data=None, fs=25e3, spks=None, color=None, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0, fullscreen=True):
         scene.SceneCanvas.__init__(self, keys=None)
@@ -222,7 +222,11 @@ class wave_view(scene.SceneCanvas):
             if data is not None:
                 self.ch_no = scene.Text('', pos=(0,0),italic=False, bold=True,
                                  color=self.cursor_color, font_size=15, parent=self.view1.scene) 
-                self._selectchs = np.arange(self.data.shape[1])
+                # display maximal the first 32 channels
+                if self.data.shape[1] <= 32:
+                    self._selectchs = np.arange(self.data.shape[1])
+                else:
+                    self._selectchs = np.arange(32)
                 self._render(data[0:self.pagesize, self.selectchs])
                 self.attach_texts()
                 self.highlight_ch()
@@ -256,7 +260,7 @@ class wave_view(scene.SceneCanvas):
     def set_data(self, ch, clu, time_slice=0):
         self.ch = ch
         self.clu = clu
-        self.chlist = self.spktag.probe.get_chs(self.ch)[::-1]
+        self.chlist = self.spktag.probe.get_group(self.ch)[::-1]
         self.nCh = len(self.chlist)
 
         self.set_range()

@@ -2,11 +2,48 @@ import numpy as np
 import numexpr as ne
 import os
 import mmap
+from numba import jit
+from ..utils import Timer 
 
 def memory_map(filename, access=mmap.ACCESS_WRITE):
     size = os.path.getsize(filename)
     fd = os.open(filename, os.O_RDWR)
     return mmap.mmap(fd, size, access=access)
+
+@jit(cache=True, nopython=True)
+def peakdet(v, delta, x = None):
+    
+    # initiate with .1 because numba doesn't support empty list
+    maxtab = [(.1,.1)]
+    mintab = [(.1,.1)]
+    if x is None:
+        x = np.arange(len(v))
+
+    mn, mx = np.Inf, -np.Inf
+    mnpos, mxpos = np.NaN, np.NaN
+    lookformax = True
+    for i in np.arange(len(v)):
+        this = v[i]
+        if this > mx:
+            mx = this
+            mxpos = x[i]
+        if this < mn:
+            mn = this
+            mnpos = x[i]
+        if lookformax:
+            if this < mx-delta:
+                maxtab.append((mxpos, mx))
+                mn = this
+                mnpos = x[i]
+                lookformax = False
+        else:
+            if this > mn+delta:
+                mintab.append((mnpos, mn))
+                mx = this
+                mxpos = x[i]
+                lookformax = True
+    return np.array(maxtab[1:]), np.array(mintab[1:])	
+
 
 class bload(object):
     '''
@@ -62,3 +99,31 @@ class bload(object):
         thres_arr = -np.median(ne.evaluate('abs(data)*k/0.675'), axis=0)
         return thres_arr
 
+    def detect_spks(self, delta=.3):
+        '''
+            detect spikes by peakdet and threshhold. (channel by channel)
+            
+            return 
+            -------
+            [0],t  : array-like
+                the time of spikes
+            [1],ch : array-like
+                the channel number of each spikes. so len(t) == len(ch)
+        '''
+        with Timer('covert to data'):
+            data = self.asarray()
+        
+        with Timer('cal threshholds'):
+            threshholds = self.to_threshold(data)
+        
+        t = np.array([], dtype=np.int64)
+        ch = np.array([], dtype=np.int32) 
+  
+        for i in range(data.shape[1]):
+            with Timer('cal peakdet for ' + str(i)):
+                _, mintab = peakdet(data[:,i],delta)    
+            spks = mintab[mintab[:,1] < threshholds[i]].astype(np.int64)
+            t = np.hstack((t, spks[:,0]))
+            ch = np.hstack((ch, np.full(spks[:,0].shape, i, dtype=np.int64)))
+
+        return np.array([t, ch])

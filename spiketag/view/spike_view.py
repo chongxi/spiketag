@@ -27,17 +27,23 @@ class spike_view(View):
     def attach(self, gui):
         gui.add_view(self)
 
-    @staticmethod
-    def _affine_transform(x):
+    def _affine_transform(self, x):
         # important!, this map the spk to view space through a affine transformation: y = ax + b
         # self.y = self._affine_transform(self.spk.transpose(2,0,1).ravel())
-        # this (a,b) gives a plot data_bounds = (-2, -2000, 2, 1000)
-        # TODO: automatically calculate from data_bounds (-2000,1000) -> (-1,1) to (a,b)
         # that gives the affine transformation y = ax + b
-        a = 1/1500.0
-        b = 1/3.0
+        a,b = self._get_affine_params(x.min(), x.max())
         y = a*x + b
         return y
+
+    def _get_affine_params(self, min, max):
+        '''
+            get the affine param which transfer [min, max] to [-1, 1]
+        '''
+        a = np.ones((2,2), dtype=np.int32)
+        a[0,0], a[1,0] = min, max
+        b = np.array([-1,1])
+        r = np.linalg.solve(a,b)
+        return r[0], r[1]
 
     def _get_data(self, data_bound):
         new_data_list=[]

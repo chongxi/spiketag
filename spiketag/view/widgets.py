@@ -25,8 +25,10 @@ class param_widget(QtGui.QWidget):
     signal_apply_to_all   = QtCore.pyqtSignal(name='apply2all')
     signal_wave_view_zoom = QtCore.pyqtSignal(name='zoom') 
     
-    def __init__(self, n_group, parent=None):
+    def __init__(self, n_group, group2chs, parent=None):
         super(param_widget, self).__init__(parent)
+
+        self.group2chs = group2chs
 
         l_fet_method = QtGui.QLabel("feature")
         self.fet_method = list(['pca', 'weighted-pca', 'ica', 'weighted-ica', 'peak'])
@@ -48,7 +50,7 @@ class param_widget(QtGui.QWidget):
         self.clu_combo.addItems(self.clu_method)
         self.clu_combo.currentIndexChanged.connect(self.update_param)
 
-        l_ch = QtGui.QLabel("Channel")
+        self.l_ch = QtGui.QLabel("group: chs" + str(self.group2chs(0)))
         self.ch = QtGui.QSpinBox()
         self.ch.setMinimum(0)
         self.ch.setMaximum(n_group - 1)
@@ -92,7 +94,7 @@ class param_widget(QtGui.QWidget):
         gbox.addWidget(self.fet_No, 1, 1)
         gbox.addWidget(l_clu_method, 2, 0)
         gbox.addWidget(self.clu_combo, 2, 1)
-        gbox.addWidget(l_ch, 3, 0)
+        gbox.addWidget(self.l_ch, 3, 0)
         gbox.addWidget(self.ch, 3, 1)
         gbox.addWidget(self.clu_param_text, 4, 0)
         gbox.addWidget(self.recluster_btn, 5, 0)
@@ -111,6 +113,7 @@ class param_widget(QtGui.QWidget):
 
 
     def update_ch(self, option):
+        self.l_ch.setText('group: chs' + str(self.group2chs(self.ch.value())))
         self.signal_ch_changed.emit()
 
     def get_fet(self, option):

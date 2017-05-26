@@ -86,6 +86,13 @@ class Probe(object):
         '''
         pass
     
+    def fetch_core_ch(self, group):
+        '''
+            abstract method, sub class need to implement it:
+            get the most important ch within group
+        '''
+        pass
+    
 class LinearProbe(Probe):
     ''' linear probe
     '''
@@ -117,10 +124,15 @@ class LinearProbe(Probe):
         near_ch = np.arange(start, end+1, 1)
         near_ch[near_ch>chmax] = -1
         near_ch[near_ch<0] = -1
-        return near_ch[near_ch>=0]
+        return near_ch
 
     def get_chs(self, group):
-        return self.get_group(group)
+        near_ch = self.get_group(group)
+        return near_ch[near_ch >= 0]
+
+    def fetch_core_ch(self, group):
+        chs = self.get_group(group)
+        return chs[len(chs)/2]
 
 class TetrodeProbe(Probe):
     ''' tetrode probe
@@ -151,3 +163,6 @@ class TetrodeProbe(Probe):
             return np.array([])
         else:
             return np.arange(group*4, group*4+4)
+
+    def fetch_core_ch(self, group):
+        return self.get_chs(group)[0]

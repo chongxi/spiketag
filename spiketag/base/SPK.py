@@ -26,15 +26,11 @@ class SPK():
 
     def weight_channel_saw(self, chlist, a=None, p=None):
         n = len(chlist)
-        if n % 2 == 1:
-            if a is None: # a is max value of saw
-                a = float(n)/2 
-            if p is None:
-                p = n/2   # p is the half period of entire saw
-            return (a/p) * (p - abs(chlist % (2*p) - p) ) + 1
-        else:
-            # for tetrode probe , weights are equal
-            return np.ones(n) 
+        if a is None: # a is max value of saw
+            a = float(n)/2 
+        if p is None:
+            p = n/2   # p is the half period of entire saw
+        return (a/p) * (p - abs(chlist % (2*p) - p) ) + 1
 
     def __getitem__(self,i):
         return self.spk[i]
@@ -86,7 +82,10 @@ class SPK():
                 # TODO: 6?
                 pca = PCA(n_components=ncomp, whiten=whiten)
                 spk = self.spk[i]
-                if spk.shape[0] > 0:
+                # Because when len(datas) less than ncomp, the len(fet) will
+                # less then ncomp too. So len(datas) smaller then ncomp is
+                # meaningless.
+                if spk.shape[0] >= ncomp:
                     # step 0
                     X = spk.transpose(0,2,1).ravel().reshape(-1, spk.shape[1]*spk.shape[2])
                     W = self.W
@@ -107,7 +106,9 @@ class SPK():
                     fet[i] = temp_fet
                     # fet[i] = np.floor(temp_fet*2**8)/(2**8)
                 else:
-                    fet[i] = np.array([])
+                    # keep same shape even no feature value, for future
+                    # convinience.
+                    fet[i] = np.empty((0, ncomp), dtype=np.float32)
             self.fet = fet
             self.pca_comp = pca_comp
             self.shift = shift

@@ -20,7 +20,8 @@ class FET(object):
             self.nSamples[ch] = len(f)
             if len(f) > 0:
                 self.ch.append(ch)
-        self.fetlen = fet[0].shape[1]
+        # exclude channels which no spikes 
+        self.fetlen = fet[self.ch[0]].shape[1]
 
         self.hdbscan_hyper_param = {'method': 'hdbscan', 
                                     'min_cluster_size': 18,
