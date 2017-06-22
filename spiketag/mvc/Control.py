@@ -16,7 +16,7 @@ class Sorter(object):
 		self.view.param_view.signal_refine.connect(self.refine)
 		self.view.param_view.signal_build_vq.connect(self.build_vq)
 		self.view.param_view.signal_apply_to_all.connect(self.check_apply_to_all)
-                self.view.param_view.signal_wave_view_zoom.connect(self.wave_view_zoom)
+                self.view.param_view.signal_trace_view_zoom.connect(self.trace_view_zoom)
 
 		self.showmua = False
 		self.ch = 0
@@ -166,8 +166,8 @@ class Sorter(object):
 
 		self.view.gui.status_message = str(self.scores)
 
-        def wave_view_zoom(self):
-                self.view.wave_view.locate_buffer = self.view.param_view.wave_view_zoom.value()
+        def trace_view_zoom(self):
+                self.view.trace_view.locate_buffer = self.view.param_view.trace_view_zoom.value()
 
 	def _validate_vq(self):
 		from sklearn.neighbors import KNeighborsClassifier as KNN
