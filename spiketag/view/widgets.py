@@ -23,7 +23,7 @@ class param_widget(QtGui.QWidget):
     signal_refine         = QtCore.pyqtSignal(name='refine')
     signal_build_vq       = QtCore.pyqtSignal(name='vq')
     signal_apply_to_all   = QtCore.pyqtSignal(name='apply2all')
-    signal_wave_view_zoom = QtCore.pyqtSignal(name='zoom') 
+    signal_trace_view_zoom = QtCore.pyqtSignal(name='zoom') 
     
     def __init__(self, n_group, group2chs, parent=None):
         super(param_widget, self).__init__(parent)
@@ -77,14 +77,14 @@ class param_widget(QtGui.QWidget):
         self.apply_to_all = QtGui.QCheckBox('Apply to all channels')
         self.apply_to_all.stateChanged.connect(self.apply_to_all_changed)
 
-        self.wave_view_zoom_text = QtGui.QLabel("wave_view_zoom:")
-        self.wave_view_zoom = QtGui.QSlider(1)
-        self.wave_view_zoom.setMinimum(300)
-        self.wave_view_zoom.setMaximum(800)
-        self.wave_view_zoom.setValue(300)
-        self.wave_view_zoom.setTickPosition(QtGui.QSlider.TicksBelow)
-        self.wave_view_zoom.setTickInterval(3)
-        self.wave_view_zoom.valueChanged.connect(self.zoom) 
+        self.trace_view_zoom_text = QtGui.QLabel("trace_view_zoom:")
+        self.trace_view_zoom = QtGui.QSlider(1)
+        self.trace_view_zoom.setMinimum(300)
+        self.trace_view_zoom.setMaximum(800)
+        self.trace_view_zoom.setValue(300)
+        self.trace_view_zoom.setTickPosition(QtGui.QSlider.TicksBelow)
+        self.trace_view_zoom.setTickInterval(3)
+        self.trace_view_zoom.valueChanged.connect(self.zoom) 
 
         gbox = QtGui.QGridLayout()
         # addWidget (QWidget, int row, int column, int rowSpan, int columnSpan, Qt.Alignment alignment = 0)
@@ -102,8 +102,8 @@ class param_widget(QtGui.QWidget):
         gbox.addWidget(self.clu_param, 6, 0, 1, 2)
         gbox.addWidget(self.vq_btn, 7, 0, 1, 1)
         gbox.addWidget(self.apply_to_all, 8, 0, 1, 2)
-        gbox.addWidget(self.wave_view_zoom_text, 9, 0)
-        gbox.addWidget(self.wave_view_zoom, 10, 0, 1, 2)
+        gbox.addWidget(self.trace_view_zoom_text, 9, 0)
+        gbox.addWidget(self.trace_view_zoom, 10, 0, 1, 2)
 
         vbox = QtGui.QVBoxLayout()
         vbox.addLayout(gbox)
@@ -144,4 +144,4 @@ class param_widget(QtGui.QWidget):
         self.signal_objet_changed.emit()
 
     def zoom(self, option):
-        self.signal_wave_view_zoom.emit()
+        self.signal_trace_view_zoom.emit()

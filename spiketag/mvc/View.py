@@ -13,7 +13,7 @@ class MainView(object):
 		self.param_view = param_widget(n_group, group2chs)
 		self.spk_view = spike_view()
 		self.scatter_view = scatter_3d_view()
-                self.wave_view = wave_view(fullscreen=False)
+                self.trace_view = trace_view()
                 self.correlogram_view = correlogram_view()
                 self.cluster_view = cluster_view()
                 self.amplitude_view = amplitude_view()
@@ -22,7 +22,7 @@ class MainView(object):
                 self.gui.add_view(self.param_view)
                 self.gui.add_view(self.scatter_view)
                 self.gui.add_view(self.spk_view)
-                self.gui.add_view(self.wave_view)
+                self.gui.add_view(self.trace_view)
                 self.gui.add_view(self.correlogram_view)
                 self.gui.add_view(self.amplitude_view)
                 self.gui.add_view(self.raster_view)
@@ -31,7 +31,7 @@ class MainView(object):
 	def set_data(self, ch=None, mua=None, spk=None, fet=None, clu=None):
                 self.spk_view.set_data(spk, clu)
 		self.scatter_view.set_data(fet, clu)
-                self.wave_view.set_data(ch, clu)
+                self.trace_view.set_data(ch, clu)
                 self.correlogram_view.set_data(ch, clu)
                 self.amplitude_view.set_data(ch, spk, clu)
                 self.raster_view.set_data(ch, clu)
@@ -47,7 +47,7 @@ class MainView(object):
 		# 	self.scatter_view.set_data(fet[self.ch], clu[self.ch])
 
         def bind_data(self, data=None, spktag=None):
-                self.wave_view.bind(data, spktag)
+                self.trace_view.bind(data, spktag)
                 self.correlogram_view.bind(spktag)
                 self.amplitude_view.bind(data, spktag)
                 self.raster_view.bind(spktag)
