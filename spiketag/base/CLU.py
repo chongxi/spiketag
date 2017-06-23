@@ -2,6 +2,11 @@ import numpy as np
 from ..utils.utils import EventEmitter
 from ..utils.utils import Timer
 
+def instack_membership(func):
+    def wrapper(self, *args, **kwargs):
+        self._membership_stack.append(self.membership.copy())
+        return func(self, *args, **kwargs)
+    return wrapper
 
 class CLU(EventEmitter):
     """docstring for Clu"""
@@ -10,21 +15,8 @@ class CLU(EventEmitter):
         self.membership = clu.copy()
         while min(self.membership) < 0:
             self.membership += 1
-        self._stack_init_()
+        self._membership_stack = []
         self.__construct__()
-
-    def _stack_init_(self):
-        self._membership_undo_stack = []
-        self._membership_undo_stack.append(self.membership.copy())
-
-        @self.connect
-        def on_reverse(*args, **kwargs):
-            if kwargs['action'] != 'undo':
-                self._membership_undo_stack.append(self.membership.copy())
-            else: #TODO: redo
-                pass
-        #       for key, value in kwargs.items():
-        #               print "{}: {}".format(key, value)
 
     def __construct__(self):
         '''
@@ -148,6 +140,7 @@ class CLU(EventEmitter):
         self.select_clus = np.sort(selected_clu_list)
         self.emit('select_clu', action='select_clu')
 
+    @instack_membership
     def merge(self, mergelist):
         '''
         merge two or more clusters, target cluNo is the lowest id
@@ -160,6 +153,7 @@ class CLU(EventEmitter):
         self.__construct__()
         self.emit('cluster', action='merge')
 
+    @instack_membership
     def move(self,clus_from,clu_to):
         '''
           move subsets from clus_from to clu_to, the clus_from is dict which including at least one clu and the subset in this clu,eg:
@@ -174,21 +168,19 @@ class CLU(EventEmitter):
         
         return self.global2local(selected_global_idx)[clu_to]
     
-
+    @instack_membership
     def split(self, clus_from):
         clu_to = self.index_id.max()+1
         self.move(clus_from, clu_to)
 
 
     def undo(self):
-        if len(self._membership_undo_stack)>1:
-            self._membership_undo_stack.pop()
-            self.membership = self._membership_undo_stack[-1]
+        if len(self._membership_stack) > 0:
+            self.membership = self._membership_stack.pop()
             self.__construct__()
-            self.emit('reverse', action = 'undo')
+            self.emit('cluster', action = 'undo')
         else:
-            print('out of stack')
-
+            print('no more undo')
 
     def redo(self):
         # TODO: add redo stack
