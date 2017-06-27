@@ -5,7 +5,7 @@ from multiprocessing import Pool
 from .SPK import SPK
 from .Binload import bload
 
-@jit(cache=True)
+@jit(cache=True, nopython=True)
 def _to_spk(data, pos, chlist, spklen=19, prelen=8):
     n = len(pos)
     spk = np.empty((n, spklen, len(chlist)), dtype=np.float32)
