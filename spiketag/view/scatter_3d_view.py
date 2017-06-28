@@ -18,6 +18,7 @@ class scatter_3d_view(scene.SceneCanvas):
         self._n = 0
         self._transparency = 0.3
         self._control_transparency = False
+        self._control_picker = False
         self._size = 3
         self._highlight_color = np.array([1,0,0,1]).astype('float32')
         self.color = np.array([])
@@ -146,14 +147,14 @@ class scatter_3d_view(scene.SceneCanvas):
 
     """
       all of method follows is used for picker
-      alt + 1 Rectangle
-      alt + 2 Lasso
+      Shift + 1 Rectangle
+      Shift + 2 Lasso
     """
     def on_mouse_press(self,e):
         modifiers = e.modifiers
         if modifiers is not ():
-            if modifiers[0].name == 'Alt':
-                if self.key_option in ['1','2']:
+            if modifiers[0].name == 'Shift':
+                if self.key_option in ['!','@']:
                     self._picker.origin_point(e.pos)
 
 
@@ -161,16 +162,16 @@ class scatter_3d_view(scene.SceneCanvas):
     def on_mouse_move(self,e):
         modifiers = e.modifiers
         if modifiers is not () and e.is_dragging:
-            if modifiers[0].name == 'Alt':
-                if self.key_option == '1':
+            if modifiers[0].name == 'Shift':
+                if self.key_option == '!':
                     self._picker.cast_net(e.pos,ptype='rectangle')
-                if self.key_option == '2':
+                if self.key_option == '@':
                     self._picker.cast_net(e.pos,ptype='lasso')
 
     def on_mouse_release(self,e):
         modifiers = e.modifiers
         if modifiers is not () and e.is_dragging:
-            if modifiers[0].name == 'Alt' and self.key_option in ['1','2']:
+            if modifiers[0].name == 'Shift' and self.key_option in ['!','@']:
                     mask = self._picker.pick(self.fet[:, :3])
                     self.highlight(mask)
                     self.clu.select(mask)
@@ -182,10 +183,16 @@ class scatter_3d_view(scene.SceneCanvas):
                 self.view.events.mouse_wheel.disconnect(self.view.camera
                         .viewbox_mouse_event)
                 self._control_transparency = not self._control_transparency 
+            if modifiers[0].name == 'Shift' and self.key_option and not self._control_picker:
+                self.view.events.mouse_press.disconnect(self.view.camera.viewbox_mouse_event)
+                self._control_picker = not self._control_picker
         self.key_option = e.text
 
     def on_key_release(self,e):
         if self._control_transparency:
             self.view.events.mouse_wheel.connect(self.view.camera.viewbox_mouse_event)
             self._control_transparency = not self._control_transparency
+        if self._control_picker and e.modifiers is ():
+            self.view.events.mouse_press.connect(self.view.camera.viewbox_mouse_event)
+            self._control_picker = not self._control_picker
         self.key_option = 0

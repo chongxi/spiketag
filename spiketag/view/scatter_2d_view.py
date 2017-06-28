@@ -112,27 +112,27 @@ class scatter_2d_view(scene.SceneCanvas):
     
     def on_mouse_press(self, e):
         """
-            Alt + 1: Rectangle
-            Alt + 2: Lasso
+            Shift + 1: Rectangle
+            Shift + 2: Lasso
         """
         modifiers = e.modifiers
         if modifiers is not ():
-            if modifiers[0].name == 'Alt':
-                if self._key_option in ['1','2']:
+            if modifiers[0].name == 'Shift':
+                if self._key_option in ['!','@']:
                     self._picker.origin_point(e.pos)
 
     def on_mouse_move(self, e):
         """
-            Alt + 1: Rectangle
-            Alt + 2: Lasso
+            Shift + 1: Rectangle
+            Shift + 2: Lasso
             Control: Highlight nearest spiks
         """
         modifiers = e.modifiers
         if modifiers is not () and e.is_dragging:
-            if modifiers[0].name == 'Alt':
-                if self._key_option == '1':
+            if modifiers[0].name == 'Shift':
+                if self._key_option == '!':
                     self._picker.cast_net(e.pos,ptype='rectangle')
-                if self._key_option == '2':
+                if self._key_option == '@':
                     self._picker.cast_net(e.pos,ptype='lasso')
             if modifiers[0].name == 'Control':
                 mask = self._get_nearest_spikes(e.pos)
@@ -141,12 +141,12 @@ class scatter_2d_view(scene.SceneCanvas):
 
     def on_mouse_release(self, e):
         """
-            Alt + 1: Rectangle
-            Alt + 2: Lasso
+            Shift + 1: Rectangle
+            Shift + 2: Lasso
         """
         modifiers = e.modifiers
         if modifiers is not () and e.is_dragging:
-            if modifiers[0].name == 'Alt' and self._key_option in ['1','2']:
+            if modifiers[0].name == 'Shift' and self._key_option in ['!','@']:
                     mask = self._picker.pick(self._pos)
                     self._highlight(mask)
                     self.select(mask)

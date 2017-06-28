@@ -60,13 +60,19 @@ class CLU(EventEmitter):
 
         if len(global_idx):
             clus_nos = np.unique(self.membership[global_idx])
-        
-            for clus_no in clus_nos:
-                clus_no = int(clus_no)
-                local_global_idx = np.intersect1d(self.index[clus_no],global_idx,assume_unique=True)
-                sub_local_idx = np.searchsorted(self.index[clus_no], local_global_idx)
+      
+            if len(clus_nos) == 1:
+                clus_no = int(clus_nos[0])
+                sub_local_idx = np.searchsorted(self.index[clus_no], global_idx)
                 sub_local_idx.sort()
-                local_idx[clus_no] = sub_local_idx
+                local_idx[clus_no] = sub_local_idx 
+            else:
+                for clus_no in clus_nos:
+                    clus_no = int(clus_no)
+                    local_global_idx = np.intersect1d(self.index[clus_no],global_idx,assume_unique=True)
+                    sub_local_idx = np.searchsorted(self.index[clus_no], local_global_idx)
+                    sub_local_idx.sort()
+                    local_idx[clus_no] = sub_local_idx
         
         return local_idx
  
@@ -79,7 +85,7 @@ class CLU(EventEmitter):
         global_idx = np.array([],dtype='int')
 
         for clu_no, local_idx in local_idx.iteritems():
-            global_idx = np.append(global_idx,self._glo_id(clu_no, local_idx))
+            global_idx = np.append(global_idx,self._glo_id(clu_no, local_idx, sorted=False))
         global_idx.sort()
 
         return global_idx
@@ -102,14 +108,15 @@ class CLU(EventEmitter):
             print(cluNo, index)
         return str(self.index_count)
 
-    def _glo_id(self, selected_clu, sub_idx):
+    def _glo_id(self, selected_clu, sub_idx, sorted=True):
         '''
         get the global id of a subset in selected_clu
         '''
         if type(sub_idx) is not list:
             sub_idx = list(sub_idx)
         glo_idx = self.index[selected_clu][sub_idx]
-        glo_idx.sort()
+        if sorted:
+            glo_idx.sort()
         return glo_idx                
 
     def _sub_id(self, global_idx):
@@ -126,12 +133,12 @@ class CLU(EventEmitter):
             print('goes to more than one cluster')
 
 
-    def select(self, selectlist):
+    def select(self, selectlist, caller=None):
         '''
             select global_idx of spikes
         '''
         self.selectlist = selectlist # update selectlist
-        self.emit('select', action='select')
+        self.emit('select', action='select', caller=caller)
     
     def select_clu(self, selected_clu_list):
         '''

@@ -80,7 +80,7 @@ class raster_view(scatter_2d_view):
                 local_idx[clu] = index - left
             left = right
         global_idx = self._clu.local2global(local_idx)
-        self._clu.select(global_idx)
+        self._clu.select(global_idx, caller=self.__module__)
 
 
  

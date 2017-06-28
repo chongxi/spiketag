@@ -201,7 +201,7 @@ class trace_view(scene.SceneCanvas):
         self.clu = clu
         self.chlist = self.spktag.probe.get_group(self.ch)[::-1]
         self.nCh = len(self.chlist)
-
+        self.times = self.spktag.t[self.spktag.ch==self.ch] 
         self.set_range()
 
         @self.clu.connect
@@ -229,7 +229,7 @@ class trace_view(scene.SceneCanvas):
            locate the segment of wave in wave_view, and highlight all spikes within this segment 
         '''
         ###### basic info ########
-        pos = self.spktag.t[self.spktag.ch==self.ch][global_idx][0]
+        pos = self.times[global_idx][0]
         
         # locate the segment and show
         locate_start = pos - self.locate_buffer if (pos - self.locate_buffer) > 0 else 0
@@ -267,9 +267,8 @@ class trace_view(scene.SceneCanvas):
         idx_buffer = 10
         idx_start = global_idx - idx_buffer if (global_idx - idx_buffer) > 0 else 0
         idx_end = global_idx + idx_buffer
-        all_spikes = self.spktag.t[self.spktag.ch == self.ch]
-        selected_spikes_pos = np.intersect1d(point_range,all_spikes[idx_start:idx_end]) 
-        selected_spikes_idx = np.where(np.in1d(all_spikes,selected_spikes_pos))[0]
+        selected_spikes_pos = np.intersect1d(point_range,self.times[idx_start:idx_end]) 
+        selected_spikes_idx = np.where(np.in1d(self.times,selected_spikes_pos))[0]
         return np.column_stack((selected_spikes_pos - data_range[0] - 8, selected_spikes_idx))
 
     @property
@@ -359,9 +358,9 @@ class trace_view(scene.SceneCanvas):
         if 1 in event.buttons and modifiers is not ():
             p1 = event.press_event.pos
             p2 = event.last_event.pos
-            if modifiers[0].name == 'Shift':
+            if modifiers[0].name == 'Control':
                 self.cross.ref_enable(p2)
-            if modifiers[0].name == 'Alt':
+            if modifiers[0].name == 'Shift':
                 self._picker.cast_net(event.pos,ptype='rectangle')
 
         elif self.cross.cross_state:
@@ -379,13 +378,13 @@ class trace_view(scene.SceneCanvas):
     def on_mouse_press(self,e):
         modifiers = e.modifiers
         if modifiers is not ():
-            if modifiers[0].name == 'Alt':
+            if modifiers[0].name == 'Shift':
                 self._picker.origin_point(e.pos)
 
     def on_mouse_release(self,e):
         modifiers = e.modifiers
         if modifiers is not () and e.is_dragging:
-            if modifiers[0].name == 'Alt':
+            if modifiers[0].name == 'Shift':
                 mask = self._picker.pick(self.waves1.get_gl_pos())
                 selected = [i for (p,i) in self.all_pos if p in mask]
                 self.clu.select(np.array(selected))
