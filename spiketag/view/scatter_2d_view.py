@@ -1,5 +1,6 @@
 import numpy as np
 from vispy import scene, app
+from vispy.util import keys
 from ..utils.utils import Picker
 
 class scatter_2d_view(scene.SceneCanvas):
@@ -98,64 +99,56 @@ class scatter_2d_view(scene.SceneCanvas):
             Control: control + mouse wheel to adjust the transparency 
             r:       reset the camera
         '''
-        modifiers = e.modifiers 
-        if modifiers is not ():
-            if modifiers[0].name == 'Control' and not self._control_transparency:
-                self._view.events.mouse_wheel.disconnect(self._view.camera
-                        .viewbox_mouse_event)
-                self._control_transparency = not self._control_transparency 
+        if keys.CONTROL in e.modifiers and not self._control_transparency:
+            self._view.events.mouse_wheel.disconnect(self._view.camera
+                    .viewbox_mouse_event)
+            self._control_transparency = not self._control_transparency 
         elif e.text == 'r':
             self._view.camera.reset()
             self._view.camera.set_range()
-        
-        self._key_option = e.text
-    
+
+        self._key_option = e.key.name
+
     def on_mouse_press(self, e):
         """
-            Shift + 1: Rectangle
-            Shift + 2: Lasso
+            Control + 1: Rectangle
+            Control + 2: Lasso
         """
-        modifiers = e.modifiers
-        if modifiers is not ():
-            if modifiers[0].name == 'Shift':
-                if self._key_option in ['!','@']:
-                    self._picker.origin_point(e.pos)
+        if keys.CONTROL in e.modifiers:
+            if self._key_option in ['1','2']:
+                self._picker.origin_point(e.pos)
 
     def on_mouse_move(self, e):
         """
-            Shift + 1: Rectangle
-            Shift + 2: Lasso
+            Control + 1: Rectangle
+            Control + 2: Lasso
             Control: Highlight nearest spiks
         """
-        modifiers = e.modifiers
-        if modifiers is not () and e.is_dragging:
-            if modifiers[0].name == 'Shift':
-                if self._key_option == '!':
+        if keys.CONTROL in e.modifiers and e.is_dragging:
+            if self._key_option in ['1', '2']:
+                if self._key_option == '1':
                     self._picker.cast_net(e.pos,ptype='rectangle')
-                if self._key_option == '@':
+                if self._key_option == '2':
                     self._picker.cast_net(e.pos,ptype='lasso')
-            if modifiers[0].name == 'Control':
+            else:
                 mask = self._get_nearest_spikes(e.pos)
                 self._highlight(mask)
                 self.select(mask)
 
     def on_mouse_release(self, e):
         """
-            Shift + 1: Rectangle
-            Shift + 2: Lasso
+            Control + 1: Rectangle
+            Control + 2: Lasso
         """
-        modifiers = e.modifiers
-        if modifiers is not () and e.is_dragging:
-            if modifiers[0].name == 'Shift' and self._key_option in ['!','@']:
-                    mask = self._picker.pick(self._pos)
-                    self._highlight(mask)
-                    self.select(mask)
+        if keys.CONTROL in e.modifiers and e.is_dragging:
+            if self._key_option in ['1','2']:
+                mask = self._picker.pick(self._pos)
+                self._highlight(mask)
+                self.select(mask)
 
     def on_mouse_wheel(self, e):
-        modifiers = e.modifiers
-        if modifiers is not ():
-            if modifiers[0].name == 'Control':
-                self.transparency *= np.exp(e.delta[1]/4)
+        if keys.CONTROL in e.modifiers:
+            self.transparency *= np.exp(e.delta[1]/4)
 
     def on_key_release(self, e):
         '''

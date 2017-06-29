@@ -1,5 +1,6 @@
 import numpy as np
 from vispy import scene, app
+from vispy.util import keys
 from .MyWaveVisual import MyWaveVisual
 from .color_scheme import palette
 from ..utils.utils import Picker
@@ -344,50 +345,43 @@ class trace_view(scene.SceneCanvas):
             self.cursor_text_ref.visible = False
             self.cursor_rect.visible = False
 
-    def on_key_press(self, event):
+    def on_key_press(self, e):
         # if event.key.name == 'PageDown':
         #     print 'next page'
-        if event.text == 'r':
+        if e.text == 'r':
             self.view2.camera.reset()
         
-        if event.text == 'c':
+        if e.text == 'c':
             self.cross.flip_state()
     
-    def on_mouse_move(self, event):
-        modifiers = event.modifiers
-        if 1 in event.buttons and modifiers is not ():
-            p1 = event.press_event.pos
-            p2 = event.last_event.pos
-            if modifiers[0].name == 'Control':
+    def on_mouse_move(self, e):
+        if 1 in e.buttons and e.modifiers is not ():
+            p1 = e.press_event.pos
+            p2 = e.last_event.pos
+            if keys.SHIFT in e.modifiers:
                 self.cross.ref_enable(p2)
-            if modifiers[0].name == 'Shift':
-                self._picker.cast_net(event.pos,ptype='rectangle')
+            if keys.CONTROL in e.modifiers:
+                self._picker.cast_net(e.pos,ptype='rectangle')
 
         elif self.cross.cross_state:
-            if event.press_event is None:
-                self.cross.moveto(event.pos)
+            if e.press_event is None:
+                self.cross.moveto(e.pos)
                 self.cross.ref_disable()
 
-    def on_mouse_wheel(self, event):
-        modifiers = event.modifiers
-        if modifiers is not ():
-            if modifiers[0].name=='Control':
-                self.gap_value = self.gap_value + 0.05*event.delta[1]
+    def on_mouse_wheel(self, e):
+        if keys.CONTROL in e.modifiers:
+            self.gap_value = self.gap_value + 0.05*e.delta[1]
 
 
-    def on_mouse_press(self,e):
-        modifiers = e.modifiers
-        if modifiers is not ():
-            if modifiers[0].name == 'Shift':
-                self._picker.origin_point(e.pos)
+    def on_mouse_press(self, e):
+        if keys.CONTROL in e.modifiers:
+            self._picker.origin_point(e.pos)
 
-    def on_mouse_release(self,e):
-        modifiers = e.modifiers
-        if modifiers is not () and e.is_dragging:
-            if modifiers[0].name == 'Shift':
-                mask = self._picker.pick(self.waves1.get_gl_pos())
-                selected = [i for (p,i) in self.all_pos if p in mask]
-                self.clu.select(np.array(selected))
+    def on_mouse_release(self, e):
+        if keys.CONTROL in  e.modifiers and e.is_dragging:
+            mask = self._picker.pick(self.waves1.get_gl_pos())
+            selected = [i for (p,i) in self.all_pos if p in mask]
+            self.clu.select(np.array(selected))
 
 # if __name__ == '__main__':
 #     from phy.gui import GUI, create_app, run_app
