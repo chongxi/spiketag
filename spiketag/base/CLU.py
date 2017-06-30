@@ -185,6 +185,7 @@ class CLU(EventEmitter):
         if len(self._membership_stack) > 0:
             self.membership = self._membership_stack.pop()
             self.__construct__()
+            self.selectlist = np.array([], np.int64) 
             self.emit('cluster', action = 'undo')
         else:
             print('no more undo')

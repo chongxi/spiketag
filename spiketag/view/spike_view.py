@@ -104,6 +104,7 @@ class spike_view(View):
         @self.clu.connect
         def on_cluster(*args, **kwargs):
             with Timer('rerender', verbose=conf.ENABLE_PROFILER):
+                self._selected = {}
                 self.rerender()
         
         @self.clu.connect
