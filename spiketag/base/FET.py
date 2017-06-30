@@ -4,6 +4,7 @@ from sklearn.neighbors import NearestNeighbors
 from hdbscan import HDBSCAN
 from time import time
 from ..utils.utils import Timer
+from ..utils.conf import info
 from .CLU import CLU
 
 class FET(object):
@@ -56,7 +57,7 @@ class FET(object):
                     pool.close()
                     pool.join()
                     toc = time()
-                    print 'clustering finished, used {} seconds'.format(toc-tic)
+                    info('clustering finished, used {} seconds'.format(toc-tic))
                     for _chNo, __clu in zip(self.ch, _clu):
                         clu[_chNo] = CLU(__clu)
                 else:
@@ -64,7 +65,7 @@ class FET(object):
                     for chNo in self.ch:
                         clu[chNo] = CLU(hdbcluster.fit_predict(self.fet[chNo]))
                     toc = time()
-                    print 'clustering finished, used {} seconds'.format(toc-tic)
+                    info('clustering finished, used {} seconds'.format(toc-tic))
                 return clu
 
             # semi-automatic parameter selection for a specific channel

@@ -1,9 +1,10 @@
-import numpy as np
-import numexpr as ne
 import os
 import mmap
 from numba import jit
+import numexpr as ne
+import numpy as np
 from ..utils import Timer 
+from ..utils.conf import info
 
 def memory_map(filename, access=mmap.ACCESS_WRITE):
     size = os.path.getsize(filename)
@@ -73,13 +74,12 @@ class bload(object):
         self.dtype = dtype
         self._npts = len(self.npmm)/self._nCh #full #pts/ch
         self._nbytes = self.npmm.nbytes
-        self.info0 = '{0} loaded, it contains: \n'.format(file_name)
-        self.info1 = '{0} * {1} points ({2} bytes) \n'.format(self._npts, self._nCh, self._nbytes)
-        self.info2 = '{0} channels with sampling rate of {1:.4f} \n'.format(self._nCh, self.fs)
-        self.info3 = '{0:.3f} secs ({1:.3f} mins) of data'.format(self._npts/self.fs, self._npts/self.fs/60)
-        print "#############  load data  ###################"
-        print self.info0 + self.info1 + self.info2 + self.info3
-        print "#############################################"
+        info("#############  load data  ###################")
+        info('{0} loaded, it contains: '.format(file_name))
+        info('{0} * {1} points ({2} bytes) '.format(self._npts, self._nCh, self._nbytes))
+        info('{0} channels with sampling rate of {1:.4f} '.format(self._nCh, self.fs))
+        info('{0:.3f} secs ({1:.3f} mins) of data'.format(self._npts/self.fs, self._npts/self.fs/60))
+        info("#############################################")
 
         dt = 1/self.fs
         self.t = np.linspace(0,self._npts*dt,self._npts,endpoint='false')

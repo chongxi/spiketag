@@ -1,17 +1,7 @@
 import numpy as np
-import logging
-import multiprocessing
 from sklearn.neighbors import KDTree
 from ..base import *
-
-
-def log_start(level=logging.INFO):
-    logger = multiprocessing.log_to_stderr()
-    logger.setLevel(level)  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-    logger.propagate = False
-
-log_start(level=logging.INFO)
-info = multiprocessing.get_logger().info
+from ..utils.conf import info 
 
 
 class MainModel(object):

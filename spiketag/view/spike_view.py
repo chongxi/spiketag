@@ -6,6 +6,7 @@ from phy.utils.event import EventEmitter
 from .color_scheme import palette
 from ..utils.utils import Timer
 from ..utils import conf 
+from ..utils.conf import error
 from ..base.CLU import CLU
 from ._core import _get_array, _accumulate
 from ._core import _spkNo2maskNo_numba, _cache_out, _cache_in_vector, _cache_in_scalar, _representsInt 
@@ -376,18 +377,28 @@ class spike_view(View):
     def _move_spikes(self, target_clu_no):
         if not self.is_spk_empty and self.selected_cluster != target_clu_no:
             # cluster takes 100 ms + on_cluster event handler take 700ms
-
             if self.selected_whole_cluster is False:  # move
-                with Timer('move', verbose=conf.ENABLE_PROFILER):
-                    target_local_idx = self.clu.move(self._selected,
-                                                    target_clu_no)
-                    self._selected = {target_clu_no:target_local_idx}
+                try:
+                    with Timer('move', verbose=conf.ENABLE_PROFILER):
+                        target_local_idx = self.clu.move(self._selected,
+                                                        target_clu_no)
+                        self._selected = {target_clu_no:target_local_idx}
+                except IndexError, e:
+                    error("Move spikes failure: {}".format(e))
+                    error("Move selected spikes {} to target clu no {}. ".format(self._selected, target_clu_no))
+                    error("Current cluster index is {}.".format(self.clu.index))
+                    return 
 
             if self.selected_whole_cluster is True:   # merge
-                global_idx = self.clu.local2global(self._selected)
-                with Timer('merge', verbose=conf.ENABLE_PROFILER):
-                    self.clu.merge(np.append(self._selected.keys(),target_clu_no))
-                self._selected = self.clu.global2local(global_idx)
+                try:
+                    global_idx = self.clu.local2global(self._selected)
+                    with Timer('merge', verbose=conf.ENABLE_PROFILER):
+                        self.clu.merge(np.append(self._selected.keys(),target_clu_no))
+                    self._selected = self.clu.global2local(global_idx)
+                except IndexError, e:
+                    error("Merge spikes failure: {}".format(e))
+                    error("Merge selected spikes {} to target clu no {}".format(self._selected, target_clu_no))
+                    error("Current cluster index is {}.".format(self.clu.index))
 
             with Timer('highlight', verbose=conf.ENABLE_PROFILER):
                 self.highlight(selected=self._selected) 

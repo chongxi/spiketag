@@ -1,6 +1,7 @@
 import numpy as np
 from ..utils.utils import EventEmitter
 from ..utils.utils import Timer
+from ..utils.conf import error, info, debug
 
 def instack_membership(func):
     def wrapper(self, *args, **kwargs):
@@ -98,14 +99,12 @@ class CLU(EventEmitter):
             return False
 
     def __getitem__(self, i):
-        if i in self.index_id:
-            return self.index[i]
-        else:
-            print('cluster id should be in {}'.format(self.index_id))
+        assert i in self.index_id, "{} should in {}".format(i, self.index_id)
+        return self.index[i]
 
     def __str__(self):
         for cluNo, index in self.index.items():
-            print(cluNo, index)
+            info(cluNo, index)
         return str(self.index_count)
 
     def _glo_id(self, selected_clu, sub_idx, sorted=True):
@@ -130,7 +129,7 @@ class CLU(EventEmitter):
             sub_idx.sort()
             return sub_clu, sub_idx
         else:
-            print('goes to more than one cluster')
+            info('goes to more than one cluster')
 
 
     def select(self, selectlist, caller=None):
@@ -188,7 +187,7 @@ class CLU(EventEmitter):
             self.selectlist = np.array([], np.int64) 
             self.emit('cluster', action = 'undo')
         else:
-            print('no more undo')
+            debug('no more undo')
 
     def redo(self):
         # TODO: add redo stack
