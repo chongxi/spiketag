@@ -17,7 +17,7 @@ class param_widget(QtGui.QWidget):
     Widget for editing OBJECT parameters
     """
     signal_objet_changed  = QtCore.pyqtSignal(name='objectChanged')
-    signal_ch_changed     = QtCore.pyqtSignal(name='chChanged')
+    signal_group_changed     = QtCore.pyqtSignal(name='groupChanged')
     signal_get_fet        = QtCore.pyqtSignal(name='getfet')
     signal_recluster      = QtCore.pyqtSignal(name='recluster')
     signal_refine         = QtCore.pyqtSignal(name='refine')
@@ -50,12 +50,12 @@ class param_widget(QtGui.QWidget):
         self.clu_combo.addItems(self.clu_method)
         self.clu_combo.currentIndexChanged.connect(self.update_param)
 
-        self.l_ch = QtGui.QLabel("group: chs" + str(self.group2chs(0)))
-        self.ch = QtGui.QSpinBox()
-        self.ch.setMinimum(0)
-        self.ch.setMaximum(n_group - 1)
-        self.ch.setValue(0)
-        self.ch.valueChanged.connect(self.update_ch)
+        self.l_group = QtGui.QLabel("group: chs" + self._group2str(0))
+        self.group = QtGui.QSpinBox()
+        self.group.setMinimum(0)
+        self.group.setMaximum(n_group - 1)
+        self.group.setValue(0)
+        self.group.valueChanged.connect(self.update_group)
 
         self.clu_param_text = QtGui.QLabel("fall-off-size: 18")
         self.clu_param  = QtGui.QSlider(1) # 1: horizontal, 2: Vertical
@@ -94,8 +94,8 @@ class param_widget(QtGui.QWidget):
         gbox.addWidget(self.fet_No, 1, 1)
         gbox.addWidget(l_clu_method, 2, 0)
         gbox.addWidget(self.clu_combo, 2, 1)
-        gbox.addWidget(self.l_ch, 3, 0)
-        gbox.addWidget(self.ch, 3, 1)
+        gbox.addWidget(self.l_group, 3, 0)
+        gbox.addWidget(self.group, 3, 1)
         gbox.addWidget(self.clu_param_text, 4, 0)
         gbox.addWidget(self.recluster_btn, 5, 0)
         gbox.addWidget(self.refine_btn, 5, 1)
@@ -112,9 +112,9 @@ class param_widget(QtGui.QWidget):
         self.setLayout(vbox)
 
 
-    def update_ch(self, option):
-        self.l_ch.setText('group: chs' + str(self.group2chs(self.ch.value())))
-        self.signal_ch_changed.emit()
+    def update_group(self, option):
+        self.l_group.setText('group: chs' + self._group2str(self.group.value()))
+        self.signal_group_changed.emit()
 
     def get_fet(self, option):
         self.signal_get_fet.emit()
@@ -145,3 +145,8 @@ class param_widget(QtGui.QWidget):
 
     def zoom(self, option):
         self.signal_trace_view_zoom.emit()
+
+    def _group2str(self, group):
+        chs = self.group2chs(group)
+        return str(chs[chs>=0])
+        

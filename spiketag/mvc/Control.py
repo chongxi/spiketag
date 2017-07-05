@@ -1,16 +1,16 @@
+import numpy as np
 from .Model import MainModel
 from .View import MainView
 from ..view import scatter_3d_view
 from ..base import CLU
-import numpy as np
-import logging
+from ..utils import warning 
 
 class Sorter(object):
 	"""docstring for Sorter"""
 	def __init__(self, *args, **kwargs):
 		self.model = MainModel(*args, **kwargs)
 		self.view  = MainView(self.model.spktag.probe.n_group, self.model.spktag.probe.get_chs)
-		self.view.param_view.signal_ch_changed.connect(self.update_ch)
+		self.view.param_view.signal_group_changed.connect(self.update_group)
 		self.view.param_view.signal_get_fet.connect(self.update_fet)
 		self.view.param_view.signal_recluster.connect(self.update_clu)
 		self.view.param_view.signal_refine.connect(self.refine)
@@ -19,7 +19,7 @@ class Sorter(object):
                 self.view.param_view.signal_trace_view_zoom.connect(self.trace_view_zoom)
 
 		self.showmua = False
-		self.ch = 0
+		self.group = 0
 		self.vq = {}
 		self.vq['points'] = {}
 		self.vq['labels'] = {}
@@ -34,28 +34,31 @@ class Sorter(object):
 		self.apply_to_all = self.view.param_view._apply_to_all
 
 	def set_model(self, model):
-		ch = self.model.spktag.probe.fetch_core_ch(self.ch)
 		if model is not None:
 			self.model = model
-	        if ch not in self.model.clu:
+	        if self.group not in self.model.clu:
                     # TODO: find some way to popup this information
-                    logging.warn(" channel {} has no spikes! ".format(ch))
+                    warning(" channel {} has no spikes! ".format(self.group))
                 elif self.showmua is False:
-			self.view.set_data(ch=ch, spk=self.model.spk[ch], 
-				               fet=self.model.fet[ch], 
-				               clu=self.model.clu[ch])
+			self.view.set_data(group=self.group, 
+                                           spk=self.model.spk[self.group], 
+				           fet=self.model.fet[self.group], 
+				           clu=self.model.clu[self.group], 
+                                           spk_times=self.model.spktag.fetch_spk_times(self.group))
 		else:
-			self.view.set_data(ch=ch, mua=self.model.mua, 
-							   spk=self.model.spk[ch], 
-							   fet=self.model.fet[ch], 
-                                                           clu=self.model.clu[ch])
+			self.view.set_data(group=self.group, 
+                                           mua=self.model.mua, 
+					   spk=self.model.spk[self.group], 
+					   fet=self.model.fet[self.group], 
+                                           clu=self.model.clu[self.group],
+                                           spk_times=self.model.spktag.fetch_spk_times(self.group))
 
 	def refresh(self):
 		self.set_model(self.model)
 
 
 	def run(self):
-	        self.update_ch()
+	        self.update_group()
 	        self.view.show()
 
 	def save(self):
@@ -74,20 +77,20 @@ class Sorter(object):
 	
 	@property
 	def spk(self):
-		return self.model.spk[self.ch]   # ndarray
+		return self.model.spk[self.group]   # ndarray
 
 	@property
 	def fet(self):
-		return self.model.fet[self.ch]   # ndarray
+		return self.model.fet[self.group]   # ndarray
 
 	@fet.setter
 	def fet(self, fet_value):
-		self.model.fet.fet[self.ch] = fet_value
+		self.model.fet.fet[self.group] = fet_value
 		self.refresh()
 
 	@property
 	def clu(self):
-		return self.model.clu[self.ch]   # CLU
+		return self.model.clu[self.group]   # CLU
 
 	@clu.setter
 	def clu(self, clu_membership):
@@ -95,9 +98,9 @@ class Sorter(object):
 		self.clu.__construct__()
 		self.refresh()
 
-	def update_ch(self):
+	def update_group(self):
 		# ---- update chosen ch and get cluster ----
-		self.ch = self.view.param_view.ch.value()
+		self.group = self.view.param_view.group.value()
 		# print '{} selected'.format(self.ch)
 		self.set_model(self.model)
 
@@ -111,7 +114,7 @@ class Sorter(object):
 		# get the features of targeted cluNo
 		X = self.fet[self.clu[cluNo]]
 		# classification on these features
-		lables_X = self.model.predict(self.ch, X, method='knn', k=10)
+		lables_X = self.model.predict(self.group, X, method='knn', k=10)
 		# reconstruct current cluster membership
 		self.clu.membership[self.clu[cluNo]] = lables_X
 		if self.clu.membership.min()>0:
@@ -136,7 +139,7 @@ class Sorter(object):
 	def update_clu(self):
 		clu_method = str(self.view.param_view.clu_combo.currentText())
 		self.model.cluster(method = clu_method,
-						   chNo   = self.ch, 
+						   groupNo   = self.group, 
 						   fall_off_size = self.view.param_view.clu_param.value())
 		self.refresh()
 
@@ -154,9 +157,9 @@ class Sorter(object):
 		self.labels = self._predict(self.points) # these are vq labels
 		self.scores = self._validate_vq()
 
-		self.vq['points'][self.ch] = self.points
-		self.vq['labels'][self.ch] = self.labels
-		self.vq['scores'][self.ch] = self.scores
+		self.vq['points'][self.group] = self.points
+		self.vq['labels'][self.group] = self.labels
+		self.vq['scores'][self.group] = self.scores
 
 		self.vq_view = scatter_3d_view()
 		self.vq_view._size = 5
@@ -177,7 +180,7 @@ class Sorter(object):
 
 
 	def _predict(self, points):
-		self.model.construct_kdtree(self.ch)
+		self.model.construct_kdtree(self.group)
 		d = []
 		for _kd in self.model.kd:
 			tmp = _kd.query(points, 10)[0]

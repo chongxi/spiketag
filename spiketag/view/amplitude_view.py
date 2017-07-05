@@ -28,8 +28,8 @@ class amplitude_view(scatter_2d_view):
         self._fs = spktag.probe.fs
         self._scale = data.max() - data.min()
 
-    def set_data(self, ch, spk=None, clu=None):
-        self._spike_time = self._get_spike_time(ch)
+    def set_data(self, spk=None, clu=None, spk_times=None):
+        self._spike_time = spk_times 
         self._spk = spk
         self._clu = clu
         
@@ -96,9 +96,6 @@ class amplitude_view(scatter_2d_view):
     ### ----------------------------------------------
     ###              private method 
     ### ----------------------------------------------
-
-    def _get_spike_time(self, ch):
-        return self._spktag.t[self._spktag.ch == ch]
 
     def _locate_amplitude(self, clu):
         '''

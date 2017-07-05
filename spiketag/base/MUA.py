@@ -16,25 +16,10 @@ def _to_spk(data, pos, chlist, spklen=19, prelen=8):
     spk[..., _nan] = 0
     return spk
 
-@jit(cache=True, nopython=True)
-def _broaden_pivotal(origin_pivotal):
-    '''
-        Only for tetrode.
-        The origin pivotal is grouped, but when do sorting, should ungroup the pivotal, the
-        time at every channel is aligned by grouped pivotal value.
-    '''
-    broadening = np.hstack((origin_pivotal, origin_pivotal, origin_pivotal, origin_pivotal))
-    for i in range(origin_pivotal.shape[1]):
-        chs = np.arange(origin_pivotal[1, i]/4*4, origin_pivotal[1, i]/4*4+4)
-        for idx, val in enumerate(chs):
-            broadening[1, (idx*origin_pivotal.shape[1] + i)] = val
-    return broadening
-
 class MUA():
     def __init__(self, filename, probe, numbytes=4, binary_radix=14):
         
         self.nCh = probe.n_ch
-        self.ch  = range(self.nCh)
         self.fs  = probe.fs*1.0
         self.probe = probe
         self.numbytes = numbytes
@@ -51,18 +36,14 @@ class MUA():
         spk_meta = np.fromfile(filename+'.spk', dtype='<i4')
         self.pivotal_pos = spk_meta.reshape(-1,2).T
 
-        if self.probe.type == 'tetrode':
-            self.pivotal_pos = _broaden_pivotal(self.pivotal_pos)
-
     def tospk(self):
-        self.ch_hash = np.asarray([self.probe.get_group(ch) 
-                                                for ch in range(self.nCh)])
         spkdict = {}
-        for ch in range(self.nCh):
-            pos = self.pivotal_pos[0, self.pivotal_pos[1]==ch]
-            spkdict[ch] = _to_spk(data   = self.data, 
+        for g in range(self.probe.n_group):
+            pivotal_chs = self.probe.fetch_pivotal_chs(g)
+            pos = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1],pivotal_chs)]
+            spkdict[g] = _to_spk(data   = self.data, 
                                   pos    = pos, 
-                                  chlist = self.ch_hash[ch], 
+                                  chlist = self.probe.get_chs(g), 
                                   spklen = self.spklen,
                                   prelen = self.prelen)
                                  

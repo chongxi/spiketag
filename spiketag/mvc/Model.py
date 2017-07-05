@@ -97,24 +97,24 @@ class MainModel(object):
 
 
     def cluster(self, method='hdbscan', *args, **kwargs):
-        chNo = kwargs['chNo'] if 'chNo' in kwargs.keys() else None
-        if chNo is not None:
-            self.clu[chNo] = self.fet.toclu(method=method, *args, **kwargs)
+        groupNo = kwargs['groupNo'] if 'groupNo' in kwargs.keys() else None
+        if groupNo is not None:
+            self.clu[groupNo] = self.fet.toclu(method=method, *args, **kwargs)
         else:
             pass
 
 
-    def construct_kdtree(self, chNo):
+    def construct_kdtree(self, groupNo):
         self.kd = []
-        for clu_id, value in self.clu[chNo].index.items():
-            fet = self.fet[chNo][value]
+        for clu_id, value in self.clu[groupNo].index.items():
+            fet = self.fet[groupNo][value]
             self.kd.append(KDTree(fet))
 
 
-    def predict(self, chNo, X, method='knn', k=10):
+    def predict(self, groupNo, X, method='knn', k=10):
         if X.ndim==1: X=X.reshape(1,-1)
         if method == 'knn':
-            self.construct_kdtree(chNo)
+            self.construct_kdtree(groupNo)
             d = []
             k = 10
             for _kd in self.kd:

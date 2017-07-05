@@ -45,8 +45,8 @@ class firing_rate_view(line_view):
         self._spktag = spktag
         self._fs = spktag.probe.fs
 
-    def set_data(self, ch, clu=None):
-        self._spike_time = self._get_spike_time(ch)
+    def set_data(self, clu=None, spk_times=None):
+        self._spike_time = spk_times
         self._clu = clu
 
         @self._clu.connect
@@ -62,10 +62,6 @@ class firing_rate_view(line_view):
     ### ----------------------------------------------
     ###              private method 
     ### ----------------------------------------------
-
-    def _get_spike_time(self, ch):
-        return self._spktag.t[self._spktag.ch == ch]
-
     def _convolve_firing_rate(self, clu):
         '''
             convolve firing rate usiing gaussian window

@@ -6,7 +6,7 @@ from .FET import FET
 class SPK():
     def __init__(self, spkdict):
         self.spk = spkdict
-        self.nCh = len(spkdict)
+        self.n_group = len(spkdict)
         self.ch_span = self.spk[0].shape[-1]
         self.spklen = 19
         weight_vector = np.array([0.2871761 , 0.2871761 , 0.3571761 , 0.45907732, 0.45485107, 
@@ -20,7 +20,7 @@ class SPK():
     @property
     def nspk(self):
         nspk = 0
-        for i in range(self.nCh):
+        for i in range(self.n_group):
             nspk += self.spk[i].shape[0]
         return nspk
 

@@ -18,8 +18,8 @@ class raster_view(scatter_2d_view):
         self._spktag = spktag
         self._fs = spktag.probe.fs
 
-    def set_data(self, ch, clu=None):
-        self._spike_time = self._get_spike_time(ch)
+    def set_data(self, clu=None, spk_times=None):
+        self._spike_time = spk_times 
         self._clu = clu
         
         @self._clu.connect
@@ -87,9 +87,6 @@ class raster_view(scatter_2d_view):
     ### ----------------------------------------------
     ###              private method 
     ### ----------------------------------------------
-
-    def _get_spike_time(self, ch):
-        return self._spktag.t[self._spktag.ch == ch]
 
     def _draw(self, clus, delimit=True):
        

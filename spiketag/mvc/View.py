@@ -28,15 +28,15 @@ class MainView(object):
                 self.gui.add_view(self.raster_view)
                 self.gui.add_view(self.cluster_view)
                 self.gui.add_view(self.firing_rate_view)
-	def set_data(self, ch=None, mua=None, spk=None, fet=None, clu=None):
+	def set_data(self, group=None, mua=None, spk=None, fet=None, clu=None, spk_times=None):
                 self.spk_view.set_data(spk, clu)
 		self.scatter_view.set_data(fet, clu)
-                self.trace_view.set_data(ch, clu)
-                self.correlogram_view.set_data(ch, clu)
-                self.amplitude_view.set_data(ch, spk, clu)
-                self.raster_view.set_data(ch, clu)
+                self.trace_view.set_data(group, clu, spk_times)
+                self.correlogram_view.set_data(clu, spk_times)
+                self.amplitude_view.set_data(spk, clu, spk_times)
+                self.raster_view.set_data(clu, spk_times)
                 self.cluster_view.set_data(clu)
-                self.firing_rate_view.set_data(ch, clu)
+                self.firing_rate_view.set_data(clu, spk_times)
 		# if spk is not None and clu is None:
 		# 	self.spk_view.set_data(spk[self.ch])
 		# if fet is not None and clu is None:

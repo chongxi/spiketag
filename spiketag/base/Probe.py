@@ -64,6 +64,14 @@ class Probe(object):
           number of groups, group can be treated as basic unit to statistic data
         '''
         return self._n_group
+    
+    @property
+    def groups(self):
+        '''
+            return all group numbers
+        '''
+        for i in range(self._n_group):
+            yield i
 
     @property
     def len_group(self):
@@ -72,27 +80,6 @@ class Probe(object):
         '''
         return self._len_group
 
-    def get_group(self, ch):
-        ''' 
-            abstract method, sub class need to implement it:
-            get the group which the ch be belonged
-        '''
-        pass
-
-    def get_chs(self, group):
-        '''
-            abstract method, sub class need to implement it:
-            get the chs which group has
-        '''
-        pass
-    
-    def fetch_core_ch(self, group):
-        '''
-            abstract method, sub class need to implement it:
-            get the most important ch within group
-        '''
-        pass
-    
 class LinearProbe(Probe):
     ''' linear probe
     '''
@@ -118,6 +105,11 @@ class LinearProbe(Probe):
     # -------------------------------
 
     def get_group(self, ch):
+        ''' 
+            get all the chs in group which the ch be belonged
+        '''
+        assert ch >= 0 and ch < self._n_ch
+
         chmax = self._n_ch - 1
         start = ch - self._ch_span # if ch-span>=0 else 0
         end   = ch + self._ch_span # if ch+span<chmax else chmax
@@ -125,14 +117,29 @@ class LinearProbe(Probe):
         near_ch[near_ch>chmax] = -1
         near_ch[near_ch<0] = -1
         return near_ch
+    
+    def belong_group(self, ch):
+        '''
+            get the group number which ch belong
+        '''
+        assert ch >= 0 and ch < self._n_ch
+        return ch
 
     def get_chs(self, group):
-        near_ch = self.get_group(group)
-        return near_ch[near_ch >= 0]
+        '''
+            get the chs which group has
+        '''
+        assert group >= 0 and group < self._n_group
+        return self.get_group(group)
 
-    def fetch_core_ch(self, group):
+    def fetch_pivotal_chs(self, group):
+        '''
+            get the most important chs within group
+        '''
+        assert group >= 0 and group < self._n_group
+
         chs = self.get_group(group)
-        return chs[len(chs)/2]
+        return np.asarray([chs[len(chs)/2]])
 
 class TetrodeProbe(Probe):
     ''' tetrode probe
@@ -153,16 +160,35 @@ class TetrodeProbe(Probe):
     # -------------------------------
 
     def get_group(self, ch):
+        ''' 
+            get the group which the ch be belonged
+        '''
         assert ch >= 0 and ch < self._n_ch
         # tetrode: 4
         t = ch/4*4
         return np.arange(t,t + 4)
 
     def get_chs(self, group):
+        '''
+            get the chs which group has
+        '''
+        assert group >= 0 and group < self._n_group
+
         if group >= self._n_group:
             return np.array([])
         else:
             return np.arange(group*4, group*4+4)
 
-    def fetch_core_ch(self, group):
-        return self.get_chs(group)[0]
+    def belong_group(self, ch):
+        '''
+        '''
+        assert ch >= 0 and ch < self._n_ch
+        return ch/4
+        
+
+    def fetch_pivotal_chs(self, group):
+        '''
+            get the most important chs within group
+        '''
+        assert group >= 0 and group < self._n_group
+        return self.get_chs(group)

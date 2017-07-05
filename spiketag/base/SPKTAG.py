@@ -24,14 +24,16 @@ class SPKTAG(object):
 			self.nspk   = arg_piv.shape[0]
 			self.t      = piv[0]
 			self.ch     = piv[1]
+                        self.group  = self._ch2group(self.ch)
 			self.spk    = spk 
 			self.fet    = fet 
 			self.clu    = clu 
 			self.meta   = {}
 			self.spklen = spk.spklen
 			self.fetlen = fet.fetlen
-			self.dtype  = [('t', 'int32'), 
-			               ('ch','int32'),  
+			self.dtype  = [('t', 'int32'),
+                                       ('ch', 'int32'),
+			               ('group','int32'),  
 			               ('spk', 'f4', (self.spklen, self.probe.len_group)), 
 			               ('fet','f4',(self.fetlen,)),
 			               ('clu','int32')]
@@ -51,13 +53,16 @@ class SPKTAG(object):
 	def build_spktag(self):
 		spktag = np.zeros(self.nspk, dtype=self.dtype)
 		spktag['t']  = self.t
-		spktag['ch'] = self.ch
-		for chNo in range(self.probe.n_ch):
-		    spktag['spk'][spktag['ch']==chNo] = self.spk[chNo]
-		    spktag['fet'][spktag['ch']==chNo] = self.fet[chNo]        
-		    spktag['clu'][spktag['ch']==chNo] = self.clu[chNo].membership
+                spktag['ch'] = self.ch
+		spktag['group'] = self.group
+		for g in range(self.probe.n_group):
+		    spktag['spk'][spktag['group']==g] = self.spk[g]
+		    spktag['fet'][spktag['group']==g] = self.fet[g]        
+		    spktag['clu'][spktag['group']==g] = self.clu[g].membership
 		self.spktag = spktag
 
+        def fetch_spk_times(self, group):
+            return np.sort(self.t[self.group == group]) 
 
 	def update(self, spk, fet, clu):
 		self.spk = spk
@@ -80,31 +85,37 @@ class SPKTAG(object):
 		self.spklen = self.meta['spklen']
 		self.fetlen = self.meta['fetlen']
 		self.dtype = [('t', 'int32'), 
-		              ('ch','int32'),  
+                              ('ch', 'int32'),
+		              ('group', 'int32'),  
 		              ('spk', 'f4', (self.spklen, self.probe.len_group)), 
-		              ('fet','f4',(self.fetlen,)),
-		              ('clu','int32')]
+		              ('fet', 'f4',(self.fetlen,)),
+		              ('clu', 'int32')]
 		self.spktag = np.fromfile(filename, dtype=self.dtype)
 		self.t  = self.spktag['t']
-		self.ch = self.spktag['ch']
+                self.ch = self.spktag['ch']
+		self.group = self.spktag['group']
 
 
 	def tospk(self):
 		spkdict = {}
-		for ch in range(self.probe.n_ch):
-			spkdict[ch] = self.spktag['spk'][self.ch==ch]
+		for g in range(self.probe.n_group):
+			spkdict[g] = self.spktag['spk'][self.group==g]
 		return SPK(spkdict)		
 
 
 	def tofet(self):
 		fetdict = {}
-		for ch in range(self.probe.n_ch):
-			fetdict[ch] = self.spktag['fet'][self.ch==ch]
+		for g in range(self.probe.n_group):
+			fetdict[g] = self.spktag['fet'][self.group==g]
 		return FET(fetdict)		
 
 
 	def toclu(self):
 		cludict = {}
-		for ch in range(self.probe.n_ch):
-			cludict[ch] = CLU(self.spktag['clu'][self.ch==ch])
+		for g in range(self.probe.n_group):
+			cludict[g] = CLU(self.spktag['clu'][self.group==g])
 		return cludict
+
+        def _ch2group(self, ch):
+            ch2group_v = np.vectorize(self.probe.belong_group)
+            return ch2group_v(ch)

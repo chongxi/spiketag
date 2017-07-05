@@ -197,12 +197,11 @@ class trace_view(scene.SceneCanvas):
         ####### trigger timer ######
         self.timer_cursor.start()
 
-    def set_data(self, ch, clu, time_slice=0):
-        self.ch = ch
+    def set_data(self, group, clu, spk_times, time_slice=0):
         self.clu = clu
-        self.chlist = self.spktag.probe.get_group(self.ch)[::-1]
+        self.chlist = self.spktag.probe.get_chs(group)[::-1]
         self.nCh = len(self.chlist)
-        self.times = self.spktag.t[self.spktag.ch==self.ch] 
+        self.times = spk_times 
         self.set_range()
 
         @self.clu.connect
@@ -239,7 +238,7 @@ class trace_view(scene.SceneCanvas):
         self._render(locate_sagment)
 
         # highlight all spikes within this segment
-        self.all_pos = self.get_near_pos(self.ch, global_idx[0], (locate_start, locate_end))
+        self.all_pos = self.get_near_pos(global_idx[0], (locate_start, locate_end))
         for (p,i) in self.all_pos:
             highlight_start = p
             highlight_end = highlight_start + self.spktag.spklen
@@ -260,7 +259,7 @@ class trace_view(scene.SceneCanvas):
         if len(self.clu.selectlist) == 1:
             self.locate_and_highlight(self.clu.selectlist)
 
-    def get_near_pos(self, ch, global_idx, data_range):
+    def get_near_pos(self, global_idx, data_range):
         '''
             get all spikes with data_range, the pos is local pos
         '''
