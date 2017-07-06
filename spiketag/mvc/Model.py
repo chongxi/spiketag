@@ -141,3 +141,14 @@ class MainModel(object):
             self.spktag_filename = barename + '_spktag.bin'
             self.spktag.tofile(self.spktag_filename)
 
+    def remove_spk(self, group, global_id):
+        '''
+        Delete one global id in certain group at a time 
+        '''
+        info("received model modified event, removed spike[group={}, global_id={}]".format(group, global_id))
+        
+        self.spk.remove(group, global_id)
+        self.fet.remove(group, global_id)
+        self.clu[group].remove(global_id)
+        self.spktag.remove(group, global_id)
+        

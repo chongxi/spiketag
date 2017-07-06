@@ -10,6 +10,8 @@ class Sorter(object):
 	def __init__(self, *args, **kwargs):
 		self.model = MainModel(*args, **kwargs)
 		self.view  = MainView(self.model.spktag.probe.n_group, self.model.spktag.probe.get_chs)
+
+                # register action for param view
 		self.view.param_view.signal_group_changed.connect(self.update_group)
 		self.view.param_view.signal_get_fet.connect(self.update_fet)
 		self.view.param_view.signal_recluster.connect(self.update_clu)
@@ -17,6 +19,9 @@ class Sorter(object):
 		self.view.param_view.signal_build_vq.connect(self.build_vq)
 		self.view.param_view.signal_apply_to_all.connect(self.check_apply_to_all)
                 self.view.param_view.signal_trace_view_zoom.connect(self.trace_view_zoom)
+
+                #register action for spike view
+                self.view.spk_view.events.model_modified.connect(self.on_model_modified)
 
 		self.showmua = False
 		self.group = 0
@@ -171,6 +176,13 @@ class Sorter(object):
 
         def trace_view_zoom(self):
                 self.view.trace_view.locate_buffer = self.view.param_view.trace_view_zoom.value()
+
+
+        def on_model_modified(self, e):
+            if e.type == 'delete':
+                self.model.remove_spk(self.group, self.view.spk_view.selected_spk)
+                self.refresh()
+
 
 	def _validate_vq(self):
 		from sklearn.neighbors import KNeighborsClassifier as KNN

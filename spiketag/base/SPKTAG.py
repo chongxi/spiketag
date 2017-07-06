@@ -19,12 +19,11 @@ class SPKTAG(object):
 			self.fromfile(filename)
 		elif probe is not None and pivotal is not None:                    # construct
 		        self.probe  = probe	
-			arg_piv     = np.lexsort((pivotal[0], pivotal[1])) 
-			piv         = pivotal[:, arg_piv]
+                        group       = self._ch2group(pivotal[1])
+			arg_piv     = np.lexsort((pivotal[0], group)) 
 			self.nspk   = arg_piv.shape[0]
-			self.t      = piv[0]
-			self.ch     = piv[1]
-                        self.group  = self._ch2group(self.ch)
+			self.t      = pivotal[0][arg_piv]
+			self.group  = group[arg_piv]
 			self.spk    = spk 
 			self.fet    = fet 
 			self.clu    = clu 
@@ -32,7 +31,6 @@ class SPKTAG(object):
 			self.spklen = spk.spklen
 			self.fetlen = fet.fetlen
 			self.dtype  = [('t', 'int32'),
-                                       ('ch', 'int32'),
 			               ('group','int32'),  
 			               ('spk', 'f4', (self.spklen, self.probe.len_group)), 
 			               ('fet','f4',(self.fetlen,)),
@@ -53,7 +51,6 @@ class SPKTAG(object):
 	def build_spktag(self):
 		spktag = np.zeros(self.nspk, dtype=self.dtype)
 		spktag['t']  = self.t
-                spktag['ch'] = self.ch
 		spktag['group'] = self.group
 		for g in range(self.probe.n_group):
 		    spktag['spk'][spktag['group']==g] = self.spk[g]
@@ -62,7 +59,15 @@ class SPKTAG(object):
 		self.spktag = spktag
 
         def fetch_spk_times(self, group):
-            return np.sort(self.t[self.group == group]) 
+            return self.t[self.group == group] 
+
+        def remove(self, group, id):
+            t = self.fetch_spk_times(group)[id]
+            id = np.where((self.t == t)&(self.group == group))[0][0]
+            self.t = np.delete(self.t, id)
+            self.group = np.delete(self.group, id)
+            self.nspk = self.t.shape[0] 
+            
 
 	def update(self, spk, fet, clu):
 		self.spk = spk
@@ -72,6 +77,8 @@ class SPKTAG(object):
 
 
 	def tofile(self, filename):
+                self.build_meta()
+                self.build_spktag()
 		with open(filename+'.meta', 'w') as metafile:
 			json.dump(self.meta, metafile)
 		self.spktag.tofile(filename)
@@ -85,14 +92,12 @@ class SPKTAG(object):
 		self.spklen = self.meta['spklen']
 		self.fetlen = self.meta['fetlen']
 		self.dtype = [('t', 'int32'), 
-                              ('ch', 'int32'),
 		              ('group', 'int32'),  
 		              ('spk', 'f4', (self.spklen, self.probe.len_group)), 
 		              ('fet', 'f4',(self.fetlen,)),
 		              ('clu', 'int32')]
 		self.spktag = np.fromfile(filename, dtype=self.dtype)
 		self.t  = self.spktag['t']
-                self.ch = self.spktag['ch']
 		self.group = self.spktag['group']
 
 
@@ -100,21 +105,24 @@ class SPKTAG(object):
 		spkdict = {}
 		for g in range(self.probe.n_group):
 			spkdict[g] = self.spktag['spk'][self.group==g]
-		return SPK(spkdict)		
+                self.spk = SPK(spkdict)
+		return self.spk		
 
 
 	def tofet(self):
 		fetdict = {}
 		for g in range(self.probe.n_group):
 			fetdict[g] = self.spktag['fet'][self.group==g]
-		return FET(fetdict)		
+                self.fet = FET(fetdict)
+		return self.fet		
 
 
 	def toclu(self):
 		cludict = {}
 		for g in range(self.probe.n_group):
 			cludict[g] = CLU(self.spktag['clu'][self.group==g])
-		return cludict
+                self.clu = cludict
+		return self.clu
 
         def _ch2group(self, ch):
             ch2group_v = np.vectorize(self.probe.belong_group)

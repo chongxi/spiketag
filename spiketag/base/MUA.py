@@ -4,6 +4,7 @@ from numba import jit
 from multiprocessing import Pool
 from .SPK import SPK
 from .Binload import bload
+from ..utils.conf import info
 
 @jit(cache=True, nopython=True)
 def _to_spk(data, pos, chlist, spklen=19, prelen=8):
@@ -70,8 +71,8 @@ class MUA():
 
         @cpu.remote(block=True)      # to be executed by cpu
         @interactive                 # to be on the global()
-        def get_noise_ids(filename, corr_cutoff):
-            spk_data = np.memmap(filename, dtype='f4').reshape(-1, 25, 32)
+        def get_noise_ids(filename, corr_cutoff, n_group):
+            spk_data = np.memmap(filename, dtype='f4').reshape(-1, 25, n_group)
             noise_id = []
             # corr_cutoff = 0.98
             # ind is index assign to each cpu
@@ -88,7 +89,7 @@ class MUA():
         # f = interactive(get_noise_ids)
         cpu.execute('import numpy as np')
         cpu.scatter('ind', range(nspk))
-        noise_id = get_noise_ids(filename, corr_cutoff)
+        noise_id = get_noise_ids(filename, corr_cutoff, self.probe.n_group)
         # cpu.execute("%reset")
         try:
             os.remove(filename)
@@ -99,4 +100,5 @@ class MUA():
 
     def remove_high_corr_noise(self, corr_cutoff=0.95):
         nid = self.get_nid(corr_cutoff)
+        info('removed noise ids: {} '.format(nid)) 
         self.pivotal_pos = np.delete(self.pivotal_pos, nid, axis=1)

@@ -35,6 +35,9 @@ class SPK():
     def __getitem__(self,i):
         return self.spk[i]
     
+    def remove(self, group, id):
+        self.spk[group] = np.delete(self.spk[group], id, axis=0)
+    
     def tofet(self, method='weighted-pca', ncomp=6, whiten=False):
         fet = {}
         pca_comp = {}

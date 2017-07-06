@@ -2,18 +2,18 @@ import numpy as np
 import numexpr as ne
 from collections import OrderedDict
 from phy.plot import View, base, visuals
-from phy.utils.event import EventEmitter
+from vispy.util.event import Event
 from .color_scheme import palette
 from ..utils.utils import Timer
 from ..utils import conf 
-from ..utils.conf import error
+from ..utils.conf import error, warning
 from ..base.CLU import CLU
 from ._core import _get_array, _accumulate
 from ._core import _spkNo2maskNo_numba, _cache_out, _cache_in_vector, _cache_in_scalar, _representsInt 
 
 
 class spike_view(View):
-    
+   
     def __init__(self, interactive=True):
         super(spike_view, self).__init__('grid')
         self.palette = palette
@@ -23,7 +23,7 @@ class spike_view(View):
         self.interactive = interactive
         self._selected = {}
         self._view_lock = True
-        self._event     = EventEmitter()
+        self.events.add(model_modified=Event)
         
     def attach(self, gui):
         gui.add_view(self)
@@ -365,15 +365,6 @@ class spike_view(View):
         for k,v in self._selected.iteritems():
             self._selected[k] = np.array([])
 
-    def on_select(self):
-        self._event.emit('select', global_idx=self.selected_spk)
-
-    def connect_(self, *args, **kwargs):
-        self._event.connect(*args, **kwargs)
-
-    def unconnect_(self, *args, **kwargs):
-        self._event.unconnect(*args, **kwargs)
-
     def _move_spikes(self, target_clu_no):
         if not self.is_spk_empty and self.selected_cluster != target_clu_no:
             # cluster takes 100 ms + on_cluster event handler take 700ms
@@ -412,11 +403,6 @@ class spike_view(View):
                 if self.view_lock is True:
                     target_clu_No = box[1]
                     self._move_spikes(target_clu_No)  
-
-            # TODO can not find the where is listener
-            #  if len(self._spkNolist) == 1:
-                #  if self.view_lock is False:
-                    #  self._event.emit('click', global_idx=self.selected_spk)     
 
         if e.button == 3:
             self.clear_virtual()
@@ -535,6 +521,13 @@ class spike_view(View):
             if not self.is_spk_empty:
                 target_clu_No = max(self.clu.index_id) + 1
                 self._move_spikes(target_clu_No)
+        
+        if e.text == 'd':
+            if len(self.selected_spk) == 1:
+                self.events.model_modified(Event('delete'))
+            else:
+                warning("Please delete only one spike each time.") # avoid misoperation
+
 
         if _representsInt(e.text):
             ### assign selected spikes to cluster number ###
