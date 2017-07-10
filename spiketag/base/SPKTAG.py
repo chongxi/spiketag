@@ -62,11 +62,11 @@ class SPKTAG(object):
         def fetch_spk_times(self, group):
             return self.t[self.group == group] 
 
-        def remove(self, group, id):
-            t = self.fetch_spk_times(group)[id]
-            id = np.where((self.t == t)&(self.group == group))[0][0]
-            self.t = np.delete(self.t, id)
-            self.group = np.delete(self.group, id)
+        def remove(self, group, ids):
+            ts = self.fetch_spk_times(group)[ids]
+            ids = np.where((np.in1d(self.t, ts))&(self.group == group))[0]
+            self.t = np.delete(self.t, ids)
+            self.group = np.delete(self.group, ids)
             self.nspk = self.t.shape[0] 
             
 

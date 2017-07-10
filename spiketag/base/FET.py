@@ -31,8 +31,8 @@ class FET(object):
     def __getitem__(self, i):
         return self.fet[i]
 
-    def remove(self, group, id):
-        self.fet[group] = np.delete(self.fet[group], id, axis=0)
+    def remove(self, group, ids):
+        self.fet[group] = np.delete(self.fet[group], ids, axis=0)
  
     def toclu(self, method='hdbscan', njobs=1, *args, **kwargs):
         clu = {}

@@ -144,14 +144,15 @@ class MainModel(object):
             self.spktag_filename = barename + '_spktag.bin'
             self.spktag.tofile(self.spktag_filename)
 
-    def remove_spk(self, group, global_id):
+    def remove_spk(self, group, global_ids):
         '''
-        Delete one global id in certain group at a time 
+        Delete spks using global_ids, spks includes SPK, FET, CLU, SPKTAG. 
         '''
-        info("received model modified event, removed spike[group={}, global_id={}]".format(group, global_id))
+        info("received model modified event, removed spikes[group={}, global_ids={}]".format(group, global_ids))
         
-        self.spk.remove(group, global_id)
-        self.fet.remove(group, global_id)
-        self.clu[group].remove(global_id)
-        self.spktag.remove(group, global_id)
-        
+        self.spk.remove(group, global_ids)
+        self.fet = self.spk.tofet(method=self.fet_method, 
+                                  whiten=self._fet_whiten,
+                                  ncomp=self._fetlen)
+        self.clu[group].remove(global_ids)
+        self.spktag.remove(group, global_ids)

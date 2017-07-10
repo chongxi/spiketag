@@ -174,16 +174,18 @@ class CLU(EventEmitter):
         
         return self.global2local(selected_global_idx)[clu_to]
 
-    def remove(self, global_id):
+    def remove(self, global_ids):
         '''
             remove certain id from clu, and recontruct the cluster. 
             the reason not using @instack_membership because it doest't help a lot when undo, because we not only remove the clu, also remove 
             spk, fet, pivotal. Have no need to support undo until spk, fet, pivotal support undo.
         '''
-        assert isinstance(global_id, int) or len(global_id) == 1, 'Only support one id at a time, global_id:{}'.format(global_id)
 
-        self.membership = np.delete(self.membership, global_id);
+        self.membership = np.delete(self.membership, global_ids)
         self.__construct__()
+
+        for i in range(len(self._membership_stack)):
+            self._membership_stack[i] = np.delete(self._membership_stack[i], global_ids)
     
     @instack_membership
     def split(self, clus_from):

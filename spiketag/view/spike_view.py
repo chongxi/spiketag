@@ -523,11 +523,9 @@ class spike_view(View):
                 self._move_spikes(target_clu_No)
         
         if e.text == 'd':
-            if len(self.selected_spk) == 1:
+            if len(self.selected_spk) > 0:
                 self.events.model_modified(Event('delete'))
-            else:
-                warning("Please delete only one spike each time.") # avoid misoperation
-
+                self._selected = {}
 
         if _representsInt(e.text):
             ### assign selected spikes to cluster number ###
