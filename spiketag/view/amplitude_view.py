@@ -104,7 +104,7 @@ class amplitude_view(scatter_2d_view):
         times = self._spike_time[self._clu.index[clu]]
         # peak always heppenned one offset before
         # TODO may not use constant
-        amplitudes = self._spk[self._clu.index[clu], 7, 1] / self._scale
+        amplitudes = self._spk[self._clu.index[clu], 7].min(axis=1) / self._scale
         
         return  times / self.binsize, amplitudes
  

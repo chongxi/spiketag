@@ -36,6 +36,7 @@ class MUA():
         self.prelen = 8
         spk_meta = np.fromfile(filename+'.spk', dtype='<i4')
         self.pivotal_pos = spk_meta.reshape(-1,2).T
+        info('raw data have {} spks'.format(self.pivotal_pos.shape[1]))
 
     def tospk(self):
         spkdict = {}
