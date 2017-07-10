@@ -69,13 +69,13 @@ class SPK():
             for i, spk in self.spk.items():
                 # TODO: 6?
                 pca = PCA(n_components=ncomp, whiten=whiten)
-                if spk.shape[0] > 0:
+                if spk.shape[0] >= ncomp:
                     # X = np.concatenate((spk[:,:,:].transpose(2,1,0)),axis=0).T   #
                     X = spk.transpose(0,2,1).ravel().reshape(-1, spk.shape[1]*spk.shape[2])
                     temp_fet = pca.fit_transform(X)
                     fet[i] = temp_fet/(temp_fet.max()-temp_fet.min()) 
                 else:
-                    fet[i] = np.array([])
+                    fet[i] = np.empty((0, ncomp), dtype=np.float32)
             self.fet = fet
 
         elif method == 'weighted-pca':

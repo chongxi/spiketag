@@ -62,6 +62,9 @@ class MainModel(object):
             info('removing high corr noise from spikes pool')
             self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
 
+            info('removing all spks on group which len(spks) less then fetlen')
+            self.mua.remove_groups_under_fetlen(self._fetlen)
+
             info('extract spikes from pivital meta data')
             self.spk = self.mua.tospk()
 

@@ -184,7 +184,7 @@ class wave_view(scene.SceneCanvas):
             wview = wave_view(data=data, spks=spks, chs=[i for i in range(32) if i % 5 == 1])
             wview.show()
     '''
-    def __init__(self, data=None, fs=25e3, spks=None, chs=None, color=None, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
+    def __init__(self, data=None, fs=25e3, spks=None, chs=None, color=None, pagesize=20000, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
         scene.SceneCanvas.__init__(self, keys=None)
         self.unfreeze()
 
@@ -222,7 +222,7 @@ class wave_view(scene.SceneCanvas):
 
         self._start_index = 0
         self.flag = 0
-        self._pagesize = 20000
+        self._pagesize = pagesize
         self.location = ''
         y_sync_cam = YSyncCamera()
         self.view1.camera.link(y_sync_cam)

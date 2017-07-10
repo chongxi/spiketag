@@ -100,5 +100,17 @@ class MUA():
 
     def remove_high_corr_noise(self, corr_cutoff=0.95):
         nid = self.get_nid(corr_cutoff)
-        info('removed noise ids: {} '.format(nid)) 
         self.pivotal_pos = np.delete(self.pivotal_pos, nid, axis=1)
+        info('removed noise ids: {} '.format(nid)) 
+
+    def remove_groups_under_fetlen(self, fetlen):
+        ids = []
+        groups = {}
+        for g in range(self.probe.n_group):
+            pivotal_chs = self.probe.fetch_pivotal_chs(g)
+            _ids = np.where(np.in1d(self.pivotal_pos[1], pivotal_chs))[0]
+            if len(_ids) < fetlen:
+                ids.extend(_ids)
+                groups[g] = len(_ids)
+        self.pivotal_pos = np.delete(self.pivotal_pos, ids, axis=1)
+        info('removed all spks on these groups: {}'.format(groups)) 

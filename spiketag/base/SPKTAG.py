@@ -55,7 +55,8 @@ class SPKTAG(object):
 		for g in range(self.probe.n_group):
 		    spktag['spk'][spktag['group']==g] = self.spk[g]
 		    spktag['fet'][spktag['group']==g] = self.fet[g]        
-		    spktag['clu'][spktag['group']==g] = self.clu[g].membership
+                    if g in self.clu: 
+                        spktag['clu'][spktag['group']==g] = self.clu[g].membership
 		self.spktag = spktag
 
         def fetch_spk_times(self, group):
