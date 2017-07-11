@@ -61,8 +61,8 @@ class MainModel(object):
             info('load mua data')
             self.mua = MUA(self.filename, self.probe, self.numbytes, self.binpoint)
 
-            # info('removing high corr noise from spikes pool')
-            # self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
+            info('removing high corr noise from spikes pool')
+            self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
 
             info('removing all spks on group which len(spks) less then fetlen')
             self.mua.remove_groups_under_fetlen(self._fetlen)
@@ -154,11 +154,9 @@ class MainModel(object):
        
         with Timer("remove spk from SPK.", verbose=conf.ENABLE_PROFILER):
             self.spk.remove(group, global_ids)
-        with Timer("spk to fet.", verbose=conf.ENABLE_PROFILER):
-            self.fet = self.spk.tofet(method=self.fet_method, 
-                                      whiten=self._fet_whiten,
-                                      ncomp=self._fetlen)
+        with Timer("spk to FET.", verbose=conf.ENABLE_PROFILER):
+            self.fet[group] = self.spk._tofet(group, method=self.fet_method)
         with Timer("remove spk from CLU.", verbose=conf.ENABLE_PROFILER):
-            self.clu[group].remove(global_ids)
+            self.clu[group] = CLU(self.fet._toclu(group))
         with Timer("remove spk from SPKTAG.", verbose=conf.ENABLE_PROFILER):
             self.spktag.remove(group, global_ids)

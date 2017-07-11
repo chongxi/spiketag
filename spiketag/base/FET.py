@@ -31,7 +31,7 @@ class FET(object):
     def __getitem__(self, i):
         return self.fet[i]
 
-    def __setitem__(self, _fet_array):
+    def __setitem__(self, i, _fet_array):
         self.fet[i] = _fet_array
 
     def remove(self, group, ids):

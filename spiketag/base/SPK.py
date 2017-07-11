@@ -40,7 +40,7 @@ def _to_fet(_spk_array, _weight_vector, method='weighted-pca', ncomp=6, whiten=F
             # pca_comp[i] = pca.components_.T
             # step 2
             shift = -np.dot(X.mean(axis=0), pca.components_.T)
-            temp_fet += shift[i]
+            temp_fet += shift
             # step 3
             scale = temp_fet.max()-temp_fet.min()
             temp_fet /= scale
@@ -105,7 +105,7 @@ class SPK():
     def __getitem__(self,i):
         return self.spk[i]
 
-    def __setitem__(self, _spk_array):
+    def __setitem__(self, i,  _spk_array):
         self.spk[i] = _spk_array
 
     def mask(self, group, ids):
@@ -119,7 +119,7 @@ class SPK():
         if spk.shape[0] > 0:
             fet = _to_fet(spk, self.W, method, ncomp, whiten)
         else:
-            fet = np.array([])
+            fet = np.empty((0, ncomp), dtype=np.float32)
         return fet
 
     def tofet(self, method='weighted-pca', ncomp=6, whiten=False):
@@ -129,6 +129,6 @@ class SPK():
         scale = {}
 
         for group in self.spk.keys():
-            fet[i] = self._tofet(group, self.W, method, ncomp, whiten)
+            fet[group] = self._tofet(group, method, ncomp, whiten)
 
         return FET(fet)
