@@ -14,6 +14,7 @@ class CLU(EventEmitter):
     def __init__(self, clu):
         super(CLU, self).__init__()
         self.membership = clu.copy()
+        self.__membership = self.membership.copy()
         while min(self.membership) < 0:
             self.membership += 1
         self._membership_stack = []
@@ -147,6 +148,13 @@ class CLU(EventEmitter):
         self.emit('select_clu', action='select_clu')
 
     @instack_membership
+    def reset(self):
+        '''reset to 0'''
+        self.membership=0
+        self.__construct__()
+        self.emit('cluster', action='reset')
+
+    @instack_membership
     def merge(self, mergelist):
         '''
         merge two or more clusters, target cluNo is the lowest id
@@ -186,6 +194,10 @@ class CLU(EventEmitter):
 
         for i in range(len(self._membership_stack)):
             self._membership_stack[i] = np.delete(self._membership_stack[i], global_ids)
+
+    def mask(self, global_ids):
+        self.membership = np.delete(self.__membership, global_ids)
+        self.__construct__()
     
     @instack_membership
     def split(self, clus_from):

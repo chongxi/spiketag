@@ -74,7 +74,7 @@ def _to_fet(_spk_array, _weight_vector, method='weighted-pca', ncomp=6, whiten=F
 
 class SPK():
     def __init__(self, spkdict):
-        self.__spk = spkdict 
+        self.__spk = spkdict.copy() 
         self.spk = spkdict
         self.n_group = len(spkdict)
         self.ch_span = self.spk[0].shape[-1]

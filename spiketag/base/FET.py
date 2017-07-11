@@ -93,7 +93,9 @@ class FET(object):
                          gen_min_span_tree=False, 
                          algorithm='boruvka_kdtree')        
             clu = hdbcluster.fit_predict(self.fet[groupNo])
-            return clu
+        elif method == 'reset':
+            clu = np.zeros((self.fet[groupNo].shape[0], )).astype(np.int64)
+        return clu
 
     # def torho(self):
     #     nbrs = NearestNeighbors(algorithm='ball_tree', metric='euclidean',

@@ -61,8 +61,8 @@ class MainModel(object):
             info('load mua data')
             self.mua = MUA(self.filename, self.probe, self.numbytes, self.binpoint)
 
-            info('removing high corr noise from spikes pool')
-            self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
+            # info('removing high corr noise from spikes pool')
+            # self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
 
             info('removing all spks on group which len(spks) less then fetlen')
             self.mua.remove_groups_under_fetlen(self._fetlen)
@@ -98,7 +98,6 @@ class MainModel(object):
 
             info('load mua data for wave view')
             self.mua = MUA(self.filename, self.spktag.probe, self.numbytes, self.binpoint)
-
 
 
     def cluster(self, method='hdbscan', *args, **kwargs):
@@ -160,3 +159,19 @@ class MainModel(object):
             self.clu[group] = CLU(self.fet._toclu(group))
         with Timer("remove spk from SPKTAG.", verbose=conf.ENABLE_PROFILER):
             self.spktag.remove(group, global_ids)
+
+    def mask_spk(self, group, global_ids):
+        '''
+        Delete spks using global_ids, spks includes SPK, FET, CLU, SPKTAG. 
+        '''
+        info("received model modified event, mask spikes[group={}, global_ids={}]".format(group, global_ids))
+        
+        with Timer("mask spk from SPK.", verbose=conf.ENABLE_PROFILER):
+            self.spk.mask(group, global_ids)
+        with Timer("spk to FET.", verbose=conf.ENABLE_PROFILER):
+            self.fet[group] = self.spk._tofet(group, method=self.fet_method)
+        with Timer("reset clu", verbose=conf.ENABLE_PROFILER):
+            self.clu[group] = CLU(self.fet._toclu(group, method='reset'))
+        with Timer("remove spk from SPKTAG.", verbose=conf.ENABLE_PROFILER):
+            self.spktag.mask(group, global_ids)
+
