@@ -151,13 +151,13 @@ class MainModel(object):
         '''
         info("received model modified event, removed spikes[group={}, global_ids={}]".format(group, global_ids))
        
-        with Timer("remove spk from SPK.", verbose=conf.ENABLE_PROFILER):
+        with Timer("[MODEL] Model -- remove spk from SPK.", verbose=conf.ENABLE_PROFILER):
             self.spk.remove(group, global_ids)
-        with Timer("spk to FET.", verbose=conf.ENABLE_PROFILER):
+        with Timer("[MODEL] Model -- spk to FET.", verbose=conf.ENABLE_PROFILER):
             self.fet[group] = self.spk._tofet(group, method=self.fet_method)
-        with Timer("remove spk from CLU.", verbose=conf.ENABLE_PROFILER):
+        with Timer("[MODEL] Model -- fet to  CLU.", verbose=conf.ENABLE_PROFILER):
             self.clu[group] = CLU(self.fet._toclu(group))
-        with Timer("remove spk from SPKTAG.", verbose=conf.ENABLE_PROFILER):
+        with Timer("[MODEL] Model --  remove spk from SPKTAG.", verbose=conf.ENABLE_PROFILER):
             self.spktag.remove(group, global_ids)
 
     def mask_spk(self, group, global_ids):

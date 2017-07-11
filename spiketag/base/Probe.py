@@ -23,14 +23,22 @@ class ProbeFactory(object):
                     sample rate
                 n_ch : int
                     number of channel
+                gmaps: dist
+                    the map from goup to channel, i.e: {1:[1,2,3,4]}. if gmaps is None, defaut sequence maps will be applied.   
     '''
     @staticmethod
     def genLinearProbe(fs, n_ch, ch_span=1):
         return LinearProbe(fs, n_ch, ch_span)
 
     @staticmethod 
-    def genTetrodeProbe(fs, n_ch):
-        return TetrodeProbe(fs, n_ch)
+    def genTetrodeProbe(fs, n_ch, gmaps=None):
+        if not gmaps:
+            gmaps = {}
+            for g in range(n_ch/4):
+               gmaps[g] = range(g*4, g*4+4)
+        else:
+            assert len(gmaps.values()) == n_ch, 'Total number of chs should be equals.'
+        return TetrodeProbe(fs, n_ch, gmaps)
 
 # -------------------------------
 #         Type of Probes
@@ -144,25 +152,22 @@ class LinearProbe(Probe):
 class TetrodeProbe(Probe):
     ''' tetrode probe
     '''
-    def __init__(self, fs, n_ch, gmaps=None):
+    def __init__(self, fs, n_ch, g2chs):
         super(TetrodeProbe, self).__init__('tetrode')
 
         assert fs > 0
         assert n_ch > 0 and n_ch % 4 == 0
+        assert g2chs
 
         self._fs = fs
         self._n_ch = n_ch
         self._n_group = int(self._n_ch / 4)
         self._len_group = 4
-        
-        if gmaps:
-            self.gmaps = gmaps
-        else:
-            # init default group to chs map
-            self.gmaps = {}
-            for g in range(self._n_group):
-               self.gmaps[g] = np.arange(g*4, g*4+4)
-
+        self._g2chs = g2chs
+        self._ch2g = {}
+        for g, chs in self._g2chs.items():
+            self._update_chs2group(chs, g)
+            
     # -------------------------------
     #        public method 
     # -------------------------------
@@ -172,33 +177,36 @@ class TetrodeProbe(Probe):
             get the chs which group has
         '''
         assert group >= 0 and group < self._n_group
-        return self.gmaps[group] 
+        return self._g2chs[group] 
 
     def belong_group(self, ch):
         '''
             return the group number which ch is belonged
         '''
         assert ch >= 0 and ch < self._n_ch
-        for g, chs in self.gmaps.items():
-            if ch in chs: return g
-        assert False, "shouldn't be here, something wrong"
+        return self._ch2g[ch]
 
     def fetch_pivotal_chs(self, group):
         '''
             get the most important chs within group
         '''
         assert group >= 0 and group < self._n_group
-        return self.gmaps[group]
+        return self._g2chs[group]
     
+    def _update_chs2group(self, chs, g):
+       for ch in chs:
+            self._ch2g[ch] = g
+
     def __getitem__(self, group):
-        return self.get_chs(group)
+        return self._g2chs(group)
 
     def __setitem__(self, group, chs):
         assert group >= 0 and group < self._n_group
         assert len(chs) == 4
-        self.gmaps[group] = chs
+        self._g2chs[group] = chs
+        self._update_chs2group(chs, group)
 
     def __str__(self):
-        return '\n'.join(['{}:{}'.format(key, val) for key, val in self.gmaps.items()]) 
+        return '\n'.join(['{}:{}'.format(key, val) for key, val in self._g2chs.items()]) 
 
     __repr__ = __str__

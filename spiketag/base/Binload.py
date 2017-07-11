@@ -110,17 +110,17 @@ class bload(object):
             [1],ch : array-like
                 the channel number of each spikes. so len(t) == len(ch)
         '''
-        with Timer('covert to data'):
+        with Timer('[MODEL] Binload -- covert to data'):
             data = self.asarray()
         
-        with Timer('cal threshholds'):
+        with Timer('[MODEL] Binload -- threshholds'):
             threshholds = self.to_threshold(data)
         
         t = np.array([], dtype=np.int64)
         ch = np.array([], dtype=np.int32) 
   
         for i in range(data.shape[1]):
-            with Timer('cal peakdet for ' + str(i)):
+            with Timer('[MODEL] Binload -- cal peakdet for ' + str(i)):
                 _, mintab = peakdet(data[:,i],delta)    
             spks = mintab[mintab[:,1] < threshholds[i]].astype(np.int64)
             t = np.hstack((t, spks[:,0]))

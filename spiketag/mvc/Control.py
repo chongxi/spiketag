@@ -182,9 +182,9 @@ class Sorter(object):
 
         def on_model_modified(self, e):
             if e.type == 'delete':
-                with Timer("remove spk from model.", verbose = conf.ENABLE_PROFILER):
+                with Timer("[CONTROL] Control -- remove spk from model.", verbose = conf.ENABLE_PROFILER):
                     self.model.remove_spk(self.group, self.view.spk_view.selected_spk)
-                with Timer("refresh view after delete.", verbose = conf.ENABLE_PROFILER): 
+                with Timer("[CONTROL] Control -- refresh view after delete.", verbose = conf.ENABLE_PROFILER): 
                     self.refresh()
 
 

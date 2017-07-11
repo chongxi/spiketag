@@ -1,4 +1,4 @@
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from hdbscan import HDBSCAN
@@ -91,7 +91,8 @@ class FET(object):
             hdbcluster = HDBSCAN(min_cluster_size=min_cluster_size, 
                          leaf_size=leaf_size,
                          gen_min_span_tree=False, 
-                         algorithm='boruvka_kdtree')        
+                         algorithm='boruvka_kdtree',
+                         core_dist_n_jobs=cpu_count())        
             clu = hdbcluster.fit_predict(self.fet[groupNo])
         elif method == 'reset':
             clu = np.zeros((self.fet[groupNo].shape[0], )).astype(np.int64)

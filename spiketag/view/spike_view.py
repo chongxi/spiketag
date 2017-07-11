@@ -104,7 +104,7 @@ class spike_view(View):
         
         @self.clu.connect
         def on_cluster(*args, **kwargs):
-            with Timer('rerender', verbose=conf.ENABLE_PROFILER):
+            with Timer('[VIEW] Spikeview -- rerender', verbose=conf.ENABLE_PROFILER):
                 self._selected = {}
                 self.rerender()
         
@@ -118,16 +118,16 @@ class spike_view(View):
         visual = visuals.PlotVisual()
         self.add_visual(visual)
         
-        with Timer('render - step 0: get data', verbose=conf.ENABLE_PROFILER):
+        with Timer('[VIEW] Spikeview -- render - step 0: get data', verbose=conf.ENABLE_PROFILER):
             self._get_data(self._data_bound)
 
-        with Timer('render - step 1: set data', verbose=conf.ENABLE_PROFILER):
+        with Timer('[VIEW] Spikeview -- render - step 1: set data', verbose=conf.ENABLE_PROFILER):
             self._build()
             self.signal_index = np.repeat(np.arange(len(self.y)/len(self._xsig)), 
                                               len(self._xsig)).astype(np.float32)
 
 
-        with Timer('render - step 2: gsgl update', verbose=conf.ENABLE_PROFILER):
+        with Timer('[VIEW] Spikeview -- render - step 2: gsgl update', verbose=conf.ENABLE_PROFILER):
             visual.program['a_position'] = self.depth
             visual.program['a_color'] = self.color
             visual.program['a_signal_index'] = self.signal_index
@@ -144,13 +144,13 @@ class spike_view(View):
         if data_bound is None:
             data_bound = (-1,-1,1,1)
 
-        with Timer('rerender - step 0: get data', verbose=conf.ENABLE_PROFILER):
+        with Timer('[VIEW] Spikeview -- rerender - step 0: get data', verbose=conf.ENABLE_PROFILER):
             self._get_data(data_bound)
         
-        with Timer('rerender - step 1: set data', verbose=conf.ENABLE_PROFILER):
+        with Timer('[VIEW] Spikeview -- rerender - step 1: set data', verbose=conf.ENABLE_PROFILER):
             self._build()
 
-        with Timer('rerender - step 2: gsgl update', verbose=conf.ENABLE_PROFILER):
+        with Timer('[VIEW] Spikeview -- rerender - step 2: gsgl update', verbose=conf.ENABLE_PROFILER):
             # [self._a_pos, self._a_color, self._a_index] = _pv_set_data(self.visuals[0], **data)
             self.visuals[0].program['a_position'] = self.depth
             self.visuals[0].program['a_color'] = self.color
@@ -237,15 +237,15 @@ class spike_view(View):
         highlight the selected spikes:
         the selected is dist, eg: {cluNo:[spikelist]}, the spike list is local idx in the clu, and the num of clu could be one or more
         """
-        with Timer('is external', verbose=conf.ENABLE_PROFILER):
+        with Timer('[VIEW] Spikeview -- is external', verbose=conf.ENABLE_PROFILER):
             if external:
                 self.clear_virtual()
 
-        with Timer('is refresh', verbose=conf.ENABLE_PROFILER):
+        with Timer('[VIEW] Spikeview -- is refresh', verbose=conf.ENABLE_PROFILER):
             if refresh:
                 self._clear_highlight()
 
-        with Timer('do highlight', verbose=conf.ENABLE_PROFILER):
+        with Timer('[VIEW] Spikeview -- do highlight', verbose=conf.ENABLE_PROFILER):
             for k,v in selected.iteritems():
                 self._highlight(v,k,refresh=False)
 
@@ -259,18 +259,18 @@ class spike_view(View):
         accelerated by numba
         """
         try:
-            with Timer('get_view_mask', verbose=conf.ENABLE_PROFILER):
+            with Timer('[VIEW] Spikeview -- get_view_mask', verbose=conf.ENABLE_PROFILER):
                 view_mask = self._spkNo2maskNo(spkNolist=spkNolist, cluNo=cluNo)
                 n_view_mask = len(view_mask)
                 n_cache_mask = len(self._cache_mask_)
 
-            with Timer('render mask', verbose=conf.ENABLE_PROFILER):
+            with Timer('[VIEW] Spikeview -- render mask', verbose=conf.ENABLE_PROFILER):
                 if refresh and n_cache_mask>0:
                     _cache_out(self._cache_mask_, self._cache_color, self.color)
                     _cache_out(self._cache_mask_, self._cache_depth, self.depth)
                     self._cache_mask_ = np.array([])
 
-            with Timer('update view', verbose=conf.ENABLE_PROFILER):
+            with Timer('[VIEW] Spikeview -- update view', verbose=conf.ENABLE_PROFILER):
                 if n_view_mask>0:
                     # selected_color = np.hstack((self._highlight_color[:3], self.transparency))
                     _cache_in_vector(view_mask, self._highlight_color, self.color)
@@ -370,7 +370,7 @@ class spike_view(View):
             # cluster takes 100 ms + on_cluster event handler take 700ms
             if self.selected_whole_cluster is False:  # move
                 try:
-                    with Timer('move', verbose=conf.ENABLE_PROFILER):
+                    with Timer('[VIEW] Spikeview -- move', verbose=conf.ENABLE_PROFILER):
                         target_local_idx = self.clu.move(self._selected,
                                                         target_clu_no)
                         self._selected = {target_clu_no:target_local_idx}
@@ -383,7 +383,7 @@ class spike_view(View):
             if self.selected_whole_cluster is True:   # merge
                 try:
                     global_idx = self.clu.local2global(self._selected)
-                    with Timer('merge', verbose=conf.ENABLE_PROFILER):
+                    with Timer('[VIEW] Spikeview -- merge', verbose=conf.ENABLE_PROFILER):
                         self.clu.merge(np.append(self._selected.keys(),target_clu_no))
                     self._selected = self.clu.global2local(global_idx)
                 except IndexError, e:
@@ -391,7 +391,7 @@ class spike_view(View):
                     error("Merge selected spikes {} to target clu no {}".format(self._selected, target_clu_no))
                     error("Current cluster index is {}.".format(self.clu.index))
 
-            with Timer('highlight', verbose=conf.ENABLE_PROFILER):
+            with Timer('[VIEW] Spikeview -- highlight', verbose=conf.ENABLE_PROFILER):
                 self.highlight(selected=self._selected) 
 
     def on_mouse_press(self, e):
@@ -524,7 +524,7 @@ class spike_view(View):
         
         if e.text == 'd':
             if len(self.selected_spk) > 0:
-                with Timer('Delete spks from spk view.', verbose=conf.ENABLE_PROFILER): 
+                with Timer('[VIEW] Spikeview -- Delete spks from spk view.', verbose=conf.ENABLE_PROFILER): 
                     self.events.model_modified(Event('delete'))
                     self._selected = {}
 
