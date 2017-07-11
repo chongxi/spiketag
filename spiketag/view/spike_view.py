@@ -524,8 +524,9 @@ class spike_view(View):
         
         if e.text == 'd':
             if len(self.selected_spk) > 0:
-                self.events.model_modified(Event('delete'))
-                self._selected = {}
+                with Timer('Delete spks from spk view.', verbose=conf.ENABLE_PROFILER): 
+                    self.events.model_modified(Event('delete'))
+                    self._selected = {}
 
         if _representsInt(e.text):
             ### assign selected spikes to cluster number ###

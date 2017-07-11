@@ -269,14 +269,6 @@ class wave_view(scene.SceneCanvas):
         ####### trigger timer ######
         self.timer_cursor.start()
 
-    def set_data(self, ch, clu, time_slice=0):
-        self.ch = ch
-        self.clu = clu
-        self.chlist = self.spktag.probe.get_group(self.ch)[::-1]
-        self.nCh = len(self.chlist)
-
-        self.set_range()
-
     def _spkarray2dist(self, spks):
         if spks is None:
             return None

@@ -2,6 +2,8 @@ import numpy as np
 from sklearn.neighbors import KDTree
 from ..base import *
 from ..utils.conf import info 
+from ..utils import conf
+from ..utils.utils import Timer
 
 
 class MainModel(object):
@@ -149,10 +151,14 @@ class MainModel(object):
         Delete spks using global_ids, spks includes SPK, FET, CLU, SPKTAG. 
         '''
         info("received model modified event, removed spikes[group={}, global_ids={}]".format(group, global_ids))
-        
-        self.spk.remove(group, global_ids)
-        self.fet = self.spk.tofet(method=self.fet_method, 
-                                  whiten=self._fet_whiten,
-                                  ncomp=self._fetlen)
-        self.clu[group].remove(global_ids)
-        self.spktag.remove(group, global_ids)
+       
+        with Timer("remove spk from SPK.", verbose=conf.ENABLE_PROFILER):
+            self.spk.remove(group, global_ids)
+        with Timer("spk to fet.", verbose=conf.ENABLE_PROFILER):
+            self.fet = self.spk.tofet(method=self.fet_method, 
+                                      whiten=self._fet_whiten,
+                                      ncomp=self._fetlen)
+        with Timer("remove spk from CLU.", verbose=conf.ENABLE_PROFILER):
+            self.clu[group].remove(global_ids)
+        with Timer("remove spk from SPKTAG.", verbose=conf.ENABLE_PROFILER):
+            self.spktag.remove(group, global_ids)

@@ -3,7 +3,9 @@ from .Model import MainModel
 from .View import MainView
 from ..view import scatter_3d_view
 from ..base import CLU
-from ..utils import warning 
+from ..utils import warning, conf
+from ..utils.utils import Timer
+
 
 class Sorter(object):
 	"""docstring for Sorter"""
@@ -180,8 +182,10 @@ class Sorter(object):
 
         def on_model_modified(self, e):
             if e.type == 'delete':
-                self.model.remove_spk(self.group, self.view.spk_view.selected_spk)
-                self.refresh()
+                with Timer("remove spk from model.", verbose = conf.ENABLE_PROFILER):
+                    self.model.remove_spk(self.group, self.view.spk_view.selected_spk)
+                with Timer("refresh view after delete.", verbose = conf.ENABLE_PROFILER): 
+                    self.refresh()
 
 
 	def _validate_vq(self):

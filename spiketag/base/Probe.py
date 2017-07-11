@@ -144,7 +144,7 @@ class LinearProbe(Probe):
 class TetrodeProbe(Probe):
     ''' tetrode probe
     '''
-    def __init__(self, fs, n_ch):
+    def __init__(self, fs, n_ch, gmaps=None):
         super(TetrodeProbe, self).__init__('tetrode')
 
         assert fs > 0
@@ -154,41 +154,51 @@ class TetrodeProbe(Probe):
         self._n_ch = n_ch
         self._n_group = int(self._n_ch / 4)
         self._len_group = 4
+        
+        if gmaps:
+            self.gmaps = gmaps
+        else:
+            # init default group to chs map
+            self.gmaps = {}
+            for g in range(self._n_group):
+               self.gmaps[g] = np.arange(g*4, g*4+4)
 
     # -------------------------------
     #        public method 
     # -------------------------------
-
-    def get_group(self, ch):
-        ''' 
-            get the group which the ch be belonged
-        '''
-        assert ch >= 0 and ch < self._n_ch
-        # tetrode: 4
-        t = ch/4*4
-        return np.arange(t,t + 4)
 
     def get_chs(self, group):
         '''
             get the chs which group has
         '''
         assert group >= 0 and group < self._n_group
-
-        if group >= self._n_group:
-            return np.array([])
-        else:
-            return np.arange(group*4, group*4+4)
+        return self.gmaps[group] 
 
     def belong_group(self, ch):
         '''
+            return the group number which ch is belonged
         '''
         assert ch >= 0 and ch < self._n_ch
-        return ch/4
-        
+        for g, chs in self.gmaps.items():
+            if ch in chs: return g
+        assert False, "shouldn't be here, something wrong"
 
     def fetch_pivotal_chs(self, group):
         '''
             get the most important chs within group
         '''
         assert group >= 0 and group < self._n_group
+        return self.gmaps[group]
+    
+    def __getitem__(self, group):
         return self.get_chs(group)
+
+    def __setitem__(self, group, chs):
+        assert group >= 0 and group < self._n_group
+        assert len(chs) == 4
+        self.gmaps[group] = chs
+
+    def __str__(self):
+        return '\n'.join(['{}:{}'.format(key, val) for key, val in self.gmaps.items()]) 
+
+    __repr__ = __str__
