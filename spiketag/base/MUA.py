@@ -18,7 +18,7 @@ def _to_spk(data, pos, chlist, spklen=19, prelen=8):
     return spk
 
 class MUA():
-    def __init__(self, filename, probe, numbytes=4, binary_radix=14):
+    def __init__(self, filename, probe, numbytes=4, binary_radix=13):
         
         self.nCh = probe.n_ch
         self.fs  = probe.fs*1.0
@@ -36,14 +36,22 @@ class MUA():
         self.prelen = 8
         spk_meta = np.fromfile(filename+'.spk', dtype='<i4')
         self.pivotal_pos = spk_meta.reshape(-1,2).T
+
+        # check spike is extracable
+        self.pivotal_pos = np.delete(self.pivotal_pos, 
+                           np.where((self.pivotal_pos[0] + self.spklen) > self.data.shape[0])[0], axis=1)
+
+        self.pivotal_pos = np.delete(self.pivotal_pos, 
+                           np.where((self.pivotal_pos[0] - self.prelen) < 0)[0], axis=1)        
+
         info('raw data have {} spks'.format(self.pivotal_pos.shape[1]))
 
     def tospk(self):
         spkdict = {}
         for g in range(self.probe.n_group):
             pivotal_chs = self.probe.fetch_pivotal_chs(g)
-            pos = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1],pivotal_chs)]
-            spkdict[g] = _to_spk(data   = self.data, 
+            pos = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
+            spkdict[g] = _to_spk( data   = self.data, 
                                   pos    = pos, 
                                   chlist = self.probe.get_chs(g), 
                                   spklen = self.spklen,

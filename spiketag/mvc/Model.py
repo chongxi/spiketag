@@ -18,7 +18,7 @@ class MainModel(object):
     """
 
     def __init__(self, filename, probe=None, spktag_filename=None, 
-                 numbytes=4, binary_radix=14, spklen=25,corr_cutoff=0.9,
+                 numbytes=4, binary_radix=14, spklen=19, corr_cutoff=0.9,
                  fet_method='weighted-pca', fetlen=6, fet_whiten=False,
                  clu_method='hdbscan', fall_off_size=18, n_jobs=24):
 
@@ -59,8 +59,8 @@ class MainModel(object):
             info('load mua data')
             self.mua = MUA(self.filename, self.probe, self.numbytes, self.binpoint)
 
-            info('removing high corr noise from spikes pool')
-            self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
+            # info('removing high corr noise from spikes pool')
+            # self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
 
             info('removing all spks on group which len(spks) less then fetlen')
             self.mua.remove_groups_under_fetlen(self._fetlen)
