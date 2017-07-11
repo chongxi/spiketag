@@ -35,7 +35,7 @@ class ProbeFactory(object):
         if not gmaps:
             gmaps = {}
             for g in range(n_ch/4):
-               gmaps[g] = range(g*4, g*4+4)
+               gmaps[g] = np.arange(g*4, g*4+4)
         else:
             assert len(gmaps.values()) == n_ch, 'Total number of chs should be equals.'
         return TetrodeProbe(fs, n_ch, gmaps)
