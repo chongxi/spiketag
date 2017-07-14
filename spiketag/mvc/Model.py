@@ -66,6 +66,9 @@ class MainModel(object):
 
             info('removing all spks on group which len(spks) less then fetlen')
             self.mua.remove_groups_under_fetlen(self._fetlen)
+            
+            info('grouping spike time')
+            self.gtimes = self.mua.group_spk_times()
 
             info('extract spikes from pivital meta data')
             self.spk = self.mua.tospk()
@@ -81,10 +84,10 @@ class MainModel(object):
                                       njobs=self._n_jobs)
 
             self.spktag = SPKTAG(self.probe,
-                                 self.mua.pivotal_pos, 
                                  self.spk, 
                                  self.fet, 
-                                 self.clu)
+                                 self.clu,
+                                 self.gtimes)
             info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 
         # After first time
@@ -92,13 +95,16 @@ class MainModel(object):
             self.spktag = SPKTAG()
             info('load spktag file')
             self.spktag.fromfile(spktag_filename)
+            self.gtimes = self.spktag.to_gtimes()
             self.spk = self.spktag.tospk()
             self.fet = self.spktag.tofet()
             self.clu = self.spktag.toclu()
+            self.probe = self.spktag.probe
 
             info('load mua data for wave view')
             self.mua = MUA(self.filename, self.spktag.probe, self.numbytes, self.binpoint)
 
+            info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 
     def cluster(self, method='hdbscan', *args, **kwargs):
         groupNo = kwargs['groupNo'] if 'groupNo' in kwargs.keys() else None
@@ -135,7 +141,6 @@ class MainModel(object):
         This should automatically update the spktag array and save
         So that next time it can be loaded and avoid re-clustering
         '''
-        self.spktag.update(self.spk, self.fet, self.clu)
         if filename is not None:
             self.spktag.tofile(filename)
         elif self.spktag_filename is not None:
@@ -144,22 +149,22 @@ class MainModel(object):
             barename = self.filename.split('.')[0]
             self.spktag_filename = barename + '_spktag.bin'
             self.spktag.tofile(self.spktag_filename)
-
+    
     def remove_spk(self, group, global_ids):
         '''
         Delete spks using global_ids, spks includes SPK, FET, CLU, SPKTAG. 
         '''
         info("received model modified event, removed spikes[group={}, global_ids={}]".format(group, global_ids))
-       
+        with Timer("[MODEL] Model -- remove spk from times", verbose=conf.ENABLE_PROFILER):
+            self.gtimes[group] = np.delete(self.gtimes[group], global_ids)
         with Timer("[MODEL] Model -- remove spk from SPK.", verbose=conf.ENABLE_PROFILER):
             self.spk.remove(group, global_ids)
         with Timer("[MODEL] Model -- spk to FET.", verbose=conf.ENABLE_PROFILER):
             self.fet[group] = self.spk._tofet(group, method=self.fet_method)
         with Timer("[MODEL] Model -- fet to  CLU.", verbose=conf.ENABLE_PROFILER):
             self.clu[group] = CLU(self.fet._toclu(group))
-        with Timer("[MODEL] Model --  remove spk from SPKTAG.", verbose=conf.ENABLE_PROFILER):
-            self.spktag.remove(group, global_ids)
 
+    # FIXME: mask the gtimes 
     def mask_spk(self, group, global_ids):
         '''
         Delete spks using global_ids, spks includes SPK, FET, CLU, SPKTAG. 
@@ -172,6 +177,4 @@ class MainModel(object):
             self.fet[group] = self.spk._tofet(group, method=self.fet_method)
         with Timer("reset clu", verbose=conf.ENABLE_PROFILER):
             self.clu[group] = CLU(self.fet._toclu(group, method='reset'))
-        with Timer("remove spk from SPKTAG.", verbose=conf.ENABLE_PROFILER):
-            self.spktag.mask(group, global_ids)
 

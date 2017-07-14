@@ -13,11 +13,12 @@ class firing_rate_view(line_view):
         fs : float
             sample rate
     '''
-    def __init__(self):
+    def __init__(self, fs=25e3):
         super(firing_rate_view, self).__init__()
        
         self.unfreeze()
 
+        self._fs = fs
         self._time_tick = 0.1 
 
     ### ----------------------------------------------
@@ -39,11 +40,6 @@ class firing_rate_view(line_view):
             self._time_tick = 0.1
         else:
             self._time_tick = v
-
-
-    def bind(self, spktag):
-        self._spktag = spktag
-        self._fs = spktag.probe.fs
 
     def set_data(self, clu=None, spk_times=None):
         self._spike_time = spk_times

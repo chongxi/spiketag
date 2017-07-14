@@ -298,3 +298,13 @@ class MyWaveVisual(visuals.Visual):
 
         # self.shared_program.vert['position'] = self.vbo
         # self.shared_program.frag['color'] = (0, 1, 0, 1)
+
+    def draw(self):
+        '''
+            if MyWaveVisual have no data, should not be drawed, otherwise the vispy/visual will raise a RuntimeError
+        '''
+        if len(self.data) == 0:
+            return
+        super(MyWaveVisual, self).draw()
+
+

@@ -11,7 +11,11 @@ class Sorter(object):
 	"""docstring for Sorter"""
 	def __init__(self, *args, **kwargs):
 		self.model = MainModel(*args, **kwargs)
-		self.view  = MainView(self.model.spktag.probe.n_group, self.model.spktag.probe.get_chs)
+		self.view  = MainView(self.model.probe.n_group, 
+                                      self.model.probe.get_chs,
+                                      self.model.probe.fs,
+                                      self.model.spk.spklen,
+                                      self.model.mua.scale)
 
                 # register action for param view
 		self.view.param_view.signal_group_changed.connect(self.update_group)
@@ -26,16 +30,12 @@ class Sorter(object):
                 self.view.spk_view.events.model_modified.connect(self.on_model_modified)
 
 		self.showmua = False
-		self.group = 0
+		self.current_group = 0
 		self.vq = {}
 		self.vq['points'] = {}
 		self.vq['labels'] = {}
 		self.vq['scores'] = {}
 		self._vq_npts = 100  # size of codebook to download to FPGA, there are many codebooks
-		#  self.set_model(self.model)
-                self.view.bind_data(data=self.model.mua.data, spktag=self.model.spktag)
-
-
 
 	def check_apply_to_all(self):
 		self.apply_to_all = self.view.param_view._apply_to_all
@@ -43,22 +43,22 @@ class Sorter(object):
 	def set_model(self, model):
 		if model is not None:
 			self.model = model
-	        if self.group not in self.model.clu:
+	        if self.current_group not in self.model.clu:
                     # TODO: find some way to popup this information
-                    warning(" channel {} has no spikes! ".format(self.group))
+                    warning(" group {} has no spikes! ".format(self.current_group))
                 elif self.showmua is False:
-			self.view.set_data(group=self.group, 
-                                           spk=self.model.spk[self.group], 
-				           fet=self.model.fet[self.group], 
-				           clu=self.model.clu[self.group], 
-                                           spk_times=self.model.spktag.fetch_spk_times(self.group))
+                    self.view.set_data(data=self.model.mua.data[:,self.model.probe[self.current_group]], 
+                                       spk=self.model.spk[self.current_group], 
+				       fet=self.model.fet[self.current_group], 
+				       clu=self.model.clu[self.current_group], 
+                                       spk_times=self.model.gtimes[self.current_group])
 		else:
-			self.view.set_data(group=self.group, 
-                                           mua=self.model.mua, 
-					   spk=self.model.spk[self.group], 
-					   fet=self.model.fet[self.group], 
-                                           clu=self.model.clu[self.group],
-                                           spk_times=self.model.spktag.fetch_spk_times(self.group))
+                    self.view.set_data(gdata=self.model.mua.data[:,self.model.probe[self.current_group]], 
+                                       mua=self.model.mua, 
+                                       spk=self.model.spk[self.current_group], 
+                                       fet=self.model.fet[self.current_group], 
+                                       clu=self.model.clu[self.current_group],
+                                       spk_times=self.model.gtimes(self.current_group))
 
 	def refresh(self):
 		self.set_model(self.model)
@@ -84,20 +84,20 @@ class Sorter(object):
 	
 	@property
 	def spk(self):
-		return self.model.spk[self.group]   # ndarray
+		return self.model.spk[self.current_group]   # ndarray
 
 	@property
 	def fet(self):
-		return self.model.fet[self.group]   # ndarray
+		return self.model.fet[self.current_group]   # ndarray
 
 	@fet.setter
 	def fet(self, fet_value):
-		self.model.fet.fet[self.group] = fet_value
+		self.model.fet.fet[self.current_group] = fet_value
 		self.refresh()
 
 	@property
 	def clu(self):
-		return self.model.clu[self.group]   # CLU
+		return self.model.clu[self.current_group]   # CLU
 
 	@clu.setter
 	def clu(self, clu_membership):
@@ -105,9 +105,13 @@ class Sorter(object):
 		self.clu.__construct__()
 		self.refresh()
 
+        @property
+        def time(self):
+                return self.model.gtimes[self.current_group]
+
 	def update_group(self):
 		# ---- update chosen ch and get cluster ----
-		self.group = self.view.param_view.group.value()
+		self.current_group = self.view.param_view.group.value()
 		# print '{} selected'.format(self.ch)
 		self.set_model(self.model)
 
@@ -121,7 +125,7 @@ class Sorter(object):
 		# get the features of targeted cluNo
 		X = self.fet[self.clu[cluNo]]
 		# classification on these features
-		lables_X = self.model.predict(self.group, X, method='knn', k=10)
+		lables_X = self.model.predict(self.current_group, X, method='knn', k=10)
 		# reconstruct current cluster membership
 		self.clu.membership[self.clu[cluNo]] = lables_X
 		if self.clu.membership.min()>0:
@@ -146,7 +150,7 @@ class Sorter(object):
 	def update_clu(self):
 		clu_method = str(self.view.param_view.clu_combo.currentText())
 		self.model.cluster(method = clu_method,
-						   groupNo   = self.group, 
+						   groupNo   = self.current_group, 
 						   fall_off_size = self.view.param_view.clu_param.value())
 		self.refresh()
 
@@ -164,9 +168,9 @@ class Sorter(object):
 		self.labels = self._predict(self.points) # these are vq labels
 		self.scores = self._validate_vq()
 
-		self.vq['points'][self.group] = self.points
-		self.vq['labels'][self.group] = self.labels
-		self.vq['scores'][self.group] = self.scores
+		self.vq['points'][self.current_group] = self.points
+		self.vq['labels'][self.current_group] = self.labels
+		self.vq['scores'][self.current_group] = self.scores
 
 		self.vq_view = scatter_3d_view()
 		self.vq_view._size = 5
@@ -183,7 +187,7 @@ class Sorter(object):
         def on_model_modified(self, e):
             if e.type == 'delete':
                 with Timer("[CONTROL] Control -- remove spk from model.", verbose = conf.ENABLE_PROFILER):
-                    self.model.remove_spk(self.group, self.view.spk_view.selected_spk)
+                    self.model.remove_spk(self.current_group, self.view.spk_view.selected_spk)
                 with Timer("[CONTROL] Control -- refresh view after delete.", verbose = conf.ENABLE_PROFILER): 
                     self.refresh()
 
@@ -196,7 +200,7 @@ class Sorter(object):
 
 
 	def _predict(self, points):
-		self.model.construct_kdtree(self.group)
+		self.model.construct_kdtree(self.current_group)
 		d = []
 		for _kd in self.model.kd:
 			tmp = _kd.query(points, 10)[0]

@@ -140,10 +140,12 @@ class Cross(object):
 
 class trace_view(scene.SceneCanvas):
 
-    def __init__(self, color=None, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
+    def __init__(self, color=None, fs=25e3, spklen=19, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
         scene.SceneCanvas.__init__(self, keys=None)
         self.unfreeze()
-
+        
+        self.fs = fs
+        self.spklen = spklen
         self.grid1 = self.central_widget.add_grid(spacing=0, bgcolor='gray',
                                                  border_color='k')
         self.view2 = self.grid1.add_view(row=0, col=0, col_span=36, margin=10, bgcolor=(0, 0, 0, 1),
@@ -177,7 +179,7 @@ class trace_view(scene.SceneCanvas):
         self.grid2 = self.view2.add_grid(spacing=0, bgcolor=(0, 0, 0, 0), border_color='k')
         self.cross = Cross(cursor_color=self.cursor_color)
         self.timer_cursor = app.Timer(connect=self.update_cursor, interval=0.01, start=False)
-
+    
     def _render(self, data):
         '''
           For now,wave_visual is the best place  where store the view information,
@@ -197,11 +199,21 @@ class trace_view(scene.SceneCanvas):
         ####### trigger timer ######
         self.timer_cursor.start()
 
-    def set_data(self, group, clu, spk_times, time_slice=0):
+    def set_data(self, data, clu, spk_times, time_slice=0):
+        self.data = np.flip(data, axis=1) # trace_view displace reserved order, so flip back.
         self.clu = clu
-        self.chlist = self.spktag.probe.get_chs(group)[::-1]
-        self.nCh = len(self.chlist)
+        self.nCh = self.data.shape[1] 
         self.times = spk_times 
+
+        #TODO: the cross object have something wrong dependency, only can initiate after have data.
+        if not self._is_inited():
+            # just simple initialization rendering
+            self._render(self.data[0:200])
+
+            # initiate the cross 
+            self.cross.attach(self.grid2)
+            self.cross.link_view(self.view2)
+            
         self.set_range()
 
         @self.clu.connect
@@ -209,20 +221,8 @@ class trace_view(scene.SceneCanvas):
             if len(self.clu.selectlist) == 1:
                 self.locate_and_highlight(self.clu.selectlist)
 
-    def bind(self, data, spktag):
-        '''
-            bind the basic data from model when model initialization
-        '''
-        self.data = data
-        self.spktag = spktag
-        self.fs = spktag.probe.fs
-        
-        # just simple initialization rendering
-        self._render(data[0:200])
-
-        # initiate the cross 
-        self.cross.attach(self.grid2)
-        self.cross.link_view(self.view2)
+    def _is_inited(self):
+        return hasattr(self.cross, 'parentview')
 
     def locate_and_highlight(self, global_idx):
         '''
@@ -234,17 +234,17 @@ class trace_view(scene.SceneCanvas):
         # locate the segment and show
         locate_start = pos - self.locate_buffer if (pos - self.locate_buffer) > 0 else 0
         locate_end = pos + self.locate_buffer if (pos + self.locate_buffer) < self.data.shape[0] else self.data.shape[0]
-        locate_sagment = self.data[locate_start:locate_end,self.chlist]
-        self._render(locate_sagment)
+        locate_segment = self.data[locate_start:locate_end,:]
+        self._render(locate_segment)
 
         # highlight all spikes within this segment
         self.all_pos = self.get_near_pos(global_idx[0], (locate_start, locate_end))
         for (p,i) in self.all_pos:
             highlight_start = p
-            highlight_end = highlight_start + self.spktag.spklen
-            highlight_sagment = [[highlight_start,highlight_end]]
+            highlight_end = highlight_start + self.spklen
+            highlight_segment = [[highlight_start,highlight_end]]
             highlight_color = np.hstack((self.palette[self.clu.global2local(i).keys()[0]],1))
-            self.waves1.highlight(self.chlist-self.chlist.min(),highlight_sagment, highlight_color)
+            self.waves1.highlight(np.arange(self.nCh),highlight_segment, highlight_color)
 
     @property
     def locate_buffer(self):
@@ -381,67 +381,3 @@ class trace_view(scene.SceneCanvas):
             mask = self._picker.pick(self.waves1.get_gl_pos())
             selected = [i for (p,i) in self.all_pos if p in mask]
             self.clu.select(np.array(selected))
-
-# if __name__ == '__main__':
-#     from phy.gui import GUI, create_app, run_app
-#     create_app()
-#     gui = GUI(position=(0, 0), size=(600, 400), name='GUI')
-#     ##############################################
-#     ### Test scatter_view
-#     # from sklearn.preprocessing import normalize
-#     # n = 1000000
-#     # fet = np.random.randn(n,3)
-#     # fet = normalize(fet,axis=1)
-#     # print fet.shape
-#     # clu = np.random.randint(3,size=(n,1))
-#     # scatter_view = scatter_3d_view()
-#     # scatter_view.attach(gui)
-#     # scatter_view.set_data(fet, clu)
-#     #############################################################################################
-#     ### Set Parameters ###
-#     filename  = '/tmp_data/pcie.bin'
-#     nCh       = 32
-#     fs        = 25000
-#     numbyte   = 4
-#     time_span = 1 # 1 seconds
-#     global time_slice
-#     time_slice = 0
-#     span = time_span * fs
-#     highlight = True
-#     #############################################################################################
-#     from Binload import Binload
-#     ### Load data ###
-#     lf = Binload(nCh=nCh, fs=fs)
-#     lf.load(filename,'i'+str(numbyte), seekpos=0)
-#     t, data = lf.tonumpyarray()
-#     data = data/float(2**14)
-
-#     ### wave_view ###
-#     wview = wave_view(data[time_slice*span:(time_slice+1)*span,:], fs=25000)
-#     wview.gap_value = 0.5*0.95
-#     wview.attach(gui)
-
-#     ############################################################################################
-#     ### Add actions ###
-
-#     from phy.gui import Actions
-#     actions = Actions(gui)
-
-#     @actions.add(shortcut=',')
-#     def page_up():
-#         global time_slice
-#         time_slice -= 1
-#         if time_slice >= 0:
-#             wview.set_data(data[time_slice*span:(time_slice+1)*span,:], time_slice)
-#         else:
-#             time_slice = 0
-
-#     @actions.add(shortcut='.')
-#     def page_down():
-#         global time_slice
-#         time_slice += 1
-#         wview.set_data(data[time_slice*span:(time_slice+1)*span,:], time_slice)
-
-#     ##############################################################################################
-#     gui.show()
-#     run_app()

@@ -17,27 +17,39 @@ class ProbeFactory(object):
                     number of channel
                 ch_span : int
                     cross up and down ch_span channel respectly 
+                gmaps : dist
+                    the map from goup to channel, i.e: {1:[1,2,3]}. if gmaps is None, defaut sequence maps will be applied.   
+                    for linear probe, the ch == -1 means ch not exist the ch == -1 means ch not exists.
         
         TetrodeProbe:
                 fs : float 
                     sample rate
                 n_ch : int
                     number of channel
-                gmaps: dist
+                gmaps : dist
                     the map from goup to channel, i.e: {1:[1,2,3,4]}. if gmaps is None, defaut sequence maps will be applied.   
     '''
     @staticmethod
-    def genLinearProbe(fs, n_ch, ch_span=1):
-        return LinearProbe(fs, n_ch, ch_span)
+    def genLinearProbe(fs, n_ch, ch_span=1, gmaps=None):
+        assert n_ch > 0, 'amount of chs should be positive'
+        assert ch_span > 0, 'span between chs should be positive'
+        if not gmaps:
+            gmaps = {}
+            chmax = n_ch - 1
+            for center_ch in range(n_ch):
+                chs = np.arange(center_ch - ch_span, center_ch + ch_span + 1, 1)
+                chs[chs>chmax] = -1 
+                chs[chs<0] = -1 
+                gmaps[center_ch] = chs
+        return LinearProbe(fs, n_ch, ch_span, gmaps)
 
     @staticmethod 
     def genTetrodeProbe(fs, n_ch, gmaps=None):
+        assert n_ch > 0, 'amount of chs should be positive'
         if not gmaps:
             gmaps = {}
             for g in range(n_ch/4):
                gmaps[g] = np.arange(g*4, g*4+4)
-        else:
-            assert len(gmaps.values()) == n_ch, 'Total number of chs should be equals.'
         return TetrodeProbe(fs, n_ch, gmaps)
 
 # -------------------------------
@@ -88,21 +100,32 @@ class Probe(object):
         '''
         return self._len_group
 
+    def __str__(self):
+        return '\n'.join(['{}:{}'.format(key, val) for key, val in self._g2chs.items()]) 
+
+    __repr__ = __str__
+
 class LinearProbe(Probe):
     ''' linear probe
     '''
-    def __init__(self, fs, n_ch, ch_span):
+    def __init__(self, fs, n_ch, ch_span, gmaps):
         super(LinearProbe, self).__init__('linear')
         
         assert fs > 0 
         assert n_ch > 0
         assert ch_span >0 and ch_span < n_ch
+        assert gmaps
 
         self._fs = fs
         self._n_ch = n_ch
         self._ch_span = ch_span
         self._n_group = self._n_ch
         self._len_group = 2 * ch_span + 1
+        self._g2chs = gmaps
+        self._ch2g = {}
+        for g, chs in self._g2chs.items():
+            self._update_chs2group(chs, g)
+        
    
     @property
     def ch_span(self):
@@ -112,33 +135,19 @@ class LinearProbe(Probe):
     #        public method 
     # -------------------------------
 
-    def get_group(self, ch):
-        ''' 
-            get all the chs in group which the ch be belonged
-        '''
-        assert ch >= 0 and ch < self._n_ch
-
-        chmax = self._n_ch - 1
-        start = ch - self._ch_span # if ch-span>=0 else 0
-        end   = ch + self._ch_span # if ch+span<chmax else chmax
-        near_ch = np.arange(start, end+1, 1)
-        near_ch[near_ch>chmax] = -1
-        near_ch[near_ch<0] = -1
-        return near_ch
-    
     def belong_group(self, ch):
         '''
             get the group number which ch belong
         '''
         assert ch >= 0 and ch < self._n_ch
-        return ch
+        return self._ch2g[ch] 
 
     def get_chs(self, group):
         '''
             get the chs which group has
         '''
         assert group >= 0 and group < self._n_group
-        return self.get_group(group)
+        return self._g2chs[group]
 
     def fetch_pivotal_chs(self, group):
         '''
@@ -146,8 +155,22 @@ class LinearProbe(Probe):
         '''
         assert group >= 0 and group < self._n_group
 
-        chs = self.get_group(group)
+        chs = self._g2chs[group]
         return np.asarray([chs[len(chs)/2]])
+
+    def _update_chs2group(self, chs, g):
+       for ch in chs:
+            self._ch2g[ch] = g
+
+    def __getitem__(self, group):
+        assert group >=0  and group < self._n_group, 'invalid group value'
+        return self._g2chs[group]
+
+    def __setitem__(self, group, chs):
+        assert group >=0  and group < self._n_group, 'invalid grup value'
+        assert isinstance(chs, np.ndarray), 'chs should numpy array, make sure numba works'
+        self._g2chs[group] = chs
+        self._update_chs2group(chs, group)
 
 class TetrodeProbe(Probe):
     ''' tetrode probe
@@ -198,15 +221,12 @@ class TetrodeProbe(Probe):
             self._ch2g[ch] = g
 
     def __getitem__(self, group):
-        return self._g2chs(group)
+        assert group >= 0 and group < self._n_group, 'invalid group value'
+        return self._g2chs[group]
 
     def __setitem__(self, group, chs):
-        assert group >= 0 and group < self._n_group
-        assert len(chs) == 4
+        assert group >= 0 and group < self._n_group, 'invalid group value'
+        assert len(chs) == 4, 'invalid amount of chs in tetrode'
+        assert isinstance(chs, np.ndarray), 'chs should numpy array, make sure numba works'
         self._g2chs[group] = chs
         self._update_chs2group(chs, group)
-
-    def __str__(self):
-        return '\n'.join(['{}:{}'.format(key, val) for key, val in self._g2chs.items()]) 
-
-    __repr__ = __str__

@@ -29,11 +29,12 @@ class MUA():
         self.bf.load(filename, dtype=self.dtype)
         self.filename = filename
         self.data = self.bf.asarray(binpoint=binary_radix)
+        self.scale = self.data.max() - self.data.min()
         self.t    = self.bf.t
 
         self.npts = self.bf._npts
         self.spklen = 19
-        self.prelen = 8
+        self.prelen = 9 
         spk_meta = np.fromfile(filename+'.spk', dtype='<i4')
         self.pivotal_pos = spk_meta.reshape(-1,2).T
 
@@ -51,12 +52,13 @@ class MUA():
         for g in range(self.probe.n_group):
             pivotal_chs = self.probe.fetch_pivotal_chs(g)
             pos = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
-            spkdict[g] = _to_spk( data   = self.data, 
-                                  pos    = pos, 
-                                  chlist = self.probe.get_chs(g), 
-                                  spklen = self.spklen,
-                                  prelen = self.prelen)
-                                 
+            if len(pos) > 0:
+                spkdict[g] = _to_spk( data   = self.data, 
+                                      pos    = pos, 
+                                      chlist = self.probe[g], 
+                                      spklen = self.spklen,
+                                      prelen = self.prelen)
+                                     
         return SPK(spkdict)
 
     def get_nid(self, corr_cutoff=0.95):  # get noisy spk id
@@ -123,3 +125,10 @@ class MUA():
                 groups[g] = len(_ids)
         self.pivotal_pos = np.delete(self.pivotal_pos, ids, axis=1)
         info('removed all spks on these groups: {}'.format(groups)) 
+
+    def group_spk_times(self):
+        group_with_times = {}
+        for g in range(self.probe.n_group):
+            times = self.pivotal_pos[0][np.where(np.in1d(self.pivotal_pos[1],self.probe[g]))[0]]
+            if len(times) > 0: group_with_times[g] = times
+        return group_with_times

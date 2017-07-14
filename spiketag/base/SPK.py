@@ -16,6 +16,15 @@ def _to_fet(_spk_array, _weight_vector, method='weighted-pca', ncomp=6, whiten=F
         temp_fet = temp_fet - np.mean(temp_fet, axis=0)
         fet = temp_fet/(temp_fet.max()-temp_fet.min())
 
+    elif method == 'tsne':
+        from sklearn.manifold import TSNE
+        tsne = TSNE(n_components=ncomp, random_state=0)
+        if _spk_array.shape[0] >= ncomp:
+            temp_fet = tsne.fit_transform(X)
+            fet = temp_fet/(temp_fet.max() - temp_fet.min())
+        else:
+            fet = np.empty((0, ncomp), dtype=np.float32)
+
     elif method == 'pca':
         from sklearn.decomposition import PCA
         pca = PCA(n_components=ncomp, whiten=whiten)
@@ -77,7 +86,7 @@ class SPK():
         self.__spk = spkdict.copy() 
         self.spk = spkdict
         self.n_group = len(spkdict)
-        self.ch_span = self.spk[0].shape[-1]
+        self.ch_span = self.spk.values()[0].shape[-1]
         self.spklen = 19
         weight_vector = np.array([0.2871761 , 0.2871761 , 0.3571761 , 0.45907732, 0.45485107, 
                                   0.664169  , 0.85485229, 0.91183021, 0.83639082, 0.83206653, 
