@@ -28,9 +28,10 @@ class MUA():
         self.bf = bload(self.nCh, self.fs)
         self.bf.load(filename, dtype=self.dtype)
         self.filename = filename
+        if probe.reorder_by_chip is True:
+            self.bf.reorder_by_chip(probe._nchips)
         self.data = self.bf.asarray(binpoint=binary_radix)
         self.t    = self.bf.t
-
         self.npts = self.bf._npts
         self.spklen = 19
         self.prelen = 8

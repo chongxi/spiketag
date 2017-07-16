@@ -198,7 +198,7 @@ class TetrodeProbe(Probe):
             self._ch2g[ch] = g
 
     def __getitem__(self, group):
-        return self._g2chs(group)
+        return self._g2chs[group]
 
     def __setitem__(self, group, chs):
         assert group >= 0 and group < self._n_group

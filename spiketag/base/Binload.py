@@ -93,6 +93,13 @@ class bload(object):
         _scale = np.float32(2**binpoint)
         return ne.evaluate('data/_scale')
 
+    def reorder_by_chip(self, nchips=5):
+        nch_perchip = self._nCh/nchips
+        self.npmm = self.npmm.reshape(-1, nch_perchip, nchips)
+        self.npmm = self.npmm.swapaxes(1,2)
+        self.npmm = self.npmm.reshape(-1, self._nCh)
+        info('reordered with nchips={0} and nch_perchip={1}'.format(nchips,nch_perchip))
+
     def to_threshold(self, data, k=4.5):
         # QQ threshold for spike detection
         data = data[::20,:]

@@ -20,7 +20,7 @@ class MainModel(object):
     """
 
     def __init__(self, filename, probe=None, spktag_filename=None, 
-                 numbytes=4, binary_radix=14, spklen=19, corr_cutoff=0.9,
+                 numbytes=4, binary_radix=13, spklen=19, corr_cutoff=0.9,
                  fet_method='weighted-pca', fetlen=6, fet_whiten=False,
                  clu_method='hdbscan', fall_off_size=18, n_jobs=24):
 
@@ -156,7 +156,7 @@ class MainModel(object):
         with Timer("[MODEL] Model -- spk to FET.", verbose=conf.ENABLE_PROFILER):
             self.fet[group] = self.spk._tofet(group, method=self.fet_method)
         with Timer("[MODEL] Model -- fet to  CLU.", verbose=conf.ENABLE_PROFILER):
-            self.clu[group] = CLU(self.fet._toclu(group))
+            self.clu[group] = CLU(self.fet._toclu(group, method='reset'))
         with Timer("[MODEL] Model --  remove spk from SPKTAG.", verbose=conf.ENABLE_PROFILER):
             self.spktag.remove(group, global_ids)
 
