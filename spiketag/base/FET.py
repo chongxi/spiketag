@@ -4,7 +4,7 @@ from sklearn.neighbors import NearestNeighbors
 from hdbscan import HDBSCAN
 from time import time
 from ..utils.utils import Timer
-from ..utils.conf import info
+from ..utils.conf import info, warning
 from .CLU import CLU
 
 class FET(object):
@@ -81,7 +81,7 @@ class FET(object):
                 clu = CLU(hdbcluster.fit_predict(self.fet[groupNo]))
                 return clu
         else: # other methods 
-            pass
+            warning('Clustering not support {} yet!!'.format(method)) 
 
     def _toclu(self, groupNo, method='hdbscan'):
         if method == 'hdbscan':
@@ -96,17 +96,6 @@ class FET(object):
             clu = hdbcluster.fit_predict(self.fet[groupNo])
         elif method == 'reset':
             clu = np.zeros((self.fet[groupNo].shape[0], )).astype(np.int64)
+        else:
+            warning('Clustering not support {} yet!!'.format(method))
         return clu
-
-    # def torho(self):
-    #     nbrs = NearestNeighbors(algorithm='ball_tree', metric='euclidean',
-    #                             n_neighbors=25).fit(self.fet)
-
-    #     dismat = np.zeros(self.fet.shape[0])
-    #     for i in range(self.fet.shape[0]):
-    #         dis,_ = nbrs.kneighbors(self.fet[i].reshape(1,-1), return_distance=True)
-    #         dismat[i] = dis.mean()
-
-    #     rho = 1/dismat
-    #     self.rho = (rho-rho.min())/(rho.max()-rho.min())
-    #     return self.rho

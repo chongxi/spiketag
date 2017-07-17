@@ -163,8 +163,6 @@ class MainModel(object):
             self.fet[group] = self.spk._tofet(group, method=self.fet_method)
         with Timer("[MODEL] Model -- fet to  CLU.", verbose=conf.ENABLE_PROFILER):
             self.clu[group] = CLU(self.fet._toclu(group, method='reset'))
-        with Timer("[MODEL] Model --  remove spk from SPKTAG.", verbose=conf.ENABLE_PROFILER):
-            self.spktag.remove(group, global_ids)
 
     # FIXME: mask the gtimes 
     def mask_spk(self, group, global_ids):

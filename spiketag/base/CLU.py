@@ -150,7 +150,7 @@ class CLU(EventEmitter):
     @instack_membership
     def reset(self):
         '''reset to 0'''
-        self.membership=0
+        self.membership = np.zeros_like(self.membership)
         self.__construct__()
         self.emit('cluster', action='reset')
 

@@ -143,7 +143,7 @@ class Sorter(object):
 	def update_fet(self):
 		fet_method = str(self.view.param_view.fet_combo.currentText())
 		fet_len    = self.view.param_view.fet_No.value()
-		self.model.fet = self.model.spk.tofet(method=fet_method, ncomp=fet_len)
+		self.model.fet[self.current_group] = self.model.spk.tofet(groupNo=self.current_group, method=fet_method, ncomp=fet_len)
 		self.refresh()
 
 

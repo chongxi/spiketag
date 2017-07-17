@@ -131,13 +131,15 @@ class SPK():
             fet = np.empty((0, ncomp), dtype=np.float32)
         return fet
 
-    def tofet(self, method='weighted-pca', ncomp=6, whiten=False):
+    def tofet(self, groupNo=None, method='weighted-pca', ncomp=6, whiten=False):
         fet = {}
         pca_comp = {}
         shift = {}
         scale = {}
-
-        for group in self.spk.keys():
-            fet[group] = self._tofet(group, method, ncomp, whiten)
-
-        return FET(fet)
+        
+        if groupNo:
+            return self._tofet(groupNo, method, ncomp, whiten)
+        else:
+            for group in self.spk.keys():
+                fet[group] = self._tofet(group, method, ncomp, whiten)
+            return FET(fet)
