@@ -3,6 +3,8 @@ from vispy import scene, app
 from .MyWaveVisual import MyWaveVisual
 from .color_scheme import palette
 from ..utils.cameras import YSyncCamera
+from ..utils.utils import Picker
+from vispy.util import keys
 
 class Axis(scene.AxisWidget):
     """from scene.AxisWidget"""
@@ -248,7 +250,11 @@ class wave_view(scene.SceneCanvas):
         self.set_range()
         self.cross.attach(self.grid2)
         self.cross.link_view(self.view2)
-
+        
+        # for picker
+        self.key_option = 0
+        self._picker = Picker(self.scene, self.view2.camera.transform)
+        self.picked_data = []
     
     def _render(self, data):
         '''
@@ -436,6 +442,9 @@ class wave_view(scene.SceneCanvas):
     def on_key_press(self, event):
         # if event.key.name == 'PageDown':
         #     print 'next page'
+
+        # print event.key.name
+        
         if event.text == 'r':
             self.view2.camera.reset()
         elif event.text == 'c':
@@ -459,7 +468,17 @@ class wave_view(scene.SceneCanvas):
             location = self._start_index + self.pagesize / 2
             self.pagesize -= int(self.pagesize * 0.1)
             self.slideto(location)
-    
+        else:
+            self.key_option = event.key.name
+            # print event.text
+     
+    def on_key_release(self, e):
+        if self.key_option == "Escape":
+            self._picker.reset()
+            self.picked_data = []
+        self.key_option = 0   
+
+
     @property
     def pagesize(self):
         return self._pagesize
@@ -481,13 +500,28 @@ class wave_view(scene.SceneCanvas):
             if modifiers[0].name == 'Shift':
                 self.cross.ref_enable(p2)
             if modifiers[0].name == 'Control':
-                self.slide(event.pos[0]-self.last_x)
+                if self.key_option != 'W':
+                    # print self.key_option
+                    self.slide(event.pos[0]-self.last_x)
+                if self.key_option == 'W':
+                    # print self.key_option
+                    self._picker.cast_net(event.pos,ptype='rectangle')
+
 
         elif self.cross.cross_state:
             if event.press_event is None:
                 self.cross.moveto(event.pos)
                 self.cross.ref_disable()
 
+    def on_mouse_release(self, e):
+        modifiers = e.modifiers
+        if keys.CONTROL in  e.modifiers and e.is_dragging:
+            mask = self._picker.pick(self.waves1.get_gl_pos(), auto_disappear=False)
+            shift_mask = [i-8 for i in mask]
+            self.picked_data = self.waves1.data[shift_mask]
+            # print len(mask)
+            # print mask
+ 
     def on_mouse_wheel(self, event):
         modifiers = event.modifiers
         if modifiers is not ():
@@ -499,7 +533,13 @@ class wave_view(scene.SceneCanvas):
         modifiers = e.modifiers
         if modifiers is not ():
             if modifiers[0].name == 'Control':
-                self.last_x = e.pos[0]
+                if self.key_option != 'W':
+                    # print self.key_option
+                    self.last_x = e.pos[0]
+                if self.key_option == 'W':
+                    # print self.key_option
+                    self._picker.origin_point(e.pos)
+
 
 # if __name__ == '__main__':
 #     from phy.gui import GUI, create_app, run_app

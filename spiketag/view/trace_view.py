@@ -200,7 +200,7 @@ class trace_view(scene.SceneCanvas):
         self.timer_cursor.start()
 
     def set_data(self, data, clu, spk_times, time_slice=0):
-        self.data = np.flip(data, axis=1) # trace_view displace reserved order, so flip back.
+        self.data = np.fliplr(data) # trace_view displace reserved order, so flip back.
         self.clu = clu
         self.nCh = self.data.shape[1] 
         self.times = spk_times 
