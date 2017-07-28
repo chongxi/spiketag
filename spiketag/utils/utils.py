@@ -256,7 +256,7 @@ class Picker(object):
         return:      array
             points be selected
     """
-    def pick(self,samples):
+    def pick(self, samples, auto_disappear=True):
         if not self._trigger:
             return np.array([])
 
@@ -266,7 +266,8 @@ class Picker(object):
             select_path = path.Path(self._vertices, closed=True)
             selected = select_path.contains_points(data)
             mask = np.where(selected)[0]
-        self.reset()
+        if auto_disappear:
+            self.reset()
         return mask
 
     """

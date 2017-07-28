@@ -185,7 +185,13 @@ class wave_view(scene.SceneCanvas):
         Example3: show trace with specific channels
             wview = wave_view(data=data, spks=spks, chs=[i for i in range(32) if i % 5 == 1])
             wview.show()
+            
+            chs = array([[ 68,  69,  74,  75],
+                         [ 70,  71,  72,  73]])
+            wview = wave_view(data=data, fs=fs, chs=chs)
+            wview.show()
     '''
+
     def __init__(self, data=None, fs=25e3, spks=None, chs=None, color=None, pagesize=20000, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
         scene.SceneCanvas.__init__(self, keys=None)
         self.unfreeze()
@@ -235,6 +241,9 @@ class wave_view(scene.SceneCanvas):
         
         self.data = data
         if chs is not None:
+            chs = np.array(chs)
+            if chs.ndim!=1:
+                chs = chs.ravel()
             self.data = self.data[:, chs]
             chs_labels = chs
         elif self.data.shape[1] <= 32:
