@@ -158,7 +158,7 @@ class EventEmitter(object):
             if caller and caller == callback.__module__:
                continue 
 
-            with Timer(callback.__module__, verbose=conf.ENABLE_PROFILER):
+            with Timer('[Event] emit -- {}'.format(callback.__module__), verbose=conf.ENABLE_PROFILER):
                 res.append(callback(*args, **kwargs))
         return res
 

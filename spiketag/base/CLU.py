@@ -11,9 +11,11 @@ def instack_membership(func):
 
 class CLU(EventEmitter):
     """docstring for Clu"""
-    def __init__(self, clu):
+    def __init__(self, clu, clusterer=None):
         super(CLU, self).__init__()
         self.membership = clu.copy()
+        self._extra_info = self._extract_extra_info(clusterer)       
+        self._select_clusters = self._extra_info['default_select_clusters']
         self.__membership = self.membership.copy()
         while min(self.membership) < 0:
             self.membership += 1
@@ -42,6 +44,14 @@ class CLU(EventEmitter):
                 self.index_count[cluNo] = len(self.index[cluNo])
                 _counts_per_clu.append(self.index_count[cluNo])
         self._clu_cumsum = np.cumsum(np.asarray(_counts_per_clu))
+
+    def _extract_extra_info(self, clusterer):
+        '''store extra infomation for other purpose.
+        '''
+        extra_info = {}
+        extra_info['condensed_tree'] = clusterer._condensed_tree
+        extra_info['default_select_clusters'] = np.array(clusterer.condensed_tree_._select_clusters(), dtype=np.int64)
+        return extra_info
 
     def make_id_continuous(self):
         if self._is_id_discontineous():
@@ -181,6 +191,31 @@ class CLU(EventEmitter):
         self.emit('cluster', action = 'move')
         
         return self.global2local(selected_global_idx)[clu_to]
+
+    def fill(self, global_idx, clu_to):
+        assert len(global_idx) == len(clu_to)
+
+        #  print 'received fill event, global_idx:{}, clu_to:{}'.format(global_idx, clu_to)
+        for idx, clu in zip(global_idx, clu_to):
+            self.membership[idx] = clu
+
+        self.__construct__()
+        self.emit('cluster', action = 'fill')
+
+    # FIXME need to a better way to deal with this
+    @property
+    def max_clu_id(self):
+        return max(self.index_id)
+   
+    # FIXME need to a better way to deal with this
+    @property
+    def select_clusters(self):
+        return self._select_clusters
+   
+    # FIXME need to a better way to deal with this
+    @select_clusters.setter
+    def select_clusters(self, clusters):
+        self._select_clusters = clusters
 
     def remove(self, global_ids):
         '''
