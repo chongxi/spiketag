@@ -162,6 +162,7 @@ class MainModel(object):
         with Timer("[MODEL] Model -- spk to FET.", verbose=conf.ENABLE_PROFILER):
             self.fet[group] = self.spk._tofet(group, method=self.fet_method)
         with Timer("[MODEL] Model -- fet to  CLU.", verbose=conf.ENABLE_PROFILER):
+            # FIXME: need to put the old condensed tree in CLU
             self.clu[group] = CLU(self.fet._toclu(group, method='reset'))
 
     # FIXME: mask the gtimes 

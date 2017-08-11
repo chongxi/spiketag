@@ -18,6 +18,7 @@ class MainView(object):
                 self.cluster_view = cluster_view()
                 self.amplitude_view = amplitude_view(fs=fs, scale=scale)
                 self.raster_view = raster_view(fs=fs)
+                self.ctree_view = ctree_view()
                 #  self.firing_rate_view = firing_rate_view(fs=fs)
                 self.gui.add_view(self.param_view)
                 self.gui.add_view(self.scatter_view)
@@ -27,6 +28,7 @@ class MainView(object):
                 self.gui.add_view(self.amplitude_view)
                 self.gui.add_view(self.raster_view)
                 self.gui.add_view(self.cluster_view)
+                self.gui.add_view(self.ctree_view)
                 #  self.gui.add_view(self.firing_rate_view)
 	def set_data(self, data=None, mua=None, spk=None, fet=None, clu=None, spk_times=None):
                 self.spk_view.set_data(spk, clu)
@@ -36,6 +38,7 @@ class MainView(object):
                 self.amplitude_view.set_data(spk, clu, spk_times)
                 self.raster_view.set_data(clu, spk_times)
                 self.cluster_view.set_data(clu)
+                self.ctree_view.set_data(clu)
                 #  self.firing_rate_view.set_data(clu, spk_times)
 
 	def show(self):

@@ -65,11 +65,12 @@ class FET(object):
                     toc = time()
                     info('clustering finished, used {} seconds'.format(toc-tic))
                     for _groupNo, __clu in zip(self.group, _clu):
-                        clu[_groupNo] = CLU(__clu)
+                        clu[_groupNo] = __clu
                 else:
                     tic = time()
                     for groupNo in self.group:
-                        clu[groupNo] = CLU(hdbcluster.fit_predict(self.fet[groupNo]))
+                        clusterer = hdbcluster.fit(self.fet[groupNo])
+                        clu[groupNo] = CLU(clusterer.labels_, clusterer)
                     toc = time()
                     info('clustering finished, used {} seconds'.format(toc-tic))
                 return clu
@@ -78,8 +79,8 @@ class FET(object):
             elif self.nSamples[groupNo] != 0:
                 # fall_off_size in kwargs
                 hdbcluster.min_cluster_size = fall_off_size
-                clu = CLU(hdbcluster.fit_predict(self.fet[groupNo]))
-                return clu
+                clusterer = hdbcluster.fit(self.fet[groupNo])
+                return CLU(clusterer.labels_, clusterer)
         else: # other methods 
             warning('Clustering not support {} yet!!'.format(method)) 
 
@@ -93,8 +94,10 @@ class FET(object):
                          gen_min_span_tree=False, 
                          algorithm='boruvka_kdtree',
                          core_dist_n_jobs=cpu_count())        
-            clu = hdbcluster.fit_predict(self.fet[groupNo])
+            clusterer = hdbcluster.fit(self.fet[groupNo])
+            return CLU(clusterer.labels_, clusterer)
         elif method == 'reset':
+            # FIXME choose the root of tree
             clu = np.zeros((self.fet[groupNo].shape[0], )).astype(np.int64)
         else:
             warning('Clustering not support {} yet!!'.format(method))
