@@ -156,7 +156,6 @@ class Sorter(object):
 
 
 	def build_vq(self):
-		# print 'build vector quantization'
 		import warnings
 		warnings.filterwarnings('ignore')
 		# get the vq and vq labels

@@ -96,9 +96,8 @@ class FET(object):
                          core_dist_n_jobs=cpu_count())        
             clusterer = hdbcluster.fit(self.fet[groupNo])
             return CLU(clusterer.labels_, clusterer)
-        elif method == 'reset':
-            # FIXME choose the root of tree
-            clu = np.zeros((self.fet[groupNo].shape[0], )).astype(np.int64)
+        #  elif method == 'reset':
+            #  clu = np.zeros((self.fet[groupNo].shape[0], )).astype(np.int64)
         else:
             warning('Clustering not support {} yet!!'.format(method))
         return clu
