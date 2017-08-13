@@ -159,23 +159,21 @@ class MainModel(object):
             self.gtimes[group] = np.delete(self.gtimes[group], global_ids)
         with Timer("[MODEL] Model -- remove spk from SPK.", verbose=conf.ENABLE_PROFILER):
             self.spk.remove(group, global_ids)
-        with Timer("[MODEL] Model -- spk to FET.", verbose=conf.ENABLE_PROFILER):
+        with Timer("[MODEL] Model -- SPK to FET.", verbose=conf.ENABLE_PROFILER):
             self.fet[group] = self.spk._tofet(group, method=self.fet_method)
-        with Timer("[MODEL] Model -- fet to  CLU.", verbose=conf.ENABLE_PROFILER):
-            # FIXME: need to put the old condensed tree in CLU
-            self.clu[group] = CLU(self.fet._toclu(group, method='reset'))
-
-    # FIXME: mask the gtimes 
+        with Timer("[MODEL] Model -- FET to CLU.", verbose=conf.ENABLE_PROFILER):
+            self.clu[group] = self.fet._toclu(group)
+            
     def mask_spk(self, group, global_ids):
         '''
-        Delete spks using global_ids, spks includes SPK, FET, CLU, SPKTAG. 
+        Mask spks using global_ids, spks includes SPK, FET, CLU, SPKTAG. 
         '''
         info("received model modified event, mask spikes[group={}, global_ids={}]".format(group, global_ids))
         
-        with Timer("mask spk from SPK.", verbose=conf.ENABLE_PROFILER):
+        with Timer("[MODEL] Model -- mask spk from SPK.", verbose=conf.ENABLE_PROFILER):
             self.spk.mask(group, global_ids)
-        with Timer("spk to FET.", verbose=conf.ENABLE_PROFILER):
+        with Timer("[MODEL] Model -- SPK to FET.", verbose=conf.ENABLE_PROFILER):
             self.fet[group] = self.spk._tofet(group, method=self.fet_method)
-        with Timer("reset clu", verbose=conf.ENABLE_PROFILER):
-            self.clu[group] = CLU(self.fet._toclu(group, method='reset'))
+        with Timer("[MODEL] Model -- FET to CLU", verbose=conf.ENABLE_PROFILER):
+            self.clu[group] = self.fet._toclu(group)
 

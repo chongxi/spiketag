@@ -14,8 +14,9 @@ class CLU(EventEmitter):
     def __init__(self, clu, clusterer=None):
         super(CLU, self).__init__()
         self.membership = clu.copy()
-        self._extra_info = self._extract_extra_info(clusterer)       
-        self._select_clusters = self._extra_info['default_select_clusters']
+        if clusterer:
+            self._extra_info = self._extract_extra_info(clusterer)       
+            self._select_clusters = self._extra_info['default_select_clusters']
         self.__membership = self.membership.copy()
         while min(self.membership) < 0:
             self.membership += 1
@@ -50,7 +51,7 @@ class CLU(EventEmitter):
         '''
         extra_info = {}
         extra_info['condensed_tree'] = clusterer._condensed_tree
-        extra_info['default_select_clusters'] = np.array(clusterer.condensed_tree_._select_clusters(), dtype=np.int64)
+        extra_info['default_select_clusters'] = np.sort(np.array(clusterer.condensed_tree_._select_clusters(), dtype=np.int64))
         return extra_info
 
     def make_id_continuous(self):
