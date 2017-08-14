@@ -2,6 +2,7 @@ import numpy as np
 from .Model import MainModel
 from .View import MainView
 from ..view import scatter_3d_view
+from ..view import wave_view
 from ..base import CLU
 from ..utils import warning, conf
 from ..utils.utils import Timer
@@ -108,6 +109,10 @@ class Sorter(object):
         @property
         def time(self):
                 return self.model.gtimes[self.current_group]
+
+        def show_context(self, chs):
+            wview = wave_view(self.model.mua.data[self.time[self.selected]-2000:self.time[self.selected]+2000, :], fs=self.model.probe.fs, ncols=1, chs=chs)
+            wview.show()
 
 	def update_group(self):
 		# ---- update chosen ch and get cluster ----
