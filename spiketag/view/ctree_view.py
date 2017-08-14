@@ -46,9 +46,11 @@ class ctree_view(scene.SceneCanvas):
         self._clu_tree = self._whole_tree[self._whole_tree['child_size'] > 1]
         #  self._select_clusters = np.array(clu._extra_info['default_select_clusters'], dtype=np.int64)
         self._select_clusters = clu.select_clusters
-        self._build_data(self._whole_tree)
-	self._render()
-        self._set_range()		
+        if len(self._select_clusters):
+            self._build_data(self._whole_tree)
+            self._render()
+            self._set_range()		
+
 
     def on_key_press(self, e):
         if e.text == 'r':
