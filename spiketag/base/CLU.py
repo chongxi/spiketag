@@ -193,6 +193,19 @@ class CLU(EventEmitter):
         
         return self.global2local(selected_global_idx)[clu_to]
 
+    @instack_membership
+    def exchange(self, clus1, clus2):
+        '''
+            exchange cluster label between clus1 and clus2
+        '''
+        clus1_idx = self.membership == clus1
+        clus2_idx = self.membership == clus2
+        self.membership[clus1_idx] = clus2
+        self.membership[clus2_idx] = clus1
+        
+        self.__construct__()
+        self.emit('cluster', action = 'exchange')
+
     def fill(self, global_idx, clu_to):
         assert len(global_idx) == len(clu_to)
 
@@ -202,6 +215,16 @@ class CLU(EventEmitter):
 
         self.__construct__()
         self.emit('cluster', action = 'fill')
+
+    def refill(self, global_idx, labels):
+        assert len(global_idx) == len(labels)
+
+        self.membership[global_idx] = labels
+        if self.membership.min()>0:
+                self.membership -= 1
+                
+        self.__construct__()
+        self.emit('cluster', action = 'refill')
 
     # FIXME need to a better way to deal with this
     @property

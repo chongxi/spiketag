@@ -404,6 +404,12 @@ class spike_view(View):
                     target_clu_No = box[1]
                     self._move_spikes(target_clu_No)  
 
+        if e.button == 2:
+            if not self.is_spk_empty and self.is_single_mode: 
+                ndc = self.panzoom.get_mouse_pos(e.pos)
+                box = self.interact.get_closest_box(ndc)
+                self.clu.exchange(self.selected_cluster, box[1])
+
         if e.button == 3:
             self.clear_virtual()
             self._reset_cluster()
@@ -527,6 +533,11 @@ class spike_view(View):
                 with Timer('[VIEW] Spikeview -- Delete spks from spk view.', verbose=conf.ENABLE_PROFILER): 
                     self.events.model_modified(Event('delete'))
                     self._selected = {}
+
+        if e.text == 'f':
+            if len(self.selected_spk) > 0:
+                self.events.model_modified(Event('refine'))
+                self._selected = {}
 
         if _representsInt(e.text):
             ### assign selected spikes to cluster number ###
