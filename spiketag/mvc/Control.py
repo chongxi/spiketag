@@ -123,9 +123,9 @@ class Sorter(object):
 	# 3. Assign the point to the closet cluster
 	def refine(self, cluNo=0, k=30):
 		# get the features of targeted cluNo
-		X = self.fet[self.clu[cluNo]]
+		#  X = self.fet[self.clu[cluNo]]
 		# classification on these features
-		lables_X = self.model.predict(self.current_group, X, method='knn', k=10)
+                lables_X = self.model.predict(self.current_group, self.clu[cluNo], method='knn', k=10)
 		# reconstruct current cluster membership
 		self.clu.membership[self.clu[cluNo]] = lables_X
 		if self.clu.membership.min()>0:
@@ -189,7 +189,8 @@ class Sorter(object):
                     self.model.remove_spk(self.current_group, self.view.spk_view.selected_spk)
                 with Timer("[CONTROL] Control -- refresh view after delete.", verbose = conf.ENABLE_PROFILER): 
                     self.refresh()
-
+            if e.type == 'refine':
+                self.model.refine(self.current_group, self.view.spk_view.selected_spk)
 
 	def _validate_vq(self):
 		from sklearn.neighbors import KNeighborsClassifier as KNN
@@ -199,7 +200,7 @@ class Sorter(object):
 
 
 	def _predict(self, points):
-		self.model.construct_kdtree(self.current_group)
+		self.model.construct_kdtree_for_vq(self.current_group)
 		d = []
 		for _kd in self.model.kd:
 			tmp = _kd.query(points, 10)[0]

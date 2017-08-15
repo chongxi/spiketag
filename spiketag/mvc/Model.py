@@ -113,26 +113,34 @@ class MainModel(object):
         else:
             pass
 
-
-    def construct_kdtree(self, groupNo):
+    def construct_kdtree_for_vq(self, groupNo):
         self.kd = []
         for clu_id, value in self.clu[groupNo].index.items():
             fet = self.fet[groupNo][value]
             self.kd.append(KDTree(fet))
 
+    def construct_kdtree(self, groupNo, global_ids):
+        self.kd = {} 
+        for clu_id, value in self.clu[groupNo].index.items():
+            diff_ids = np.setdiff1d(value, global_ids, assume_unique=True)
+            if len(diff_ids) > 0:
+                fet = self.fet[groupNo][diff_ids]
+                self.kd[KDTree(fet)] = clu_id
 
-    def predict(self, groupNo, X, method='knn', k=10):
+
+    def predict(self, groupNo, global_ids, method='knn', k=10):
+        X = self.fet[groupNo][global_ids]
         if X.ndim==1: X=X.reshape(1,-1)
+
         if method == 'knn':
-            self.construct_kdtree(groupNo)
+            self.construct_kdtree(groupNo, global_ids)
             d = []
-            k = 10
-            for _kd in self.kd:
+            for _kd in self.kd.iterkeys():
                 tmp = _kd.query(X, k)[0]
                 d.append(tmp.mean(axis=1))
             d = np.vstack(np.asarray(d))
             # np.argmin(d[0:,:],axis=0)
-            labels = np.argmin(d[1:,:],axis=0)+1
+            labels = np.asarray(self.kd.values())[np.argmin(d[0:,:],axis=0)]
         return labels
 
 
@@ -149,6 +157,12 @@ class MainModel(object):
             barename = self.filename.split('.')[0]
             self.spktag_filename = barename + '_spktag.bin'
             self.spktag.tofile(self.spktag_filename)
+
+    def refine(self, group, global_ids):
+        info("received model modified event, refine spikes[group={}, global_ids={}]".format(group, global_ids))
+        labels = self.predict(group, global_ids) 
+        info("the result of refine: {}".format(labels))
+        self.clu[group].refill(global_ids, labels)
     
     def remove_spk(self, group, global_ids):
         '''
