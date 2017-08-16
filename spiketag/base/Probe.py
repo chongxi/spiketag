@@ -1,4 +1,5 @@
 import numpy as np
+import json
 
 #------------------------------
 #        Probe Factory 
@@ -230,3 +231,16 @@ class TetrodeProbe(Probe):
         assert isinstance(chs, np.ndarray), 'chs should numpy array, make sure numba works'
         self._g2chs[group] = chs
         self._update_chs2group(chs, group)
+
+    def fromfile(self, file, filetype='json'):
+        if filetype == 'json':
+            with open(file) as mapping_file:    
+                data = json.load(mapping_file)
+        else:
+            print 'the file needs to be json'
+        tetrode_ch_hash = np.array(data['0']['mapping'])[:self._n_ch].reshape(-1,4) - 1
+        for i, _ch_hash in enumerate(tetrode_ch_hash):
+                self[i] = _ch_hash
+
+    def ch_hash(self, ch):
+        return self.get_chs(self.belong_group(ch))

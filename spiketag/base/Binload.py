@@ -87,7 +87,7 @@ class bload(object):
     def __repr__(self):
         return self.info0 + self.info1 + self.info2 + self.info3
 
-    def asarray(self, binpoint=14):
+    def asarray(self, binpoint=13):
         ne.set_num_threads(32)
         data = np.asarray(self.npmm).reshape(-1, self._nCh)
         _scale = np.float32(2**binpoint)
