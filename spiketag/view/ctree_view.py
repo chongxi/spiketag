@@ -45,6 +45,7 @@ class ctree_view(scene.SceneCanvas):
         self._whole_tree = clu._extra_info['condensed_tree']
         self._clu_tree = self._whole_tree[self._whole_tree['child_size'] > 1]
         #  self._select_clusters = np.array(clu._extra_info['default_select_clusters'], dtype=np.int64)
+        self._clu_array = self._get_nodes_from_clu_tree()
         self._select_clusters = clu.select_clusters
         if len(self._select_clusters):
             self._build_data(self._whole_tree)
@@ -62,6 +63,7 @@ class ctree_view(scene.SceneCanvas):
             current_cluster = self._get_cluster_by_pos(e.pos)
         if not current_cluster:
             self._last_highlight = None
+            self._clu.select(np.array([]))
         elif current_cluster == self._last_highlight:
             return
         else:
@@ -93,40 +95,36 @@ class ctree_view(scene.SceneCanvas):
                         self._clu.select_clusters = self._select_clusters
                         group_of_idx = []
                         group_of_clu = []
-                        if (self._select_clusters[-2:] == children).all():
-                            group_of_idx.append(self._get_leaves_from_whole_tree(current_cluster))                        
-                            group_of_clu.append(np.array([0]))
-                            for child in children:
-                                global_idx = self._get_leaves_from_whole_tree(child)
-                                clu = np.where(self._select_clusters == child)[0] + self._clu.max_clu_id  #plus one since always ignore the grey one
-                                group_of_idx.append(global_idx)
-                                group_of_clu.append(clu)
-
-                            self._clu.fill(group_of_idx, group_of_clu)
-                        else:
-                            debug('Not support expand here now!')
-                    
+                        group_of_idx.append(self._get_leaves_from_whole_tree(current_cluster))                        
+                        group_of_clu.append(np.array([0]))
+                        leftmost = np.where(self._select_clusters == children.min())[0]
+                        for idx, val in enumerate(self._select_clusters):
+                            if idx < leftmost: continue 
+                            global_idx = self._get_leaves_from_whole_tree(val)
+                            clu = np.where(self._clu_array == val)[0][0] + 1
+                            group_of_idx.append(global_idx)
+                            group_of_clu.append(clu)
+                        self._clu.fill(group_of_idx, group_of_clu)
                         self._update()
 
                 # collapse cluster
                 else:
                     debug('ctree view collapse cluster {} here'.format(current_cluster))
-                    children = self._get_children(self._clu_tree, current_cluster)
-                    for child in children:
-                        if child not in self._select_clusters:
-                            return 
-                    sc = self._select_clusters
-                    group_of_idx = [].append(np.where(sc == children[0])[0])
-                    group_of_clu = [np.array([], dtype=np.int64)]
-                    for child in children:
-                        sc = np.delete(sc, np.where(sc == child)[0])
-                    sc = np.append(sc, current_cluster)
-                    self._select_clusters = np.sort(sc)
-                    self._clu.select_clusters = self._select_clusters   
-                    for child in children:
-                        group_of_clu[0] = np.append(group_of_clu[0], self._get_leaves_from_whole_tree(child))
-                    self._clu.fill(group_of_idx, group_of_clu) 
-
+                    #  children = self._get_children(self._clu_tree, current_cluster)
+                    #  for child in children:
+                        #  if child not in self._select_clusters:
+                            #  return 
+                    #  sc = self._select_clusters
+                    #  group_of_idx = [].append(np.where(sc == children[0])[0])
+                    #  group_of_clu = [np.array([], dtype=np.int64)]
+                    #  for child in children:
+                        #  sc = np.delete(sc, np.where(sc == child)[0])
+                    #  sc = np.append(sc, current_cluster)
+                    #  self._select_clusters = np.sort(sc)
+                    #  self._clu.select_clusters = self._select_clusters   
+                    #  for child in children:
+                        #  group_of_clu[0] = np.append(group_of_clu[0], self._get_leaves_from_whole_tree(child))
+                    #  self._clu.fill(group_of_idx, group_of_clu) 
                     
 
     def _get_cluster_by_pos(self, pos):
@@ -192,6 +190,9 @@ class ctree_view(scene.SceneCanvas):
                 for child in children: __get_leaves(tree, child)
         __get_leaves(self._clu_tree, root)
         return np.array(nodes)
+
+    def _get_nodes_from_clu_tree(self):
+        return np.unique(np.append(self._clu_tree['parent'], self._clu_tree['child']))
 
     def _get_leaves_from_whole_tree(self, root=None):
         '''because the reason of performance, so seperate the method of get leaves from clu_tree or whole tree.
