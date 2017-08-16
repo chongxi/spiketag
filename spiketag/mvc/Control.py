@@ -200,11 +200,11 @@ class Sorter(object):
 
 
 	def _predict(self, points):
-		self.model.construct_kdtree_for_vq(self.current_group)
+		self.model.construct_kdtree(self.current_group)
 		d = []
-		for _kd in self.model.kd:
+		for _kd in self.model.kd.iterkeys():
 			tmp = _kd.query(points, 10)[0]
 			d.append(tmp.mean(axis=1))
 		d = np.vstack(np.asarray(d))
-		labels = np.argmin(d, axis=0)
+                labels = np.asarray(self.model.kd.values())[np.argmin(d, axis=0)]
 		return labels

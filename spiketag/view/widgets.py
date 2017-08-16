@@ -52,6 +52,7 @@ class param_widget(QtGui.QWidget):
 
         self.l_group = QtGui.QLabel("group: chs" + self._group2str(0))
         self.group = QtGui.QSpinBox()
+        self.group.setKeyboardTracking(False) # emit the valueChanged when return key is pressed
         self.group.setMinimum(0)
         self.group.setMaximum(n_group - 1)
         self.group.setValue(0)

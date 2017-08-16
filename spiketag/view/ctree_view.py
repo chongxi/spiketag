@@ -55,7 +55,7 @@ class ctree_view(scene.SceneCanvas):
     def on_key_press(self, e):
         if e.text == 'r':
             self._view.camera.reset()
-            self._view.camera.set_range()
+            self._set_range() 
 
     def on_mouse_move(self, e):
         with Timer("[View] Ctreeview -- get_cluster_by_pos.", conf.ENABLE_PROFILER):
@@ -337,7 +337,8 @@ class ctree_view(scene.SceneCanvas):
     def _set_range(self):
         x_bound = (self._vertices[:,0].min(), self._vertices[:,0].max())
         y_bound = (self._vertices[:,1].min(), self._vertices[:,1].max())
-        self._view.camera.set_range(x=x_bound, y=y_bound)
+        z_bound = (0,0)
+        self._view.camera.set_range(x=x_bound, y=y_bound, z=z_bound)
    
     def _render(self):
         self._mesh.set_data(vertices=self._vertices, faces=self._faces, face_colors=self._face_colors);
