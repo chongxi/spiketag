@@ -114,6 +114,15 @@ class Sorter(object):
             wview = wave_view(self.model.mua.data[self.time[self.selected]-2000:self.time[self.selected]+2000, :], fs=self.model.probe.fs, ncols=1, chs=chs)
             wview.show()
 
+        def show_mua(self, chs, spks=None):
+            '''
+            spks: (t,ch) encodes pivital
+            array([[  37074,   37155,   37192, ..., 1602920, 1602943, 1602947],
+                   [     58,      49,      58, ...,      58,      75,      77]], dtype=int32)
+            '''
+            wview = wave_view(self.model.mua.data, fs=self.model.probe.fs, ncols=1, chs=chs, spks=spks)
+            wview.show()
+
 	def update_group(self):
 		# ---- update chosen ch and get cluster ----
 		self.current_group = self.view.param_view.group.value()
