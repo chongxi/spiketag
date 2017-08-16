@@ -113,13 +113,7 @@ class MainModel(object):
         else:
             pass
 
-    def construct_kdtree_for_vq(self, groupNo):
-        self.kd = []
-        for clu_id, value in self.clu[groupNo].index.items():
-            fet = self.fet[groupNo][value]
-            self.kd.append(KDTree(fet))
-
-    def construct_kdtree(self, groupNo, global_ids):
+    def construct_kdtree(self, groupNo, global_ids=None):
         self.kd = {} 
         for clu_id, value in self.clu[groupNo].index.items():
             diff_ids = np.setdiff1d(value, global_ids, assume_unique=True)
@@ -139,8 +133,7 @@ class MainModel(object):
                 tmp = _kd.query(X, k)[0]
                 d.append(tmp.mean(axis=1))
             d = np.vstack(np.asarray(d))
-            # np.argmin(d[0:,:],axis=0)
-            labels = np.asarray(self.kd.values())[np.argmin(d[0:,:],axis=0)]
+            labels = np.asarray(self.kd.values())[np.argmin(d, axis=0)]
         return labels
 
 
