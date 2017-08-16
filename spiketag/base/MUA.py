@@ -6,6 +6,10 @@ from .SPK import SPK
 from .Binload import bload
 from ..utils.conf import info
 
+def _calculate_threshold(x, beta=4.0):
+    thr = -beta*np.median(abs(x)/0.6745,axis=0)
+    return thr
+
 @jit(cache=True, nopython=True)
 def _to_spk(data, pos, chlist, spklen=19, prelen=8):
     n = len(pos)
@@ -47,6 +51,9 @@ class MUA():
                            np.where((self.pivotal_pos[0] - self.prelen) < 0)[0], axis=1)        
 
         info('raw data have {} spks'.format(self.pivotal_pos.shape[1]))
+
+    def get_threshold(self):
+        return _calculate_threshold(self.data)
 
     def tospk(self):
         spkdict = {}
