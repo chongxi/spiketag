@@ -39,6 +39,7 @@ class param_widget(QtGui.QWidget):
 
         l_fet_No = QtGui.QLabel("fetNo")
         self.fet_No = QtGui.QSpinBox()
+        self.fet_No.setKeyboardTracking(False)
         self.fet_No.setMinimum(1)
         self.fet_No.setMaximum(12)
         self.fet_No.setValue(3)
