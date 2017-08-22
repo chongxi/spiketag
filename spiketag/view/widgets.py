@@ -17,7 +17,7 @@ class param_widget(QtGui.QWidget):
     Widget for editing OBJECT parameters
     """
     signal_objet_changed  = QtCore.pyqtSignal(name='objectChanged')
-    signal_group_changed     = QtCore.pyqtSignal(name='groupChanged')
+    signal_group_changed  = QtCore.pyqtSignal(name='groupChanged')
     signal_get_fet        = QtCore.pyqtSignal(name='getfet')
     signal_recluster      = QtCore.pyqtSignal(name='recluster')
     signal_refine         = QtCore.pyqtSignal(name='refine')

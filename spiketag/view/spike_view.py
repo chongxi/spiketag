@@ -289,6 +289,8 @@ class spike_view(View):
                 _cache_out(self._cache_mask_, self._cache_color, self.color)
                 _cache_out(self._cache_mask_, self._cache_depth, self.depth)
                 self._cache_mask_ = np.array([])
+                self.visuals[0].program['a_color']    = self.color
+                self.visuals[0].program['a_position'] = self.depth  # pos include depth
                 self.update()
 
 
