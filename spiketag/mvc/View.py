@@ -4,12 +4,12 @@ from ..view import *
 import PyQt4
 from PyQt4 import QtGui
 import os
-from ..utils.utils import get_config_dir
+from . import root_dir
 
 class MainView(object):
 	"""docstring for View"""
 	def __init__(self, n_group, group2chs, fs, spklen, scale):
-                self.gui = gui.GUI(name='spiketag', config_dir=get_config_dir())
+                self.gui = gui.GUI(name='spiketag', config_dir=root_dir())
 		self.param_view = param_widget(n_group, group2chs)
 		self.spk_view = spike_view()
 		self.scatter_view = scatter_3d_view()

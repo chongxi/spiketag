@@ -34,7 +34,7 @@ class ctree_view(scene.SceneCanvas):
         self._cluster_bounds = {}
 
         self._last_highlight = None
-        self._view_lock = False
+        self._view_lock = True 
         self._default_clu_color = (0.933333, 0.866667, 0.509804, 1)
         self._default_line_color = (1, 1, 0, 1)
        
