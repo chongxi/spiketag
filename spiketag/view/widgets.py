@@ -17,7 +17,7 @@ class param_widget(QtGui.QWidget):
     Widget for editing OBJECT parameters
     """
     signal_objet_changed  = QtCore.pyqtSignal(name='objectChanged')
-    signal_group_changed     = QtCore.pyqtSignal(name='groupChanged')
+    signal_group_changed  = QtCore.pyqtSignal(name='groupChanged')
     signal_get_fet        = QtCore.pyqtSignal(name='getfet')
     signal_recluster      = QtCore.pyqtSignal(name='recluster')
     signal_refine         = QtCore.pyqtSignal(name='refine')
@@ -39,6 +39,7 @@ class param_widget(QtGui.QWidget):
 
         l_fet_No = QtGui.QLabel("fetNo")
         self.fet_No = QtGui.QSpinBox()
+        self.fet_No.setKeyboardTracking(False)
         self.fet_No.setMinimum(1)
         self.fet_No.setMaximum(12)
         self.fet_No.setValue(3)

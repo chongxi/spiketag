@@ -34,6 +34,9 @@ class ctree_view(scene.SceneCanvas):
         self._cluster_bounds = {}
 
         self._last_highlight = None
+        self._view_lock = True 
+        self._default_clu_color = (0.933333, 0.866667, 0.509804, 1)
+        self._default_line_color = (1, 1, 0, 1)
        
         if show is True:
             self.show()
@@ -57,13 +60,15 @@ class ctree_view(scene.SceneCanvas):
         if e.text == 'r':
             self._view.camera.reset()
             self._set_range() 
+        if e.text == 'c':
+            self._view_lock = not self._view_lock
 
     def on_mouse_move(self, e):
         with Timer("[View] Ctreeview -- get_cluster_by_pos.", conf.ENABLE_PROFILER):
             current_cluster = self._get_cluster_by_pos(e.pos)
         if not current_cluster:
             self._last_highlight = None
-            self._clu.select(np.array([]))
+            if not self._view_lock: self._clu.select(np.array([]))
         elif current_cluster == self._last_highlight:
             return
         else:
@@ -161,7 +166,7 @@ class ctree_view(scene.SceneCanvas):
         faces = faces + np.repeat(np.arange(vertices.shape[0]/4) * 4, 6)
 	faces = faces.reshape(-1, 3)
 
-        face_colors = np.full([faces.shape[0], 4], (1, 1, 0, 1), dtype=np.float64)
+        face_colors = np.full([faces.shape[0], 4], self._default_clu_color, dtype=np.float64)
         for idx, val in enumerate(self._select_clusters):
             color = np.hstack((np.asarray(palette[idx+1]), 1))
             for child in self._get_descendants(self._clu_tree, val):
@@ -343,7 +348,7 @@ class ctree_view(scene.SceneCanvas):
    
     def _render(self):
         self._mesh.set_data(vertices=self._vertices, faces=self._faces, face_colors=self._face_colors);
-        self._line.set_data(pos=self._line_pos, color=(1,1,0,1))
+        self._line.set_data(pos=self._line_pos, color=self._default_line_color)
 
     def _update(self):
         self._build_data(self._whole_tree)

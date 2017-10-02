@@ -313,9 +313,3 @@ class Picker(object):
         radius = np.array([.0,.0,.0,.0])
         return rectangle._generate_vertices(center=center,radius=radius,height=height,width=width)[1:, ..., :2]
 
-def get_config_dir():
-    '''
-        get the template gui state config dir, this is for temparory now.
-    '''
-    return spiketag.__path__[0] + os.path.sep + 'res' 
-
