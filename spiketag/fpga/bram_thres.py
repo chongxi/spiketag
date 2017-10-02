@@ -9,6 +9,38 @@ import struct
 
 # thres_arr = np.array([-100.14724392]*32)
 
+class chgpNo(object):
+    """
+    """
+    def __init__(self, nCh=32, base_address=768):
+        self.nCh  = nCh
+        self.base = base_address
+        self.chgpNo = np.zeros(nCh)
+
+    def enable(self, flag):
+        if flag is True:
+            write_mem_16(self.enable_reg_addres,0b0001)
+        elif flag is False:
+            write_mem_16(self.enable_reg_addres,0b0000)
+
+    def __setitem__(self, chNo, chgpNo):
+        self.chgpNo[chNo] = chgpNo
+        if type(chNo) is slice:
+            for i,v in enumerate(chgpNo):
+                write_thr_32(i+self.base, chgpNo[i], dtype='<I4', binpoint=0) 
+        else:
+            write_thr_32(chNo+self.base, chgpNo, dtype='<I4', binpoint=0) 
+
+    def __getitem__(self, chNo):
+        ch = chNo+self.base
+        return read_thr_32(ch, dtype='<I4', binpoint=0)
+
+    def __repr__(self):
+        for ch in np.arange(self.nCh):
+            print('chgpNo of ch{0} is {1}'.format(ch, self.chgpNo[ch]))
+        return 'chgpNo done'
+
+
 class offset(object):
     """
     """
