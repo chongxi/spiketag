@@ -80,8 +80,8 @@ def _to_fet(_spk_array, _weight_vector, method='weighted-pca', ncomp=6, whiten=F
             shift = -np.dot(X.mean(axis=0), pca.components_.T)
             temp_fet += shift
             # step 3
-            scale = temp_fet.max()-temp_fet.min()
-            temp_fet /= scale
+            scale = 1/(temp_fet.max()-temp_fet.min())
+            temp_fet *= scale
             # quantization for FPGA
             fet = temp_fet
             # fet[i] = np.floor(temp_fet*2**8)/(2**8)
