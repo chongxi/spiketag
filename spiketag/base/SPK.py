@@ -2,6 +2,35 @@ import numpy as np
 import numexpr as ne
 from .FET import FET
 
+
+def _transformer(X, P, shift, scale):
+    '''
+    y = scale*((PX)+shift) 
+    '''
+    y = scale*(np.dot(X,P)+shift)
+    return y
+
+def _construct_transformer(x, ncomp=6):
+    from sklearn.decomposition import PCA
+    pca = PCA(n_components=ncomp, whiten=False)
+    # step 1
+    temp_fet = pca.fit(x)
+    # pca_comp[i] = pca.components_.T
+    # 8 bit PCA: #1.#7
+    pca_comp = np.floor(pca.components_.T*(2**7))/(2**7)
+    temp_fet = np.dot(x, pca_comp)
+    # pca_comp[i] = pca.components_.T
+    # step 2
+    shift = -np.dot(x.mean(axis=0), pca.components_.T)
+    temp_fet += shift
+    # step 3
+    scale = 1/(temp_fet.max()-temp_fet.min())
+    temp_fet *= scale
+    # quantization for FPGA
+    fet = temp_fet
+    return pca_comp, shift, scale
+
+
 def _to_fet(_spk_array, _weight_vector, method='weighted-pca', ncomp=6, whiten=False):
 
     X = _spk_array.transpose(0,2,1).ravel().reshape(-1, _spk_array.shape[1]*_spk_array.shape[2])
@@ -95,6 +124,9 @@ class SPK():
         weight_channel = self.weight_channel_saw(np.arange(self.ch_span))
         W = weight_channel * weight_vector.reshape(-1,1)
         self.W = W.T.ravel()
+
+        self.W = np.ones((self.spklen*self.ch_span,)).astype(np.float32) # for tetrode
+
 
     @property
     def nspk(self):
