@@ -6,6 +6,7 @@ from ..view import wave_view
 from ..base import CLU
 from ..utils import warning, conf
 from ..utils.utils import Timer
+from ..base.SPK import _transform
 
 
 class Sorter(object):
@@ -224,3 +225,11 @@ class Sorter(object):
 		d = np.vstack(np.asarray(d))
                 labels = np.asarray(self.model.kd.values())[np.argmin(d, axis=0)]
 		return labels
+
+        def _transform(self, x, P, shift, scale):
+            return _transform(x, P, shift, scale) 
+
+        def construct_transformer(self, groupNo, ndim=4):
+            _pca_comp, _shift, _scale = self.model.construct_transformer(groupNo, ndim)
+            return _pca_comp, _shift, _scale            
+

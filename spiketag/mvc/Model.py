@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.neighbors import KDTree
+from ..base.SPK import _construct_transformer
 from ..base import *
 from ..utils.conf import info 
 from ..utils import conf
@@ -106,12 +107,31 @@ class MainModel(object):
 
             info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 
+        self.groups = self.spk.spk.keys()
+
     def cluster(self, method='hdbscan', *args, **kwargs):
         groupNo = kwargs['groupNo'] if 'groupNo' in kwargs.keys() else None
         if groupNo is not None:
             self.clu[groupNo] = self.fet.toclu(method=method, *args, **kwargs)
         else:
             pass
+
+
+    def construct_transformer(self, groupNo, ndim=4):
+        '''
+        construct transformer parameters for a specific group
+        y = a(xP+b)
+        P: _pca_comp
+        b: _shift
+        a: _scale
+        '''
+        # concateated spike waveforms from one channel group
+        r = self.spk[groupNo]
+        x = r.transpose(0,2,1).ravel().reshape(-1, r.shape[1]*r.shape[2])
+        # construct transfomer params
+        _pca_comp, _shift, _scale = _construct_transformer(x, ncomp=ndim)
+        return _pca_comp, _shift, _scale
+
 
     def construct_kdtree(self, groupNo, global_ids=None):
         self.kd = {} 

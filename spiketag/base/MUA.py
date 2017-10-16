@@ -16,7 +16,7 @@ def _to_spk(data, pos, chlist, spklen=19, prelen=8):
     spk = np.empty((n, spklen, len(chlist)), dtype=np.float32)
     for i in range(n):
         # i spike in chlist
-        spk[i, ...]  = data[pos[i]-prelen:pos[i]-prelen+spklen, chlist]
+        spk[i, ...]  = data[pos[i]-prelen+2:pos[i]-prelen+spklen+2, chlist]
     _nan = np.where(chlist==-1)[0]
     spk[..., _nan] = 0
     return spk

@@ -3,11 +3,11 @@ import numexpr as ne
 from .FET import FET
 
 
-def _transformer(X, P, shift, scale):
+def _transform(X, P, shift, scale):
     '''
     y = scale*((PX)+shift) 
     '''
-    y = scale*(np.dot(X,P)+shift)
+    y = (np.dot(X,P)+shift)/scale
     return y
 
 def _construct_transformer(x, ncomp=6):
@@ -24,8 +24,8 @@ def _construct_transformer(x, ncomp=6):
     shift = -np.dot(x.mean(axis=0), pca.components_.T)
     temp_fet += shift
     # step 3
-    scale = 1/(temp_fet.max()-temp_fet.min())
-    temp_fet *= scale
+    scale = temp_fet.max()-temp_fet.min()
+    temp_fet /= scale
     # quantization for FPGA
     fet = temp_fet
     return pca_comp, shift, scale
@@ -80,8 +80,8 @@ def _to_fet(_spk_array, _weight_vector, method='weighted-pca', ncomp=6, whiten=F
             shift = -np.dot(X.mean(axis=0), pca.components_.T)
             temp_fet += shift
             # step 3
-            scale = 1/(temp_fet.max()-temp_fet.min())
-            temp_fet *= scale
+            scale = temp_fet.max()-temp_fet.min()
+            temp_fet /= scale
             # quantization for FPGA
             fet = temp_fet
             # fet[i] = np.floor(temp_fet*2**8)/(2**8)
