@@ -3,4 +3,5 @@ from .bram_thres import offset
 from .bram_thres import channel_hash 
 from .memory_api import *
 from configFPGA import xike_config
+from run import run
 
