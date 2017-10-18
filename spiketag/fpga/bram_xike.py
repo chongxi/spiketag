@@ -45,8 +45,8 @@ class pca_hash(object):
                                             pca0, pca1, pca2, pca3))[0]
         write_tat_32(i, x, dtype='<i4', binpoint=0) 
 
-    def __setitem__(self, chNo, pca_comp):
-        ch = chNo*self.dim + self.base
+    def __setitem__(self, grpNo, pca_comp):
+        ch = grpNo*self.dim + self.base
         for i, pca_in in enumerate(pca_comp):
             self.write_pca_in(ch+i, pca_in)
         
@@ -57,16 +57,16 @@ class pca_hash(object):
         y = y/(2**7)
         return y
 
-    def __getitem__(self, chNo):
+    def __getitem__(self, grpNo):
         pca_comp = np.zeros((self.dim, 4))
-        ch = chNo*self.dim + self.base
+        ch = grpNo*self.dim + self.base
         for i in range(self.dim):
             pca_comp[i] = self.read_pca_out(ch+i)
         return pca_comp
 
-    def get_hex(self, chNo):
+    def get_hex(self, grpNo):
         pca_comp_hex = []
-        ch = chNo*self.dim + self.base
+        ch = grpNo*self.dim + self.base
         for i in range(self.dim):
             addr = (ch+i) * 4
             r32 = open('/dev/xillybus_template_32', 'rb')
@@ -143,25 +143,39 @@ class vq_hash(object):
     In FPGA:       the vq[ch] is organized as a memory structure in bram_thres module in Xike
     Currently, the base address shift is 1952 = 128 + 57*32
     """
-    def __init__(self, nCh=32, base_address=1952):
+    def __init__(self, nCh=32, base_address=1952, ndim=100):
         self.nCh  = nCh
         self.base = base_address
-        self.vq = np.zeros(nCh)
+        self.vq   = np.zeros(nCh)
+        self.dim  = ndim
 
-    def __setitem__(self, chNo, vq_in):
+    def write_vq_in(self, i, vq_in):
         vq_in = np.floor(np.asarray(vq_in)*2**7)
         vq_in = vq_in.astype(np.int32)
         vq0, vq1, vq2, vq3 = vq_in
         x = struct.unpack('<i', struct.pack('4b', 
                                             vq0, vq1, vq2, vq3))[0]
-        ch = chNo + self.base
+        ch = i + self.base
         write_tat_32(ch, x, dtype='<i4', binpoint=0) 
 
-    def __getitem__(self, chNo):
-        ch = chNo + self.base
+    def read_vq_out(self, i):
+        ch = i + self.base
         x = read_tat_32(ch, dtype='<i', binpoint=0)
         y = struct.unpack('4b', struct.pack('<i', x))
         y = np.asarray(y).astype(np.float32)
         y = y/(2**7)
         return y
+
+    def __setitem__(self, grpNo, vq):
+        ch = grpNo*self.dim
+        for i, vq_in in enumerate(vq):
+            self.write_vq_in(ch+i, vq_in)
+ 
+    def __getitem__(self, grpNo):
+        vq = np.zeros((self.dim, 4))
+        ch = grpNo*self.dim
+        for i in range(self.dim):
+            vq[i] = self.read_vq_out(ch+i)
+        return vq
+
 

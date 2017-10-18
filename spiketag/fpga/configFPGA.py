@@ -63,6 +63,9 @@ class xike_config(object):
         self.shift[grpNo] = b
         self.pca[grpNo]   = P
 
+    def _config_FPGA_vq_knn(self, grpNo, vq):
+        self.vq[grpNo] = vq
+
 
 # if __name__ == "__main__":
    # config(offset_value = 32, thres_value = -500)
