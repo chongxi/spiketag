@@ -27,8 +27,8 @@ class grid_scatter3d(QtGui.QWidget):
         self.fet_view = {}
         for idx, position in enumerate(positions):
             self.fet_view[idx] = scatter_3d_view()
-            self.fet_view[idx].create_native()
-            self.fet_view[idx].native.setParent(self)
+            # self.fet_view[idx].create_native()
+            # self.fet_view[idx].native.setParent(self)
             self.grid.addWidget(self.fet_view[idx].native, *position)
             self.grid.addWidget(self.fet_view[idx].native, *position)
 
