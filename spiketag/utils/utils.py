@@ -6,8 +6,7 @@ from time import time
 from vispy import scene, app
 import numpy as np
 from matplotlib import path
-import spiketag
-import conf
+from ..utils import conf
 
 #------------------------------------------------------------------------------
 # Simple Timer for performance test
@@ -33,7 +32,7 @@ class Timer(object):
         self.secs = self.end - self.start
         self.msecs = self.secs * 1000  # millisecs
         if self.verbose:
-            print '{0}, elapsed time: {1} ms'.format(self.task, self.msecs)
+            print('{0}, elapsed time: {1} ms'.format(self.task, self.msecs))
 
 
 #------------------------------------------------------------------------------

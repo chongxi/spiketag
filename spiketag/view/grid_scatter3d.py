@@ -2,24 +2,28 @@
 Example demonstrating the use of two GLCanvases in one QtApp.
 """
 
-from PyQt4 import QtGui, QtCore
+try:
+    from PyQt5 import QtWidgets as QtW
+except:
+    from PyQt4 import QtGui as QtW
+
 import sys
 import numpy as np
 from ..view import scatter_3d_view
 from ..utils import Timer
 
-class grid_scatter3d(QtGui.QWidget):
+class grid_scatter3d(QtW.QWidget):
     def __init__(self, rows, cols):
         # QtGui.QMainWindow.__init__(self)
         super(grid_scatter3d, self).__init__()
         self.resize(1000, 500)
         self.setWindowTitle('Feature Spaces')
 
-        self.grid = QtGui.QGridLayout()
+        self.grid = QtW.QGridLayout()
         self.setLayout(self.grid)
-        # self.grid.setContentsMargins(0,0,0,0)
+        self.grid.setContentsMargins(0,0,0,0)
         self.grid.setSpacing(1)
-        self.grid.setMargin(0)
+        #self.grid.setMargin(0)
 
         self.rows = rows
         self.cols = cols

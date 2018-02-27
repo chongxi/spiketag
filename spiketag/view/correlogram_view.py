@@ -3,7 +3,7 @@ from vispy import scene, app
 from ..base.CLU import CLU
 from .color_scheme import palette
 from ..core.correlate import correlate
-from phy.plot import View
+from ..external.phy.phy.plot import View
 
 class correlogram_view(View):
 

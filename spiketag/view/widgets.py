@@ -1,7 +1,15 @@
 import numpy as np
-from PyQt4 import QtGui, QtCore
-from phy.plot import View
-from phy.io.array import _accumulate
+try:
+    from PyQt5 import QtWidgets as QtW
+    from PyQt5 import QtCore, QtGui
+except:
+    from PyQt4 import QtGui as QtW
+    from PyQt4 import QtCore
+
+import sys
+
+from ..external.phy.phy.plot import View
+from ..external.phy.phy.io.array import _accumulate
 
 
 def _representsInt(s):
@@ -12,7 +20,7 @@ def _representsInt(s):
         return False
 
 
-class param_widget(QtGui.QWidget):
+class param_widget(QtW.QWidget):
     """
     Widget for editing OBJECT parameters
     """

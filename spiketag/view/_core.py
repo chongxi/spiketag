@@ -1,6 +1,6 @@
 from numba import int32, int64, float32, jit
-from phy.plot.utils import _get_array
-from phy.io.array import _accumulate
+from ..external.phy.phy.plot.utils import _get_array
+from ..external.phy.phy.io.array import _accumulate
 
 
 # @jit('(int64, int64, int64, int32[:], int64, int32[:], int64[:])', cache=True)

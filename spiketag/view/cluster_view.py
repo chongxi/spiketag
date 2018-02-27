@@ -1,5 +1,5 @@
 import  numpy as np
-from phy.gui.widgets import Table
+from ..external.phy.phy.gui.widgets import Table
 
 class cluster_view(Table):
     '''

@@ -237,7 +237,7 @@ class TetrodeProbe(Probe):
             with open(file) as mapping_file:    
                 data = json.load(mapping_file)
         else:
-            print 'the file needs to be json'
+            print('the file needs to be json')
         tetrode_ch_hash = np.array(data['0']['mapping'])[:self._n_ch].reshape(-1,4) - 1
         for i, _ch_hash in enumerate(tetrode_ch_hash):
                 self[i] = _ch_hash

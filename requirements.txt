@@ -4,7 +4,8 @@ numexpr >= 2.5.2
 numpy >= 1.11.0
 scipy >= 0.17.0
 scikit-learn >= 0.17.1
-vispy == 0.5.0
-phy >= 1.04
+vispy >= 0.5.0
+phy >= 1.0.4
 seaborn >= 0.7.0
 hdbscan >= 0.7.3
+PyQt4 >= 4.8.6

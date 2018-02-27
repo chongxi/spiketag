@@ -105,7 +105,7 @@ def _to_fet(_spk_array, _weight_vector, method='weighted-pca', ncomp=6, whiten=F
         fet = temp_fet/(temp_fet.max()-temp_fet.min()) 
 
     else:
-        print 'method has to be {peak, pca, weighted-pca, ica, weighted-ica}'
+        print('method has to be {peak, pca, weighted-pca, ica, weighted-ica}')
 
     return fet
 

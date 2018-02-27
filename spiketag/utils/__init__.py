@@ -1,7 +1,6 @@
 from .utils import Timer, EventEmitter, Picker
 from .cameras import YSyncCamera
-from conf import logger, debug, info, warning, error, critical
-import conf 
+from .conf import logger, debug, info, warning, error, critical
 import numpy as np
 
 

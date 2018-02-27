@@ -31,9 +31,9 @@ def _unpickle_method(func_name, obj, cls):
             break
     return func.__get__(obj, cls)
 
-import copy_reg
+import copyreg
 import types
-copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
+copyreg.pickle(types.MethodType, _pickle_method, _unpickle_method)
 #######################################################################
 
 
@@ -48,7 +48,7 @@ def distance2clu(u, k=10):
     for key, value in app.model.clu[app.ch].index.items():
         if key > 0:
             X = app.model.fet[app.ch][value]
-            print key, X.shape
+            print(key, X.shape)
             kd = KDTree(X, p=2)
             d  = kd.query(u, k)[0]
             dis.append(d.mean(axis=1))
