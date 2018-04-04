@@ -53,7 +53,7 @@ class MUA():
         info('raw data have {} spks'.format(self.pivotal_pos.shape[1]))
 
     def get_threshold(self):
-        return _calculate_threshold(self.data)
+        return _calculate_threshold(self.data[::100])
 
     def tospk(self):
         spkdict = {}

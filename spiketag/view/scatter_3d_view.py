@@ -17,7 +17,7 @@ class scatter_3d_view(scene.SceneCanvas):
         self.view.camera = 'turntable'
 
         self._n = 0
-        self._transparency = 0.3
+        self._transparency = 0.7
         self._control_transparency = False
         self._control_picker = False
         self._size = 3
