@@ -1,4 +1,4 @@
-from multiprocessing import Pool, cpu_count
+from torch.multiprocessing import Pool, cpu_count
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from hdbscan import HDBSCAN
@@ -6,6 +6,30 @@ from time import time
 from ..utils.utils import Timer
 from ..utils.conf import info, warning
 from .CLU import CLU
+
+# def _pickle_method(method):
+#     func_name = method.im_func.__name__
+#     obj = method.im_self
+#     cls = method.im_class
+#     if func_name.startswith('__') and not func_name.endswith('__'): #deal with mangled names
+#         cls_name = cls.__name__.lstrip('_')
+#         func_name = '_' + cls_name + func_name
+#     return _unpickle_method, (func_name, obj, cls)
+
+# def _unpickle_method(func_name, obj, cls):
+#     for cls in cls.__mro__:
+#         try:
+#             func = cls.__dict__[func_name]
+#         except KeyError:
+#             pass
+#         else:
+#             break
+#     return func.__get__(obj, cls)
+
+# import copy_reg
+# import types
+# copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
+
 
 class FET(object):
     """
@@ -54,7 +78,7 @@ class FET(object):
                                  gen_min_span_tree=True, 
                                  algorithm='boruvka_kdtree')
 
-            # automatic tatch clustering
+            # automatic pool clustering
             if groupNo is None:
                 if njobs!=1:
                     tic = time()
@@ -63,7 +87,8 @@ class FET(object):
                     pool.close()
                     pool.join()
                     toc = time()
-                    info('clustering finished, used {} seconds'.format(toc-tic))
+                    info('clustering finished, used {} sec'.format(toc-tic))
+                    # info('get clustering from groupNo {}:'.format(str(_groupNo)))
                     for _groupNo, __clu in zip(self.group, _clu):
                         clu[_groupNo] = __clu
                 else:
@@ -72,7 +97,7 @@ class FET(object):
                         clusterer = hdbcluster.fit(self.fet[groupNo])
                         clu[groupNo] = CLU(clusterer.labels_, clusterer)
                     toc = time()
-                    info('clustering finished, used {} seconds'.format(toc-tic))
+                    info('clustering finished, used {} sec'.format(toc-tic))
                 return clu
 
             # semi-automatic parameter selection for a specific channel
@@ -86,6 +111,7 @@ class FET(object):
 
     def _toclu(self, groupNo, method='hdbscan'):
         if method == 'hdbscan':
+            # tic = time()
             from hdbscan import HDBSCAN
             min_cluster_size = self.hdbscan_hyper_param['min_cluster_size']
             leaf_size = self.hdbscan_hyper_param['leaf_size']
@@ -95,6 +121,8 @@ class FET(object):
                          algorithm='boruvka_kdtree',
                          core_dist_n_jobs=cpu_count())        
             clusterer = hdbcluster.fit(self.fet[groupNo])
+            # toc = time()
+            # info('fet._toclu(groupNo={}, method={})  -- {} sec'.format(groupNo, method, toc-tic))
             return CLU(clusterer.labels_, clusterer)
         #  elif method == 'reset':
             #  clu = np.zeros((self.fet[groupNo].shape[0], )).astype(np.int64)

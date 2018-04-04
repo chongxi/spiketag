@@ -31,7 +31,7 @@ class MUA():
         self.dtype = 'i'+str(self.numbytes)
         self.bf = bload(self.nCh, self.fs)
         self.bf.load(filename, dtype=self.dtype)
-        self.filename = filename
+        self.mua_file = filename
         if probe.reorder_by_chip is True:
             self.bf.reorder_by_chip(probe._nchips)
         self.data = self.bf.asarray(binpoint=binary_radix)
@@ -40,7 +40,12 @@ class MUA():
         self.npts = self.bf._npts
         self.spklen = 19
         self.prelen = 9 
-        spk_meta = np.fromfile(filename+'.spk', dtype='<i4')
+
+        # acquire pivotal_pos from spk.bin under same folder
+        foldername = '/'.join(self.mua_file.split('/')[:-1])+'/'
+        info('processing folder: {}'.format(foldername))
+        self.spk_file = foldername + 'spk.bin'
+        spk_meta = np.fromfile(self.spk_file, dtype='<i4')
         self.pivotal_pos = spk_meta.reshape(-1,2).T
 
         # check spike is extracable
@@ -51,11 +56,14 @@ class MUA():
                            np.where((self.pivotal_pos[0] - self.prelen) < 0)[0], axis=1)        
 
         info('raw data have {} spks'.format(self.pivotal_pos.shape[1]))
+        info('----------------success------------------')
+        info(' ')
 
     def get_threshold(self):
         return _calculate_threshold(self.data[::100])
 
     def tospk(self):
+        info('mua.tospk()')
         spkdict = {}
         for g in range(self.probe.n_group):
             pivotal_chs = self.probe.fetch_pivotal_chs(g)
@@ -66,7 +74,8 @@ class MUA():
                                       chlist = self.probe[g], 
                                       spklen = self.spklen,
                                       prelen = self.prelen)
-                                     
+        info('----------------success------------------')     
+        info(' ')               
         return SPK(spkdict)
 
     def get_nid(self, corr_cutoff=0.95):  # get noisy spk id
