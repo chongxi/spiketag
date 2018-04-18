@@ -171,7 +171,8 @@ class ctree_view(scene.SceneCanvas):
             color = np.hstack((np.asarray(palette[idx+1]), 1))
             for child in self._get_descendants(self._clu_tree, val):
                 face_idx = np.hstack((self._bar_index[child] * 2, self._bar_index[child] * 2 + 1))
-                face_colors[face_idx] = color
+                if face_idx != []:
+                    face_colors[face_idx] = color
 	return vertices, faces, face_colors 
 
     def _select(self, cluster_id):

@@ -70,11 +70,11 @@ class scatter_3d_view(scene.SceneCanvas):
         self.fet = fet
 
         if clu is None:
-            base_color = np.ones((len(fet), 3))
+            self.clu = CLU(np.zeros(fet.shape[0],).astype(np.int64))
         elif type(clu) is np.ndarray:
             self.clu = CLU(clu)
         else:
-            self.clu = clu
+            self.clu = clu  # CLU type
 
         self.rho = rho
 
