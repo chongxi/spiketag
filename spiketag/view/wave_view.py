@@ -180,14 +180,14 @@ class wave_view(scene.SceneCanvas):
         self.cursor_text_ref = scene.Text("", pos=(0, 0), italic=True, bold=False, anchor_x='left', anchor_y='center',
                                      color=(0, 1, 1, 1), font_size=24, parent=self.view2.scene)
 
-        self.cursor_rect = scene.Rectangle(center=(0, 0, 0), height=1.,
-                                      width=1.,
-                                      radius=[0., 0., 0., 0.],
-                                      color=(0.1, 0.3, 0.3, 0.5),
-                                      border_width=0,
-                                      border_color=(0, 0, 0, 0),
-                                      parent=self.view2.scene)
-        self.cursor_rect.visible = False
+#         self.cursor_rect = scene.Rectangle(center=(0, 0, 0), height=1.,
+                                      # width=1.,
+                                      # radius=[0., 0., 0., 0.],
+                                      # color=(0.1, 0.3, 0.3, 0.5),
+                                      # border_width=0,
+                                      # border_color=(0, 0, 0, 0),
+                                      # parent=self.view2.scene)
+#         self.cursor_rect.visible = False
         self.palette = palette
         self._gap_value = gap_value
         self._locate_buffer = 200
@@ -473,21 +473,21 @@ class wave_view(scene.SceneCanvas):
             self.cursor_text_ref.pos = (offset_x, offset_y)
 
             # 2. cursor_rect
-            self.cursor_rect.visible = True
-            y_axis_pos = (self.cross.y_axis.pos[0]+self.view2.margin,0)
-            start_x = self.view2.camera.transform.imap(y_axis_pos)[0]
-            self.cursor_rect.center = (start_x+self.cursor_rect._width/2.+self.cursor_rect._border_width ,0, 0)
-            y_axis_ref_pos = (self.cross.y_axis_ref.pos[0]+self.view2.margin,0)
-            end_x   = self.view2.camera.transform.imap(y_axis_ref_pos)[0]
-            width = end_x - start_x
-            if width <= 0:
-                width = 1e-15
-            self.cursor_rect.width = width
-            height = self.view2.camera.transform.imap((0,-self.view2.size[1]))[1]
-            self.cursor_rect.height = height*2
+            # self.cursor_rect.visible = True
+            # y_axis_pos = (self.cross.y_axis.pos[0]+self.view2.margin,0)
+            # start_x = self.view2.camera.transform.imap(y_axis_pos)[0]
+            # self.cursor_rect.center = (start_x+self.cursor_rect._width/2.+self.cursor_rect._border_width ,0, 0)
+            # y_axis_ref_pos = (self.cross.y_axis_ref.pos[0]+self.view2.margin,0)
+            # end_x   = self.view2.camera.transform.imap(y_axis_ref_pos)[0]
+            # width = end_x - start_x
+            # if width <= 0:
+                # width = 1e-15
+            # self.cursor_rect.width = width
+            # height = self.view2.camera.transform.imap((0,-self.view2.size[1]))[1]
+            # self.cursor_rect.height = height*2
         else:
             self.cursor_text_ref.visible = False
-            self.cursor_rect.visible = False
+            # self.cursor_rect.visible = False
 
     def on_key_press(self, event):
         # if event.key.name == 'PageDown':
