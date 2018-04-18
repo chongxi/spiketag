@@ -4,108 +4,87 @@ from numba import jit
 from multiprocessing import Pool
 from .SPK import SPK
 from .Binload import bload
+from ..utils.conf import info
 
-@jit(cache=True)
+def _calculate_threshold(x, beta=4.0):
+    thr = -beta*np.median(abs(x)/0.6745,axis=0)
+    return thr
+
+@jit(cache=True, nopython=True)
 def _to_spk(data, pos, chlist, spklen=19, prelen=8):
     n = len(pos)
     spk = np.empty((n, spklen, len(chlist)), dtype=np.float32)
     for i in range(n):
         # i spike in chlist
-        spk[i, ...]  = data[pos[i]-prelen:pos[i]-prelen+spklen, chlist]
+        spk[i, ...]  = data[pos[i]-prelen+2:pos[i]-prelen+spklen+2, chlist]
     _nan = np.where(chlist==-1)[0]
     spk[..., _nan] = 0
     return spk
 
-@jit(cache=True, nopython=True)
-def peakdet(v, delta, x = None):
-    
-    # initiate with .1 because numba doesn't support empty list
-    maxtab = [(.1,.1)]
-    mintab = [(.1,.1)]
-    if x is None:
-        x = np.arange(len(v))
-
-    mn, mx = np.Inf, -np.Inf
-    mnpos, mxpos = np.NaN, np.NaN
-    lookformax = True
-    for i in np.arange(len(v)):
-        this = v[i]
-        if this > mx:
-            mx = this
-            mxpos = x[i]
-        if this < mn:
-            mn = this
-            mnpos = x[i]
-        if lookformax:
-            if this < mx-delta:
-                maxtab.append((mxpos, mx))
-                mn = this
-                mnpos = x[i]
-                lookformax = False
-        else:
-            if this > mn+delta:
-                mintab.append((mnpos, mn))
-                mx = this
-                mxpos = x[i]
-                lookformax = True
-    return np.array(maxtab[1:]), np.array(mintab[1:])	
-
-#  @jit(nopython=True)
-#  def detect_spk(data, threshholds):
-    
-    #  t = np.array([1], dtype=np.int64)
-    #  ch = np.array([1],dtype=np.int32)
-  
-    #  for i in range(data.shape[1]):
-        #  _, mintab = peakdet(data[:,i],.3)    
-        #  spks = mintab[mintab[:,1] < threshholds[i]].astype(np.int64)
-        #  t = np.hstack((t,spks[:,0]))
-        #  ch = np.hstack((ch,np.full(spks[:,0].shape,i,dtype=np.int32)))
-        #  print 'deteck_spk channel {} finished at {}'.format(i, time.ctime())
-    #  print 'detect_spk ends at {}'.format(time.ctime())
-
-    #  return np.array([t[1:], ch[1:]])
-
 class MUA():
-    def __init__(self, filename, probe, numbytes=4, binary_radix=14):
+    def __init__(self, filename, probe, numbytes=4, binary_radix=13):
         
         self.nCh = probe.n_ch
-        self.ch  = range(self.nCh)
         self.fs  = probe.fs*1.0
         self.probe = probe
         self.numbytes = numbytes
         self.dtype = 'i'+str(self.numbytes)
         self.bf = bload(self.nCh, self.fs)
         self.bf.load(filename, dtype=self.dtype)
-        self.filename = filename
+        self.mua_file = filename
+        if probe.reorder_by_chip is True:
+            self.bf.reorder_by_chip(probe._nchips)
         self.data = self.bf.asarray(binpoint=binary_radix)
+        self.scale = self.data.max() - self.data.min()
         self.t    = self.bf.t
-
         self.npts = self.bf._npts
         self.spklen = 19
-        self.prelen = 8
-        spk_meta = np.fromfile(filename+'.spk', dtype='<i4')
+        self.prelen = 9 
+
+        # acquire pivotal_pos from spk.bin under same folder
+        foldername = '/'.join(self.mua_file.split('/')[:-1])+'/'
+        info('processing folder: {}'.format(foldername))
+        self.spk_file = foldername + 'spk.bin'
+        spk_meta = np.fromfile(self.spk_file, dtype='<i4')
         self.pivotal_pos = spk_meta.reshape(-1,2).T
 
+        # check spike is extracable
+        self.pivotal_pos = np.delete(self.pivotal_pos, 
+                           np.where((self.pivotal_pos[0] + self.spklen) > self.data.shape[0])[0], axis=1)
+
+        self.pivotal_pos = np.delete(self.pivotal_pos, 
+                           np.where((self.pivotal_pos[0] - self.prelen) < 0)[0], axis=1)        
+
+        info('raw data have {} spks'.format(self.pivotal_pos.shape[1]))
+        info('----------------success------------------')
+        info(' ')
+
+    def get_threshold(self):
+        return _calculate_threshold(self.data[::100])
+
     def tospk(self):
-        self.ch_hash = np.asarray([self.probe.get_group_ch(ch) 
-                                                for ch in range(self.nCh)])
+        info('mua.tospk()')
         spkdict = {}
-        for ch in range(self.nCh):
-            pos = self.pivotal_pos[0, self.pivotal_pos[1]==ch]
-            spkdict[ch] = _to_spk(data   = self.data, 
-                                  pos    = pos, 
-                                  chlist = self.ch_hash[ch], 
-                                  spklen = self.spklen,
-                                  prelen = self.prelen)
-                                 
+        for g in range(self.probe.n_group):
+            pivotal_chs = self.probe.fetch_pivotal_chs(g)
+            pos = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
+            if len(pos) > 0:
+                spkdict[g] = _to_spk( data   = self.data, 
+                                      pos    = pos, 
+                                      chlist = self.probe[g], 
+                                      spklen = self.spklen,
+                                      prelen = self.prelen)
+        info('----------------success------------------')     
+        info(' ')               
         return SPK(spkdict)
 
     def get_nid(self, corr_cutoff=0.95):  # get noisy spk id
         # 1. dump spikes file (binary)
         piv = self.pivotal_pos.T
         nspk = self.pivotal_pos.shape[1]
-        rows = np.arange(-10,15).reshape(1,-1) + piv[:,0].reshape(-1,1)
+        # the reason adding mod operation here is if the spike is in the very end ,i.e: within 15 offset to end 
+        # point, this will make self.data[rows, :] out of bound.
+        rows = (np.arange(-10,15).reshape(1,-1) + piv[:,0].reshape(-1,1)) % self.data.shape[0]
         cols = piv[:,1].reshape(-1,1)
         full_spk = self.data[rows, :]
         filename = os.path.dirname(self.filename)+'/.'+os.path.basename(self.filename)+'.spkfull'
@@ -120,8 +99,8 @@ class MUA():
 
         @cpu.remote(block=True)      # to be executed by cpu
         @interactive                 # to be on the global()
-        def get_noise_ids(filename, corr_cutoff):
-            spk_data = np.memmap(filename, dtype='f4').reshape(-1, 25, 32)
+        def get_noise_ids(filename, corr_cutoff, n_group):
+            spk_data = np.memmap(filename, dtype='f4').reshape(-1, 25, n_group)
             noise_id = []
             # corr_cutoff = 0.98
             # ind is index assign to each cpu
@@ -138,7 +117,7 @@ class MUA():
         # f = interactive(get_noise_ids)
         cpu.execute('import numpy as np')
         cpu.scatter('ind', range(nspk))
-        noise_id = get_noise_ids(filename, corr_cutoff)
+        noise_id = get_noise_ids(filename, corr_cutoff, self.probe.n_group)
         # cpu.execute("%reset")
         try:
             os.remove(filename)
@@ -150,27 +129,23 @@ class MUA():
     def remove_high_corr_noise(self, corr_cutoff=0.95):
         nid = self.get_nid(corr_cutoff)
         self.pivotal_pos = np.delete(self.pivotal_pos, nid, axis=1)
+        info('removed noise ids: {} '.format(nid)) 
 
+    def remove_groups_under_fetlen(self, fetlen):
+        ids = []
+        groups = {}
+        for g in range(self.probe.n_group):
+            pivotal_chs = self.probe.fetch_pivotal_chs(g)
+            _ids = np.where(np.in1d(self.pivotal_pos[1], pivotal_chs))[0]
+            if len(_ids) < fetlen:
+                ids.extend(_ids)
+                groups[g] = len(_ids)
+        self.pivotal_pos = np.delete(self.pivotal_pos, ids, axis=1)
+        info('removed all spks on these groups: {}'.format(groups)) 
 
-    def detect_spks(self):
-        '''
-            detect spikes by peakdet and threshhold. (channel by channel)
-            
-            return 
-            -------
-            [0],t  : array-like
-                the time of spikes
-            [1],ch : array-like
-                the channel number of each spikes. so len(t) == len(ch)
-        '''
-        threshholds = self.bf.to_threshold(self.data)
-        t = np.array([], dtype=np.int64)
-        ch = np.array([], dtype=np.int32) 
-  
-        for i in range(self.data.shape[1]):
-            _, mintab = peakdet(self.data[:,i], .3)    
-            spks = mintab[mintab[:,1] < threshholds[i]].astype(np.int64)
-            t = np.hstack((t, spks[:,0]))
-            ch = np.hstack((ch, np.full(spks[:,0].shape, i)))
-        
-        return np.array([t,ch]) 
+    def group_spk_times(self):
+        group_with_times = {}
+        for g in range(self.probe.n_group):
+            times = self.pivotal_pos[0][np.where(np.in1d(self.pivotal_pos[1],self.probe[g]))[0]]
+            if len(times) > 0: group_with_times[g] = times
+        return group_with_times

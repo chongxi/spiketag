@@ -1,30 +1,27 @@
 import numpy as np
 from ..utils.utils import EventEmitter
 from ..utils.utils import Timer
+from ..utils.conf import error, info, debug
 
+def instack_membership(func):
+    def wrapper(self, *args, **kwargs):
+        self._membership_stack.append(self.membership.copy())
+        return func(self, *args, **kwargs)
+    return wrapper
 
 class CLU(EventEmitter):
     """docstring for Clu"""
-    def __init__(self, clu):
+    def __init__(self, clu, clusterer=None):
         super(CLU, self).__init__()
         self.membership = clu.copy()
+        if clusterer:
+            self._extra_info = self._extract_extra_info(clusterer)       
+            self._select_clusters = self._extra_info['default_select_clusters']
+        self.__membership = self.membership.copy()
         while min(self.membership) < 0:
             self.membership += 1
-        self._stack_init_()
+        self._membership_stack = []
         self.__construct__()
-
-    def _stack_init_(self):
-        self._membership_undo_stack = []
-        self._membership_undo_stack.append(self.membership.copy())
-
-        @self.connect
-        def on_reverse(*args, **kwargs):
-            if kwargs['action'] != 'undo':
-                self._membership_undo_stack.append(self.membership.copy())
-            else: #TODO: redo
-                pass
-        #       for key, value in kwargs.items():
-        #               print "{}: {}".format(key, value)
 
     def __construct__(self):
         '''
@@ -49,6 +46,14 @@ class CLU(EventEmitter):
                 _counts_per_clu.append(self.index_count[cluNo])
         self._clu_cumsum = np.cumsum(np.asarray(_counts_per_clu))
 
+    def _extract_extra_info(self, clusterer):
+        '''store extra infomation for other purpose.
+        '''
+        extra_info = {}
+        extra_info['condensed_tree'] = clusterer._condensed_tree
+        extra_info['default_select_clusters'] = np.sort(np.array(clusterer.condensed_tree_._select_clusters(), dtype=np.int64))
+        return extra_info
+
     def make_id_continuous(self):
         if self._is_id_discontineous():
             for i in range(1, self.index_id.size):
@@ -68,13 +73,19 @@ class CLU(EventEmitter):
 
         if len(global_idx):
             clus_nos = np.unique(self.membership[global_idx])
-        
-            for clus_no in clus_nos:
-                clus_no = int(clus_no)
-                local_global_idx = np.intersect1d(self.index[clus_no],global_idx,assume_unique=True)
-                sub_local_idx = np.searchsorted(self.index[clus_no], local_global_idx)
+      
+            if len(clus_nos) == 1:
+                clus_no = int(clus_nos[0])
+                sub_local_idx = np.searchsorted(self.index[clus_no], global_idx)
                 sub_local_idx.sort()
-                local_idx[clus_no] = sub_local_idx
+                local_idx[clus_no] = sub_local_idx 
+            else:
+                for clus_no in clus_nos:
+                    clus_no = int(clus_no)
+                    local_global_idx = np.intersect1d(self.index[clus_no],global_idx,assume_unique=True)
+                    sub_local_idx = np.searchsorted(self.index[clus_no], local_global_idx)
+                    sub_local_idx.sort()
+                    local_idx[clus_no] = sub_local_idx
         
         return local_idx
  
@@ -87,7 +98,7 @@ class CLU(EventEmitter):
         global_idx = np.array([],dtype='int')
 
         for clu_no, local_idx in local_idx.iteritems():
-            global_idx = np.append(global_idx,self._glo_id(clu_no, local_idx))
+            global_idx = np.append(global_idx,self._glo_id(clu_no, local_idx, sorted=False))
         global_idx.sort()
 
         return global_idx
@@ -100,24 +111,23 @@ class CLU(EventEmitter):
             return False
 
     def __getitem__(self, i):
-        if i in self.index_id:
-            return self.index[i]
-        else:
-            print('cluster id should be in {}'.format(self.index_id))
+        assert i in self.index_id, "{} should in {}".format(i, self.index_id)
+        return self.index[i]
 
     def __str__(self):
         for cluNo, index in self.index.items():
-            print(cluNo, index)
+            info(cluNo, index)
         return str(self.index_count)
 
-    def _glo_id(self, selected_clu, sub_idx):
+    def _glo_id(self, selected_clu, sub_idx, sorted=True):
         '''
         get the global id of a subset in selected_clu
         '''
         if type(sub_idx) is not list:
             sub_idx = list(sub_idx)
         glo_idx = self.index[selected_clu][sub_idx]
-        glo_idx.sort()
+        if sorted:
+            glo_idx.sort()
         return glo_idx                
 
     def _sub_id(self, global_idx):
@@ -131,15 +141,15 @@ class CLU(EventEmitter):
             sub_idx.sort()
             return sub_clu, sub_idx
         else:
-            print('goes to more than one cluster')
+            info('goes to more than one cluster')
 
 
-    def select(self, selectlist):
+    def select(self, selectlist, caller=None):
         '''
             select global_idx of spikes
         '''
         self.selectlist = selectlist # update selectlist
-        self.emit('select', action='select')
+        self.emit('select', action='select', caller=caller)
     
     def select_clu(self, selected_clu_list):
         '''
@@ -148,6 +158,14 @@ class CLU(EventEmitter):
         self.select_clus = np.sort(selected_clu_list)
         self.emit('select_clu', action='select_clu')
 
+    @instack_membership
+    def reset(self):
+        '''reset to 0'''
+        self.membership = np.zeros_like(self.membership)
+        self.__construct__()
+        self.emit('cluster', action='reset')
+
+    @instack_membership
     def merge(self, mergelist):
         '''
         merge two or more clusters, target cluNo is the lowest id
@@ -160,6 +178,7 @@ class CLU(EventEmitter):
         self.__construct__()
         self.emit('cluster', action='merge')
 
+    @instack_membership
     def move(self,clus_from,clu_to):
         '''
           move subsets from clus_from to clu_to, the clus_from is dict which including at least one clu and the subset in this clu,eg:
@@ -173,22 +192,86 @@ class CLU(EventEmitter):
         self.emit('cluster', action = 'move')
         
         return self.global2local(selected_global_idx)[clu_to]
-    
 
+    @instack_membership
+    def exchange(self, clus1, clus2):
+        '''
+            exchange cluster label between clus1 and clus2
+        '''
+        clus1_idx = self.membership == clus1
+        clus2_idx = self.membership == clus2
+        self.membership[clus1_idx] = clus2
+        self.membership[clus2_idx] = clus1
+        
+        self.__construct__()
+        self.emit('cluster', action = 'exchange')
+
+    def fill(self, global_idx, clu_to):
+        assert len(global_idx) == len(clu_to)
+
+        #  print 'received fill event, global_idx:{}, clu_to:{}'.format(global_idx, clu_to)
+        for idx, clu in zip(global_idx, clu_to):
+            self.membership[idx] = clu
+
+        self.__construct__()
+        self.emit('cluster', action = 'fill')
+
+    def refill(self, global_idx, labels):
+        assert len(global_idx) == len(labels)
+
+        self.membership[global_idx] = labels
+        if self.membership.min()>0:
+                self.membership -= 1
+                
+        self.__construct__()
+        self.emit('cluster', action = 'refill')
+
+    # FIXME need to a better way to deal with this
+    @property
+    def max_clu_id(self):
+        return max(self.index_id)
+   
+    # FIXME need to a better way to deal with this
+    @property
+    def select_clusters(self):
+        return self._select_clusters
+   
+    # FIXME need to a better way to deal with this
+    @select_clusters.setter
+    def select_clusters(self, clusters):
+        self._select_clusters = clusters
+
+    def remove(self, global_ids):
+        '''
+            remove certain id from clu, and recontruct the cluster. 
+            the reason not using @instack_membership because it doest't help a lot when undo, because we not only remove the clu, also remove 
+            spk, fet, pivotal. Have no need to support undo until spk, fet, pivotal support undo.
+        '''
+
+        self.membership = np.delete(self.membership, global_ids)
+        self.__construct__()
+
+        for i in range(len(self._membership_stack)):
+            self._membership_stack[i] = np.delete(self._membership_stack[i], global_ids)
+
+    def mask(self, global_ids):
+        self.membership = np.delete(self.__membership, global_ids)
+        self.__construct__()
+    
+    @instack_membership
     def split(self, clus_from):
         clu_to = self.index_id.max()+1
         self.move(clus_from, clu_to)
 
 
     def undo(self):
-        if len(self._membership_undo_stack)>1:
-            self._membership_undo_stack.pop()
-            self.membership = self._membership_undo_stack[-1]
+        if len(self._membership_stack) > 0:
+            self.membership = self._membership_stack.pop()
             self.__construct__()
-            self.emit('reverse', action = 'undo')
+            self.selectlist = np.array([], np.int64) 
+            self.emit('cluster', action = 'undo')
         else:
-            print('out of stack')
-
+            debug('no more undo')
 
     def redo(self):
         # TODO: add redo stack

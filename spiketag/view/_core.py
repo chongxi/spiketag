@@ -4,7 +4,7 @@ from phy.io.array import _accumulate
 
 
 # @jit('(int64, int64, int64, int32[:], int64, int32[:], int64[:])', cache=True)
-@jit(cache=True)
+@jit(cache=True, nopython=True)
 def _spkNo2maskNo_numba(n_signals, n_samples, n_ch, clu_offset, cluNo, spkNolist, mask):
     '''
     turn the spkNolist(local) and cluNo into spike_view mask
@@ -20,7 +20,7 @@ def _spkNo2maskNo_numba(n_signals, n_samples, n_ch, clu_offset, cluNo, spkNolist
                 mask[i] = j
                 i += 1
 
-@jit(cache=True)
+@jit(cache=True, nopython=True)
 def _cache_out(_cache_mask, _cache, target):
     N = len(_cache_mask)
     M = target.shape[1]
@@ -30,7 +30,7 @@ def _cache_out(_cache_mask, _cache, target):
             target[k,j] = _cache[k,j]
 
 
-@jit(cache=True)
+@jit(cache=True, nopython=True)
 def _cache_in_matrix(mask, source, target):
     N = len(mask)
     M = target.shape[1]
@@ -40,7 +40,7 @@ def _cache_in_matrix(mask, source, target):
             target[k,j] = source[i,j]
 
 
-@jit(cache=True)
+@jit(cache=True, nopython=True)
 def _cache_in_vector(mask, source, target):
     N = len(mask)
     M = target.shape[1]
@@ -50,7 +50,7 @@ def _cache_in_vector(mask, source, target):
             target[k,j] = source[j]
 
 
-@jit(cache=True)
+@jit(cache=True, nopython=True)
 def _cache_in_scalar(mask, source, target):
     N = len(mask)
     M = target.shape[1]

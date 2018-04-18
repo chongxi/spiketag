@@ -4,22 +4,19 @@ from scatter_2d_view import scatter_2d_view
 
 class raster_view(scatter_2d_view):
 
-    def __init__(self, time_tick=1):
+    def __init__(self, fs=25e3, time_tick=1):
         super(raster_view, self).__init__(symbol='|', marker_size=5., edge_width=1e-3)
         super(raster_view, self).attach_xaxis()
 
         self._time_tick = time_tick 
+        self._fs = fs
 
     ### ----------------------------------------------
     ###              public method 
     ### ----------------------------------------------
 
-    def bind(self, spktag):
-        self._spktag = spktag
-        self._fs = spktag.probe.fs
-
-    def set_data(self, ch, clu=None):
-        self._spike_time = self._get_spike_time(ch)
+    def set_data(self, clu=None, spk_times=None):
+        self._spike_time = spk_times 
         self._clu = clu
         
         @self._clu.connect
@@ -80,16 +77,13 @@ class raster_view(scatter_2d_view):
                 local_idx[clu] = index - left
             left = right
         global_idx = self._clu.local2global(local_idx)
-        self._clu.select(global_idx)
+        self._clu.select(global_idx, caller=self.__module__)
 
 
  
     ### ----------------------------------------------
     ###              private method 
     ### ----------------------------------------------
-
-    def _get_spike_time(self, ch):
-        return self._spktag.t[self._spktag.ch == ch]
 
     def _draw(self, clus, delimit=True):
        

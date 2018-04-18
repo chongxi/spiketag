@@ -13,11 +13,12 @@ class firing_rate_view(line_view):
         fs : float
             sample rate
     '''
-    def __init__(self):
+    def __init__(self, fs=25e3):
         super(firing_rate_view, self).__init__()
        
         self.unfreeze()
 
+        self._fs = fs
         self._time_tick = 0.1 
 
     ### ----------------------------------------------
@@ -40,13 +41,8 @@ class firing_rate_view(line_view):
         else:
             self._time_tick = v
 
-
-    def bind(self, spktag):
-        self._spktag = spktag
-        self._fs = spktag.probe.fs
-
-    def set_data(self, ch, clu=None):
-        self._spike_time = self._get_spike_time(ch)
+    def set_data(self, clu=None, spk_times=None):
+        self._spike_time = spk_times
         self._clu = clu
 
         @self._clu.connect
@@ -62,10 +58,6 @@ class firing_rate_view(line_view):
     ### ----------------------------------------------
     ###              private method 
     ### ----------------------------------------------
-
-    def _get_spike_time(self, ch):
-        return self._spktag.t[self._spktag.ch == ch]
-
     def _convolve_firing_rate(self, clu):
         '''
             convolve firing rate usiing gaussian window

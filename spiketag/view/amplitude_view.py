@@ -9,27 +9,26 @@ class amplitude_view(scatter_2d_view):
         ----------
         fs : float
             sample rate
+        scale : float
+            normalization of amplitudes
         time_tick : int
             the unit(s) of time tick in x axis
     '''
-    def __init__(self, time_tick=1):
+    def __init__(self, fs=25e3, scale=1.0, time_tick=1):
         super(amplitude_view, self).__init__()
         super(amplitude_view, self).attach_xaxis()
 
         self._time_tick = time_tick 
+        self._fs = fs
+        self._scale = scale
 
 
     ### ----------------------------------------------
     ###              public method 
     ### ----------------------------------------------
 
-    def bind(self, data, spktag):
-        self._spktag = spktag
-        self._fs = spktag.probe.fs
-        self._scale = data.max() - data.min()
-
-    def set_data(self, ch, spk=None, clu=None):
-        self._spike_time = self._get_spike_time(ch)
+    def set_data(self, spk=None, clu=None, spk_times=None):
+        self._spike_time = spk_times 
         self._spk = spk
         self._clu = clu
         
@@ -90,15 +89,12 @@ class amplitude_view(scatter_2d_view):
                 local_idx[clu] = index - left
             left = right
         global_idx = self._clu.local2global(local_idx)
-        self._clu.select(global_idx)
+        self._clu.select(global_idx, caller=self.__module__)
 
 
     ### ----------------------------------------------
     ###              private method 
     ### ----------------------------------------------
-
-    def _get_spike_time(self, ch):
-        return self._spktag.t[self._spktag.ch == ch]
 
     def _locate_amplitude(self, clu):
         '''
@@ -106,8 +102,7 @@ class amplitude_view(scatter_2d_view):
         '''
         times = self._spike_time[self._clu.index[clu]]
         # peak always heppenned one offset before
-        # TODO may not use constant
-        amplitudes = self._spk[self._clu.index[clu], 7, 1] / self._scale
+        amplitudes = self._spk[self._clu.index[clu], 7].min(axis=1) / self._scale
         
         return  times / self.binsize, amplitudes
  

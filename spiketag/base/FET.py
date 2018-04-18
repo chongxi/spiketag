@@ -1,26 +1,52 @@
-from multiprocessing import Pool
+from torch.multiprocessing import Pool, cpu_count
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from hdbscan import HDBSCAN
 from time import time
 from ..utils.utils import Timer
+from ..utils.conf import info, warning
 from .CLU import CLU
+
+# def _pickle_method(method):
+#     func_name = method.im_func.__name__
+#     obj = method.im_self
+#     cls = method.im_class
+#     if func_name.startswith('__') and not func_name.endswith('__'): #deal with mangled names
+#         cls_name = cls.__name__.lstrip('_')
+#         func_name = '_' + cls_name + func_name
+#     return _unpickle_method, (func_name, obj, cls)
+
+# def _unpickle_method(func_name, obj, cls):
+#     for cls in cls.__mro__:
+#         try:
+#             func = cls.__dict__[func_name]
+#         except KeyError:
+#             pass
+#         else:
+#             break
+#     return func.__get__(obj, cls)
+
+# import copy_reg
+# import types
+# copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
+
 
 class FET(object):
     """
     feature = FET(fet)
-    fet: dictionary {chNo:fet[chNo], ...}
-    fet[chNo]: n*m matrix, n is #samples, m is #features
+    fet: dictionary {groupNo:fet[groupNo], ...}
+    fet[groupNo]: n*m matrix, n is #samples, m is #features
     """
     def __init__(self, fet):
         self.fet = fet
-        self.ch  = []
+        self.group  = []
         self.nSamples = {}
-        for ch, f in self.fet.items():
-            self.nSamples[ch] = len(f)
+        for g, f in self.fet.items():
+            self.nSamples[g] = len(f)
             if len(f) > 0:
-                self.ch.append(ch)
-        self.fetlen = fet[0].shape[1]
+                self.group.append(g)
+        # exclude channels which no spikes 
+        self.fetlen = fet[self.group[0]].shape[1]
 
         self.hdbscan_hyper_param = {'method': 'hdbscan', 
                                     'min_cluster_size': 18,
@@ -29,12 +55,18 @@ class FET(object):
     def __getitem__(self, i):
         return self.fet[i]
 
+    def __setitem__(self, i, _fet_array):
+        self.fet[i] = _fet_array
+
+    def remove(self, group, ids):
+        self.fet[group] = np.delete(self.fet[group], ids, axis=0)
+ 
     def toclu(self, method='hdbscan', njobs=1, *args, **kwargs):
         clu = {}
         
-        chNo = kwargs['chNo'] if 'chNo' in kwargs.keys() else None
+        groupNo = kwargs['groupNo'] if 'groupNo' in kwargs.keys() else None
         fall_off_size = kwargs['fall_off_size'] if 'fall_off_size' in kwargs.keys() else None
-        # print 'clustering method: {0}, chNo: {1}, fall_off_size: {2}'.format(method, chNo, fall_off_size)
+        # print 'clustering method: {0}, groupNo: {1}, fall_off_size: {2}'.format(method, groupNo, fall_off_size)
 
         if method == 'hdbscan':
             min_cluster_size = self.hdbscan_hyper_param['min_cluster_size']
@@ -46,56 +78,54 @@ class FET(object):
                                  gen_min_span_tree=True, 
                                  algorithm='boruvka_kdtree')
 
-            # automatic tatch clustering
-            if chNo is None:
+            # automatic pool clustering
+            if groupNo is None:
                 if njobs!=1:
                     tic = time()
                     pool = Pool(njobs)
-                    _clu = pool.map(self._toclu, self.ch)
+                    _clu = pool.map(self._toclu, self.group)
                     pool.close()
                     pool.join()
                     toc = time()
-                    print 'clustering finished, used {} seconds'.format(toc-tic)
-                    for _chNo, __clu in zip(self.ch, _clu):
-                        clu[_chNo] = CLU(__clu)
+                    info('clustering finished, used {} sec'.format(toc-tic))
+                    # info('get clustering from groupNo {}:'.format(str(_groupNo)))
+                    for _groupNo, __clu in zip(self.group, _clu):
+                        clu[_groupNo] = __clu
                 else:
                     tic = time()
-                    for chNo in self.ch:
-                        clu[chNo] = CLU(hdbcluster.fit_predict(self.fet[chNo]))
+                    for groupNo in self.group:
+                        clusterer = hdbcluster.fit(self.fet[groupNo])
+                        clu[groupNo] = CLU(clusterer.labels_, clusterer)
                     toc = time()
-                    print 'clustering finished, used {} seconds'.format(toc-tic)
+                    info('clustering finished, used {} sec'.format(toc-tic))
                 return clu
 
             # semi-automatic parameter selection for a specific channel
-            elif self.nSamples[chNo] != 0:
+            elif self.nSamples[groupNo] != 0:
                 # fall_off_size in kwargs
                 hdbcluster.min_cluster_size = fall_off_size
-                clu = CLU(hdbcluster.fit_predict(self.fet[chNo]))
-                return clu
+                clusterer = hdbcluster.fit(self.fet[groupNo])
+                return CLU(clusterer.labels_, clusterer)
         else: # other methods 
-            pass
+            warning('Clustering not support {} yet!!'.format(method)) 
 
-    def _toclu(self, chNo, method='hdbscan'):
+    def _toclu(self, groupNo, method='hdbscan'):
         if method == 'hdbscan':
+            # tic = time()
             from hdbscan import HDBSCAN
             min_cluster_size = self.hdbscan_hyper_param['min_cluster_size']
             leaf_size = self.hdbscan_hyper_param['leaf_size']
             hdbcluster = HDBSCAN(min_cluster_size=min_cluster_size, 
                          leaf_size=leaf_size,
                          gen_min_span_tree=False, 
-                         algorithm='boruvka_kdtree')        
-            clu = hdbcluster.fit_predict(self.fet[chNo])
-            return clu
-
-    # def torho(self):
-    #     nbrs = NearestNeighbors(algorithm='ball_tree', metric='euclidean',
-    #                             n_neighbors=25).fit(self.fet)
-
-    #     dismat = np.zeros(self.fet.shape[0])
-    #     for i in range(self.fet.shape[0]):
-    #         dis,_ = nbrs.kneighbors(self.fet[i].reshape(1,-1), return_distance=True)
-    #         dismat[i] = dis.mean()
-
-    #     rho = 1/dismat
-    #     self.rho = (rho-rho.min())/(rho.max()-rho.min())
-    #     return self.rho
+                         algorithm='boruvka_kdtree',
+                         core_dist_n_jobs=cpu_count())        
+            clusterer = hdbcluster.fit(self.fet[groupNo])
+            # toc = time()
+            # info('fet._toclu(groupNo={}, method={})  -- {} sec'.format(groupNo, method, toc-tic))
+            return CLU(clusterer.labels_, clusterer)
+        #  elif method == 'reset':
+            #  clu = np.zeros((self.fet[groupNo].shape[0], )).astype(np.int64)
+        else:
+            warning('Clustering not support {} yet!!'.format(method))
+        return clu

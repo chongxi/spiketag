@@ -21,7 +21,7 @@ class correlogram_view(View):
         bin_size : int
             the time interval(ms) to sum spikes.
     '''
-    def __init__(self, correlate=correlate, window_bins=50, bin_size=1, show=False):
+    def __init__(self, correlate=correlate, fs=25e3, window_bins=50, bin_size=1, show=False):
         super(correlogram_view, self).__init__('grid')
         
         self._window_bins = window_bins
@@ -30,6 +30,7 @@ class correlogram_view(View):
 
         # inject the function to calculate correlare
         self._correlate = correlate
+        self._fs = fs
     
 
     ### ----------------------------------------------
@@ -46,9 +47,9 @@ class correlogram_view(View):
         assert self._window_bins % 2 == 0
         assert self._window_bins % self._bin_size == 0
 
-    def set_data(self, ch, clu):
+    def set_data(self, clu, spk_times):
         self._clu = clu
-        self._spike_time = self._get_spike_time(ch) 
+        self._spike_time = spk_times 
 
         # Not rendering immedially now, waiting for shortcut
         self._render()
@@ -56,10 +57,6 @@ class correlogram_view(View):
         @self._clu.connect
         def on_cluster(*args, **kwargs):
             self._render()
-
-    def bind(self, spktag):
-        self._spktag = spktag
-        self._fs = spktag.probe.fs
 
     def change_correlate_func(self, func):
         '''
@@ -83,12 +80,6 @@ class correlogram_view(View):
             for j in range(i + 1):
                 yield i,j
     
-    def _get_spike_time(self, ch):
-        '''
-            get all global idxs according ch_no from pivotal_pos
-        '''
-        return self._spktag.t[self._spktag.ch == ch]   
-
     def _render(self):
         '''
             draw correlogram within grid. eg: if we have 4 clu:

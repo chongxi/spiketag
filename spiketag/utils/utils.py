@@ -1,4 +1,5 @@
 import re
+import os
 from collections import defaultdict
 from functools import partial
 from time import time
@@ -6,7 +7,7 @@ from vispy import scene, app
 import numpy as np
 from matplotlib import path
 import spiketag
-import os
+import conf
 
 #------------------------------------------------------------------------------
 # Simple Timer for performance test
@@ -143,7 +144,7 @@ class EventEmitter(object):
                 if func in callbacks:
                     callbacks.remove(func)
 
-    def emit(self, event, *args, **kwargs):
+    def emit(self, event, caller=None, *args, **kwargs):
         """Call all callback functions registered with an event.
 
         Any positional and keyword arguments can be passed here, and they will
@@ -154,7 +155,11 @@ class EventEmitter(object):
         """
         res = []
         for callback in self._callbacks.get(event, []):
-            res.append(callback(*args, **kwargs))
+            if caller and caller == callback.__module__:
+               continue 
+
+            with Timer('[Event] emit -- {}'.format(callback.__module__), verbose=conf.ENABLE_PROFILER):
+                res.append(callback(*args, **kwargs))
         return res
 
 #------------------------------------------------------------------------------
@@ -251,7 +256,7 @@ class Picker(object):
         return:      array
             points be selected
     """
-    def pick(self,samples):
+    def pick(self, samples, auto_disappear=True):
         if not self._trigger:
             return np.array([])
 
@@ -261,7 +266,8 @@ class Picker(object):
             select_path = path.Path(self._vertices, closed=True)
             selected = select_path.contains_points(data)
             mask = np.where(selected)[0]
-        self.reset()
+        if auto_disappear:
+            self.reset()
         return mask
 
     """
@@ -306,10 +312,4 @@ class Picker(object):
         rectangle = scene.visuals.Rectangle(height=height,width=width)
         radius = np.array([.0,.0,.0,.0])
         return rectangle._generate_vertices(center=center,radius=radius,height=height,width=width)[1:, ..., :2]
-
-def get_config_dir():
-    '''
-        get the template gui state config dir, this is for temparory now.
-    '''
-    return spiketag.__path__[0] + os.path.sep + 'res' 
 
