@@ -45,7 +45,7 @@ void main() {
 
     // Apply the static subplot transformation + scaling.
     gl_Position = $transform(vec4(a*position+b, 0.0, 1.0));
-    gl_PointSize = 4.5;
+
     v_color = a_color;
     v_index = a_index;
 

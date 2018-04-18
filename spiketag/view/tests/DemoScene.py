@@ -1,7 +1,10 @@
 import sys
 import numpy as np
-
-from PyQt4 import QtGui, QtCore
+try:
+    from PyQt5 import QtWidgets as QtGui
+except:
+    from PyQt4 import QtGui as QtGui
+from PyQt5 import QtCore
 from vispy import app, scene
 from vispy.scene import visuals
 from vispy.geometry import generation as gen, create_sphere
@@ -59,14 +62,14 @@ class DemoScene(QtGui.QWidget):
 
         #Add scatter to view and find the transform
         self.view.add(self.scatter)
-        # self.tr = self.scatter.node_transform(self.canvas.canvas_cs)
+        # self.tr = self.scatter.node_transform(self.canvas.native)
 
-        #self.mappeddata = self.tr.simplified().map(self.data)
+        # self.mappeddata = self.tr.simplified().map(self.data)
 
-        #self.inv = self.tr.simplified().imap(self.mappeddata)
-        #print self.mappeddata[0]
-        #print self.data[0]
-        #print self.inv[0]
+        # self.inv = self.tr.imap(self.mappeddata)
+        # print self.mappeddata[0]
+        # print self.data[0]
+        # print self.inv[0]
 
         #print self.tr.simplified().imap(self.mappeddata)
         # Add a 3D axis to keep us oriented
@@ -95,7 +98,7 @@ class DemoScene(QtGui.QWidget):
         elif event.key() == QtCore.Qt.Key_Space:
             self.keymapping['Space']()
         else:
-            print event.text()
+            print(event.text())
 
     def keyReleaseEvent(self, event):
         """
@@ -110,7 +113,7 @@ class DemoScene(QtGui.QWidget):
         """
         if event.button == 1 and self.rectselect == False:
             #Ray intersection on the CPU to highlight the selected point(s)
-            data = self.tr.simplified().map(self.data)[:,:2]
+            data = self.tr.map(self.data)[:,:2]
             m1 = data > (event.pos - 4)
             m2 = data < (event.pos + 4)
             self.selected = np.argwhere(m1[:,0] & m1[:,1] & m2[:,0] & m2[:,1])
@@ -122,7 +125,7 @@ class DemoScene(QtGui.QWidget):
         elif event.button == 2 and self.rectselect == True:
             if self.selectionpolygon is None:
                 origin = np.array([event.pos[0], event.pos[1], -0.99799905, 1.0])
-                origin = self.tr.simplified().imap(origin)
+                # origin = self.tr.simplified().imap(origin)
                 self.polydata = np.empty((4,3))
                 self.polydata[0] = origin[:3]
                 self.selectionpolygon = visuals.Polygon(pos=self.polydata, color=(1.0, 0.0, 0.0, 1.0))
@@ -222,7 +225,7 @@ class DemoScene(QtGui.QWidget):
                                      color=(0.5, 0.5, 0.5, .75))
             self.view.add(self.mesh)
         else:
-            print dir(self.mesh)
+            print(dir(self.mesh))
 
 if __name__ == '__main__':
     appQt = QtGui.QApplication(sys.argv)

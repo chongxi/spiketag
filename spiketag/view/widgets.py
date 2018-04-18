@@ -1,5 +1,14 @@
 import numpy as np
-from PyQt4 import QtGui, QtCore
+# from PyQt4 import QtGui, QtCore
+
+try:
+    from PyQt5 import QtCore
+    from PyQt5 import QtWidgets as QtGui
+except:
+    from PyQt4 import QtCore
+    from PyQt4 import QtGui as QtGui
+
+
 from phy.plot import View
 from phy.io.array import _accumulate
 

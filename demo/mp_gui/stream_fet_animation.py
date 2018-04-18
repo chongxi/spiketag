@@ -18,6 +18,8 @@ r32 = io.open('/dev/xillybus_fet_clf_32', 'rb')
 r32_buf = io.BufferedReader(r32)
 _size=7*4  # 7*32bits
 
+#%%
+r32.close()
 
 #%%
 from spiketag.view.grid_scatter3d import grid_scatter3d as gdview
@@ -25,6 +27,15 @@ rows, cols = 6, 8
 win = gdview(rows, cols) 
 win.show()
 
+#%%
+for i in range(rows*cols):
+    win.fet_view[i]._transparency=1
+    win.fet_view[i].set_range()
+    scale = np.array([-1,1]) * 0.3
+    win.fet_view[i].view.camera.set_range(scale,scale,scale)
+
+#%%
+vq = np.load('vq.npy').item()
 
 #%%
 def fet_frombuffer(buf, npts, dtype='int32', fix_points=16):
@@ -36,16 +47,16 @@ def fet_frombuffer(buf, npts, dtype='int32', fix_points=16):
     t       = fet[:, 0]
     grpNo   = fet[:, 1]   
     fet_val = fet[:, 2:6].reshape(-1,4)/float(2**fix_points)
-    label   = fet[:, 6]
-    return t, grpNo, fet_val, label
+    nnid   = fet[:, 6]
+    return t, grpNo, fet_val, nnid
 
 
-#%%
+#%%z
 def update():
     n = 160
     with Timer('read data from FPGA'):
         buf = r32.read(n*_size)
-        t, grpNo, fet_val, label = fet_frombuffer(buf, n, 'int32', 16)
+        t, grpNo, fet_val, nnid = fet_frombuffer(buf, n, 'int32', 16)
         ssrate = 2
 #    print t[-1], grpNo[-1]
     with Timer('update all views'):
@@ -55,7 +66,11 @@ def update():
             idx = np.where(grpNo==i)[0]
             if idx.shape[0]>0:
                 new_fet = fet_val[idx, :]
-                new_clu = np.ones((new_fet.shape[0],), dtype=np.int32)
+                if i in vq['labels'].keys():
+                    labels  = vq['labels'][i]
+                    new_clu = labels[nnid[idx]]
+                else:
+                    new_clu = np.zeros((new_fet.shape[0],), dtype=np.int32)
                 with Timer('update single views', verbose=False):
                     win.fet_view[i].stream_in(new_fet, new_clu)
 
@@ -68,7 +83,7 @@ def reset_fet_viz(N):
         win.fet_view[idx].set_data(fet, clu)
 
 #%%
-reset_fet_viz(500)
+reset_fet_viz(800)
 
 #%%
 #timer = app.Timer(connect=update, interval=0.030)
@@ -77,7 +92,7 @@ timer = QtCore.QTimer()
 timer.timeout.connect(update)
 
 #%%
-timer.start(10)
+timer.start(15)
 
 #%%
 timer.stop()

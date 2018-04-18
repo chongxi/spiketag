@@ -1,7 +1,7 @@
 import numpy as np
 import numexpr as ne
 from .FET import FET
-
+from ..utils.conf import info
 
 def _transform(X, P, shift, scale):
     '''
@@ -164,6 +164,7 @@ class SPK():
         return fet
 
     def tofet(self, groupNo=None, method='weighted-pca', ncomp=6, whiten=False):
+
         fet = {}
         pca_comp = {}
         shift = {}
@@ -174,4 +175,7 @@ class SPK():
         else:
             for group in self.spk.keys():
                 fet[group] = self._tofet(group, method, ncomp, whiten)
+                info('spk._tofet(groupNo={}, method={}, ncomp={}, whiten={})'.format(group, method, ncomp, whiten))
+            info('----------------success------------------')
+            info(' ')
             return FET(fet)

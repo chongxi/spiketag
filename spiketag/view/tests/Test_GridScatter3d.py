@@ -1,5 +1,9 @@
 
-from PyQt4 import QtGui, QtCore
+try:
+    from PyQt5 import QtWidgets as QtGui
+except:
+    from PyQt4 import QtGui as QtGui
+
 import sys
 import numpy as np
 from spiketag.view.grid_scatter3d import grid_scatter3d
@@ -11,7 +15,7 @@ if __name__ == '__main__':
     win = grid_scatter3d(rows, cols)
     win.show()
 
-    N = 5000
+    N = 2000
     fet = np.random.randn(N, 9)
     clu = np.zeros((N,)).astype(np.int)
     for idx in range(rows*cols):

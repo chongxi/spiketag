@@ -33,7 +33,7 @@ class Timer(object):
         self.secs = self.end - self.start
         self.msecs = self.secs * 1000  # millisecs
         if self.verbose:
-            print '{0}, elapsed time: {1} ms'.format(self.task, self.msecs)
+            print('{0}, elapsed time: {1} ms'.format(self.task, self.msecs))
 
 
 #------------------------------------------------------------------------------
@@ -82,12 +82,10 @@ class EventEmitter(object):
                              "`on_<eventname>`().")
         return event
 
-
-  
     def _registered_func_name(self, event):
         funcNamelist = []
         for func in self._callbacks[event]:
-            funcName = func.__module__ + '.' + func.__name__
+            funcName = func.__module__ + '.' + func.__name__ + '_id' + str(id(func))
             funcNamelist.append(funcName)
         return funcNamelist
 
@@ -125,7 +123,7 @@ class EventEmitter(object):
 
         # We register the callback function.
         # if func is not in self._callbacks[event]:
-        funcName = func.__module__ + '.' + func.__name__
+        funcName = func.__module__ + '.' + func.__name__ + '_id' + str(id(func))
         if funcName not in self._registered_func_name(event):
             self._callbacks[event].append(func)
 

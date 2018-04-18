@@ -206,9 +206,9 @@ class wave_view(scene.SceneCanvas):
         self.view2.camera.set_range()
         self.cursor_color = '#0FB6B6'
         self.cursor_text = scene.Text("", pos=(0, 0), italic=False, bold=True, anchor_x='left', anchor_y='center',
-                                 color=self.cursor_color, font_size=24, parent=self.view2.scene)
+                                 color=self.cursor_color, font_size=14, parent=self.view2.scene)
         self.cursor_text_ref = scene.Text("", pos=(0, 0), italic=True, bold=False, anchor_x='left', anchor_y='center',
-                                     color=(0, 1, 1, 1), font_size=24, parent=self.view2.scene)
+                                     color=(0, 1, 1, 1), font_size=14, parent=self.view2.scene)
 
         self.palette = palette
         self._gap_value = gap_value
