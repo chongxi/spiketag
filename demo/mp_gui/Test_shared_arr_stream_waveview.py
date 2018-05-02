@@ -114,7 +114,7 @@ def get_data(shared_arr, n, read_conn):
     # q.put(1)
     # f = open('/tmp_data/pcie.bin','wb') 
     fd = os.open("/tmp_data/pcie.bin", os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
-    data = tonumpyarray(shared_arr)
+    data = shared_arr.tonumpy()
     num = 0
     _size = n*32*4  # 32 channels, 4 bytes/sample
     total_size = 0
