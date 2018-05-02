@@ -44,7 +44,7 @@ class MUA():
         # acquire pivotal_pos from spk.bin under same folder
         foldername = '/'.join(self.mua_file.split('/')[:-1])+'/'
         info('processing folder: {}'.format(foldername))
-        self.spk_file = foldername + 'spk.bin'
+        self.spk_file = self.mua_file[:-4] + '.spk.bin'
         spk_meta = np.fromfile(self.spk_file, dtype='<i4')
         self.pivotal_pos = spk_meta.reshape(-1,2).T
 
