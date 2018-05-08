@@ -22,7 +22,7 @@ def _to_spk(data, pos, chlist, spklen=19, prelen=8):
     return spk
 
 class MUA():
-    def __init__(self, filename, probe, numbytes=4, binary_radix=13):
+    def __init__(self, mua_filename, spk_filename, probe, numbytes=4, binary_radix=13):
         
         self.nCh = probe.n_ch
         self.fs  = probe.fs*1.0
@@ -30,8 +30,8 @@ class MUA():
         self.numbytes = numbytes
         self.dtype = 'i'+str(self.numbytes)
         self.bf = bload(self.nCh, self.fs)
-        self.bf.load(filename, dtype=self.dtype)
-        self.mua_file = filename
+        self.bf.load(mua_filename, dtype=self.dtype)
+        self.mua_file = mua_filename
         if probe.reorder_by_chip is True:
             self.bf.reorder_by_chip(probe._nchips)
         self.data = self.bf.asarray(binpoint=binary_radix)
@@ -44,7 +44,8 @@ class MUA():
         # acquire pivotal_pos from spk.bin under same folder
         foldername = '/'.join(self.mua_file.split('/')[:-1])+'/'
         info('processing folder: {}'.format(foldername))
-        self.spk_file = self.mua_file[:-4] + '.spk.bin'
+        # self.spk_file = self.mua_file[:-4] + '.spk.bin'
+        self.spk_file = spk_filename
         spk_meta = np.fromfile(self.spk_file, dtype='<i4')
         self.pivotal_pos = spk_meta.reshape(-1,2).T
 
