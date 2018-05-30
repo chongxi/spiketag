@@ -64,7 +64,7 @@ class probe_view(scene.SceneCanvas):
         self.key_option = '2' 
         
 
-    def set_data(self, prb):
+    def set_data(self, prb, font_size=17):
         '''
         both mapping and grp_dict are dictionary
         mapping is electrode_id to position
@@ -78,10 +78,10 @@ class probe_view(scene.SceneCanvas):
         self.electrode_id = np.array(mapping.keys())
         self.electrode_pos = np.vstack(mapping.values())
         self.electrode_pos_KD = KDTree(self.electrode_pos, leaf_size=30, metric='euclidean')
-        self.electrode_pads.set_data(self.electrode_pos, symbol='square', size=17)
+        self.electrode_pads.set_data(self.electrode_pos, symbol='square', size=font_size)
         self.electrode_text.text = [str(i) for i in self.electrode_id]
         self.electrode_text.pos  = self.electrode_pos
-        self.electrode_text.font_size = 6
+        self.electrode_text.font_size = font_size - 15
 
         if hasattr(prb, 'grp_dict'):
             self.edges, self.grp_idx = self.grp_2_edges(prb.grp_dict)
