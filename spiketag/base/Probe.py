@@ -1,5 +1,267 @@
 import numpy as np
 import json
+from collections import OrderedDict
+
+
+class electrode(object):
+    def __init__(self, ch=None, pos=None):
+        self.id  = ch
+        self.pos = pos
+
+
+#------------------------------
+#        Channel Group
+#------------------------------
+class ch_group(object):
+    """atomic class for probe
+       contains channel numbers(_channels) and positions(_pos)
+
+       tetrode = ch_group([0,5,9,12])
+       tetrode.pos = np.array([[0,0], [0,10], [10,0],[10,10]])
+       tetrode.rank()
+
+    """
+    def __init__(self, channels):
+        self.channels = np.array(channels)
+        self.pos = np.zeros((self.channels.shape[0], 2)) 
+        self.__shank__ = 0
+        self.__group__ = 0
+
+    @property
+    def channels(self):
+        return self._channels
+
+    @channels.setter
+    def channels(self, _channels):
+        self._channels = np.array(_channels)
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
+    def pos(self, _pos):
+        self._pos = np.array(_pos)    
+
+    def rank(self):
+        idx = np.argsort(self._channels)
+        self.channels = self.channels[idx]
+        self.pos = self.pos[idx]
+
+    def __getitem__(self, i):
+        return zip(self._channels, self._pos)[i]
+
+    def __setitem__(self, idx, args):
+        ch = args[0]
+        pos = args[1]
+        self._channels[idx] = ch
+        self._pos[idx] = pos
+
+    def __repr__(self):
+        return str(zip(self._channels, self._pos))
+
+
+
+#------------------------------
+#        shank
+#------------------------------
+class shank(object):
+    def __init__(self, shank_id=0):
+        self.__shank__ = shank_id
+        self.ch_group = {}
+        self.mapping = OrderedDict()
+        self.m = []  # middle side
+        self.l = []  # left side
+        self.r = []  # right side
+        self.xl = 0   # shank left side x position (tip)
+        self.yl = 0   # shank left side y position (tip)
+        self.xr = 0   # shank right side x position
+        self.yr = 0   # shank right side y position
+
+    def __getitem__(self, group_id):
+        return self.ch_group[group_id]
+
+    def __setitem__(self, group_id, ch_grp):
+        self.ch_group[group_id] = ch_grp
+
+    def __repr__(self):
+        return 'shank_{}: (left:{}, middle:{}, right:{})'.format(str(self.__shank__), str(self.l), str(self.m), str(self.r))
+
+
+
+
+#------------------------------
+#        probe
+#------------------------------
+
+
+class BaseProbe(object):
+    ''' the base class of probe
+    '''
+    def __init__(self, type):
+        assert type is not None
+        self._type = type
+        self.shanks = {}
+        self._grp_dict = {}
+        self.mapping = OrderedDict()
+        self.ch2g = {}
+        self.fpga_connected = False
+
+    @property
+    def type(self):
+        '''
+          the string of type, some place need to distinguish the type 
+        '''
+        return self._type
+
+    @property
+    def fs(self):
+        return self._fs
+    
+    @property
+    def n_ch(self):
+        return self._n_ch
+
+    @property
+    def n_group(self):
+        '''
+          number of groups, group can be treated as basic unit to statistic data
+        '''
+        return self._n_group
+    
+    @property
+    def groups(self):
+        '''
+            return all group numbers
+        '''
+        for i in range(self._n_group):
+            yield i
+
+    @property
+    def group_len(self):
+        '''
+            number of channles in a group
+        '''
+        return self._group_len
+
+
+    @property
+    def grp_dict(self):
+        return self._grp_dict
+
+    @grp_dict.setter
+    def grp_dict(self, grp_dict_in):
+        self._grp_dict = grp_dict_in
+        for g, chs in self._grp_dict.items():
+            self._update_chs2group(chs, g)
+
+    def _update_chs2group(self, chs, g):
+       for ch in chs:
+            self.ch2g[ch] = g
+
+
+    def __getitem__(self, group):
+        assert group >= 0 and group < self._n_group, 'invalid group value'
+        return self.grp_dict[group]
+
+    def __setitem__(self, group, chs):
+        assert group >= 0 and group < self._n_group, 'invalid group value'
+        assert len(chs) == 4, 'invalid amount of chs in group (so far only support 4)'
+        assert isinstance(chs, np.ndarray), 'chs should numpy array, make sure numba works'
+        self.grp_dict[group] = chs
+        self._update_chs2group(chs, group)  
+
+
+    def __str__(self):
+        return '\n'.join(['{}:{}'.format(key, val) for key, val in self.grp_dict.items()]) 
+
+    __repr__ = __str__
+
+
+
+class probe(BaseProbe):
+    '''
+        shk = shank(shank_id=0)
+        shk[1] = ch_group([3,4,10,1])
+        prb = probe()
+        prb[0] = shk
+
+        prb.shanks[0][1]
+        prb[0][1]
+        
+        returns:
+        [(3, array([0., 0.])), (4, array([0., 0.])), (10, array([0., 0.])), (1, array([0., 0.]))]
+        
+        shank 0, group 1: ([ch, pos])
+        prb.shanks[0].ch_group
+
+    '''
+    def __init__(self, fs=25000., n_ch=64, group_len=4, shank_no=None):
+        BaseProbe.__init__(self, type='bow_tie')
+        if shank_no is not None:
+            self.shanks = {}
+            for shank_id in range(shank_no):
+                self.shanks[shank_id] = shank(shank_id)
+        else:
+            #TOD: load prb file
+            pass
+
+        self._fs = fs
+        self._n_ch = n_ch
+        self._group_len = group_len
+        self._n_group = int(self._n_ch / self._group_len)
+        
+
+    def auto_pos(self):
+        if self.type == 'bow_tie':
+            delta_y = 10
+            for shank_id, shank in self.shanks.items():
+                print shank_id, shank
+                # left side
+                x, y = shank.xl, shank.yl
+                for ch in shank.l:
+                    shank.mapping[ch] = np.array([x,y])
+                    y += delta_y
+                # right side
+                x, y = shank.xr, shank.yr
+                for ch in shank.r:
+                    shank.mapping[ch] = np.array([x,y])
+                    y += delta_y
+                # print shank.mapping
+                self.mapping.update(shank.mapping)
+
+
+if __name__ == '__main__':
+    from spiketag.base import ch_group, shank, probe
+    # shk = shank()
+    # shk[1] = ch_group([3, 4, 10, 1])
+    prb = probe(shank_no=3)
+    prb[0].l = [59,60,10,58,12,11,57,56]
+    prb[0].r = [5,52,3,54,53,4,13,2,55]
+    prb[0].x = -100.
+    prb[0].y = 10
+
+    prb[1].l = [15,63,48,47,0,61,9,14,62,6]
+    prb[1].r = [8, 1,51,50,18,34,31,25,33,17,22]
+    prb[1].x = -50.
+    prb[1].y = 5
+
+    prb[2].l = [39,38,20,45,44,24,7,32,16,23,46,30]
+    prb[2].r = [19,37,21,35,36,26,29,40,27,42,41,28,43]
+    prb[2].x = 0.
+    prb[2].y = 0
+    # print prb[0]
+    prb.auto_pos()
+    print prb.mapping
+    # print prb[0][1]
+    # print prb.shanks
+
+
+# --------------------------------------------------------------------------------------------------------------------------------------------------
+# 
+# --------------------------------------------------------------------------------------------------------------------------------------------------
+# 
+# --------------------------------------------------------------------------------------------------------------------------------------------------
 
 #------------------------------
 #        Probe Factory 
@@ -106,6 +368,11 @@ class Probe(object):
 
     __repr__ = __str__
 
+
+
+
+
+
 class LinearProbe(Probe):
     ''' linear probe
     '''
@@ -172,6 +439,10 @@ class LinearProbe(Probe):
         assert isinstance(chs, np.ndarray), 'chs should numpy array, make sure numba works'
         self._g2chs[group] = chs
         self._update_chs2group(chs, group)
+
+
+
+
 
 class TetrodeProbe(Probe):
     ''' tetrode probe
