@@ -5,6 +5,7 @@ from .MyWaveVisual import MyWaveVisual
 from .color_scheme import palette
 from ..utils.utils import Picker
 
+
 class Axis(scene.AxisWidget):
     """from scene.AxisWidget"""
     def set_x_transform(self, x_transform):
@@ -137,6 +138,8 @@ class Cross(object):
     def view_changed(self):
         self.x_axis._view_changed()
         self.y_axis._view_changed()
+
+
 
 class trace_view(scene.SceneCanvas):
 

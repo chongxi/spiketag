@@ -81,7 +81,7 @@ class probe_view(scene.SceneCanvas):
         self.electrode_pads.set_data(self.electrode_pos, symbol='square', size=font_size)
         self.electrode_text.text = [str(i) for i in self.electrode_id]
         self.electrode_text.pos  = self.electrode_pos
-        self.electrode_text.font_size = font_size - 15
+        self.electrode_text.font_size = int(font_size * 0.35)
 
         if hasattr(prb, 'grp_dict'):
             self.edges, self.grp_idx = self.grp_2_edges(prb.grp_dict)
@@ -127,7 +127,7 @@ class probe_view(scene.SceneCanvas):
     def select(self, group_id):
         if hasattr(self.prb, 'grp_dict'):
             self.electrode_edge.color[:] = np.ones((self.electrode_pos.shape[0], 4))*0.5
-            self.electrode_edge.color[self.grp_idx[group_id],:] = np.array([1,0,0,0.5])
+            self.electrode_edge.color[self.grp_idx[group_id],:] = np.array([1,0,0,0.8])
             self.update()
 
 
