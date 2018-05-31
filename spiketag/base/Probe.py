@@ -105,6 +105,7 @@ class BaseProbe(object):
         self._grp_dict = {}
         self.mapping = OrderedDict()
         self.ch2g = {}
+        self._bad_chs = np.array([], dtype=int)
         self.fpga_connected = False
 
     @property
@@ -153,7 +154,25 @@ class BaseProbe(object):
     def grp_dict(self, grp_dict_in):
         self._grp_dict = grp_dict_in
         for g, chs in self._grp_dict.items():
+            chs.sort()
             self._update_chs2group(chs, g)
+
+    @property
+    def bad_chs(self):
+        return self._bad_chs
+
+    @bad_chs.setter
+    def bad_chs(self, v):
+        self._bad_chs = v
+
+    @property
+    def chs(self):
+        return np.hstack(self.grp_dict.values())
+
+    def mask_chs(self, nCh):
+        mask_chs = np.setdiff1d(np.arange(nCh), self.chs)
+        mask_chs = np.union1d(mask_chs, self.bad_chs)
+        return mask_chs
 
     def _update_chs2group(self, chs, g):
        for ch in chs:
@@ -168,7 +187,7 @@ class BaseProbe(object):
         assert group >= 0 and group < self._n_group, 'invalid group value'
         assert len(chs) == 4, 'invalid amount of chs in group (so far only support 4)'
         assert isinstance(chs, np.ndarray), 'chs should numpy array, make sure numba works'
-        self.grp_dict[group] = chs
+        self.grp_dict[group] = np.sort(chs)
         self._update_chs2group(chs, group)  
 
 
