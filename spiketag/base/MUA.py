@@ -63,6 +63,10 @@ class MUA():
     def get_threshold(self):
         return _calculate_threshold(self.data[::100])
 
+    def tofile(self, file_name, nchs, dtype=np.int32):
+        data = self.data[:, nchs].astype(dtype)
+        data.tofile(file_name)
+
     def tospk(self):
         info('mua.tospk()')
         spkdict = {}

@@ -119,7 +119,7 @@ class FET(object):
                          leaf_size=leaf_size,
                          gen_min_span_tree=False, 
                          algorithm='boruvka_kdtree',
-                         core_dist_n_jobs=cpu_count())        
+                         core_dist_n_jobs=1)        
             clusterer = hdbcluster.fit(self.fet[groupNo])
             # toc = time()
             # info('fet._toclu(groupNo={}, method={})  -- {} sec'.format(groupNo, method, toc-tic))
