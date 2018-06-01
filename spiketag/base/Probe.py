@@ -163,7 +163,7 @@ class BaseProbe(object):
 
     @bad_chs.setter
     def bad_chs(self, v):
-        self._bad_chs = v
+        self._bad_chs = v.astype(int)
 
     @property
     def chs(self):
