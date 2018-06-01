@@ -2,10 +2,10 @@ import os
 import numpy as np
 from numba import jit
 from multiprocessing import Pool
+import spiketag.view.wave_view
 from .SPK import SPK
 from .Binload import bload
 from ..utils.conf import info
-from ..view import wave_view
 
 def _calculate_threshold(x, beta=4.0):
     thr = -beta*np.median(abs(x)/0.6745,axis=0)

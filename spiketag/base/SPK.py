@@ -1,8 +1,9 @@
 import numpy as np
 import numexpr as ne
+import spiketag.view.spike_view
 from .FET import FET
 from ..utils.conf import info
-from ..view import spike_view
+
 
 def _transform(X, P, shift, scale):
     '''
