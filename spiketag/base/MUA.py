@@ -5,6 +5,7 @@ from multiprocessing import Pool
 from .SPK import SPK
 from .Binload import bload
 from ..utils.conf import info
+from ..view import wave_view
 
 def _calculate_threshold(x, beta=4.0):
     thr = -beta*np.median(abs(x)/0.6745,axis=0)
@@ -50,6 +51,7 @@ class MUA():
         self.pivotal_pos = spk_meta.reshape(-1,2).T
 
         # check spike is extracable
+        # delete begin AND end
         self.pivotal_pos = np.delete(self.pivotal_pos, 
                            np.where((self.pivotal_pos[0] + self.spklen) > self.data.shape[0])[0], axis=1)
 
@@ -70,8 +72,9 @@ class MUA():
     def tospk(self):
         info('mua.tospk()')
         spkdict = {}
-        for g in range(self.probe.n_group):
-            pivotal_chs = self.probe.fetch_pivotal_chs(g)
+        for g in self.probe.grp_dict.keys():
+            # pivotal_chs = self.probe.fetch_pivotal_chs(g)
+            pivotal_chs = self.probe.grp_dict[g]
             pos = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
             if len(pos) > 0:
                 spkdict[g] = _to_spk( data   = self.data, 
@@ -154,3 +157,7 @@ class MUA():
             times = self.pivotal_pos[0][np.where(np.in1d(self.pivotal_pos[1],self.probe[g]))[0]]
             if len(times) > 0: group_with_times[g] = times
         return group_with_times
+
+    def show(self, chs):
+        wview = wave_view(self.data, chs=chs, spks=self.pivotal_pos)
+        wview.show()

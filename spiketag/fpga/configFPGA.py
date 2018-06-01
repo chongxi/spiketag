@@ -35,7 +35,7 @@ class xike_config(object):
         a: ()                   : scale[grpNo]
         '''
         ngrp    = self.probe.n_group     # 40 for tetrodes
-        ch_span = self.probe.len_group   # 4  for tetrodes ;  40*4=160 chs
+        ch_span = self.probe.group_len   # 4  for tetrodes ;  40*4=160 chs
         spklen  = 19                     # 19
         p_dim   = 4
         self.scale = scale_hash(nCh=ngrp, base_address=0)
@@ -54,7 +54,7 @@ class xike_config(object):
         self.thres[:] = self._thres_value
         # channel group hashing
         self.ch_ugp = channel_hash(nCh=self._n_ch, base_address=256)
-        for ch in range(self._n_ch):
+        for ch in self.probe.chs:
             self.ch_ugp[ch] = self.probe.ch_hash(ch)
 
     def _config_FPGA_transformer(self, grpNo, P, b, a):

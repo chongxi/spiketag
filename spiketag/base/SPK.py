@@ -2,6 +2,7 @@ import numpy as np
 import numexpr as ne
 from .FET import FET
 from ..utils.conf import info
+from ..view import spike_view
 
 def _transform(X, P, shift, scale):
     '''
@@ -179,3 +180,9 @@ class SPK():
             info('----------------success------------------')
             info(' ')
             return FET(fet)
+
+
+    def show(self, group_id):
+        spk_view = spike_view()
+        spk_view.set_data(self.spk[group_id])
+        spk_view.show()
