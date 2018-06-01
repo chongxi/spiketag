@@ -178,7 +178,6 @@ class BaseProbe(object):
        for ch in chs:
             self.ch2g[ch] = g
 
-
     def __getitem__(self, group):
         assert group >= 0 and group < self._n_group, 'invalid group value'
         return self.grp_dict[group]
@@ -190,6 +189,8 @@ class BaseProbe(object):
         self.grp_dict[group] = np.sort(chs)
         self._update_chs2group(chs, group)  
 
+    def ch_hash(self, ch):
+        return self.grp_dict[self.ch2g[ch]]
 
     def __str__(self):
         return '\n'.join(['{}:{}'.format(key, val) for key, val in self.grp_dict.items()]) 
