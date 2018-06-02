@@ -1,6 +1,7 @@
 import numpy as np
 import json
 from collections import OrderedDict
+from spiketag.view import probe_view
 
 
 class electrode(object):
@@ -236,7 +237,7 @@ class probe(BaseProbe):
         if self.type == 'bow_tie':
             delta_y = 10
             for shank_id, shank in self.shanks.items():
-                print shank_id, shank
+                # print shank_id, shank
                 # left side
                 x, y = shank.xl, shank.yl
                 for ch in shank.l:
@@ -249,6 +250,12 @@ class probe(BaseProbe):
                     y += delta_y
                 # print shank.mapping
                 self.mapping.update(shank.mapping)
+
+
+    def show(self):
+        self.prb_view = probe_view()
+        self.prb_view.set_data(self)
+        self.prb_view.run()
 
 
 if __name__ == '__main__':
