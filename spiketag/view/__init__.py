@@ -1,3 +1,4 @@
+from .probe_view import probe_view
 from .color_scheme import palette
 from .widgets import param_widget
 from .line_view import line_view
@@ -14,4 +15,3 @@ from .firing_rate_view import firing_rate_view
 from .trace_view import trace_view
 from .ctree_view import ctree_view
 from .grid_scatter3d import grid_scatter3d
-from .probe_view import probe_view

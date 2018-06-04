@@ -1,6 +1,6 @@
 import numpy as np
 import numexpr as ne
-import spiketag.view.spike_view
+from spiketag.view import spike_view
 from .FET import FET
 from ..utils.conf import info
 
@@ -11,6 +11,7 @@ def _transform(X, P, shift, scale):
     '''
     y = (np.dot(X,P)+shift)/scale
     return y
+
 
 def _construct_transformer(x, ncomp=6):
     from sklearn.decomposition import PCA
@@ -184,6 +185,6 @@ class SPK():
 
 
     def show(self, group_id):
-        spk_view = spike_view()
-        spk_view.set_data(self.spk[group_id])
-        spk_view.show()
+        self.spk_view = spike_view()
+        self.spk_view.set_data(self.spk[group_id])
+        self.spk_view.show()
