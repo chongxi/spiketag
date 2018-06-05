@@ -81,7 +81,7 @@ class probe_view(scene.SceneCanvas):
         self.electrode_pads.set_data(self.electrode_pos, symbol='square', size=font_size)
         self.electrode_text.text = [str(i) for i in self.electrode_id]
         self.electrode_text.pos  = self.electrode_pos
-        self.electrode_text.font_size = int(font_size * 0.35)
+        self.electrode_text.font_size = int(font_size * 0.40)
 
         if hasattr(prb, 'grp_dict'):
             self.edges, self.grp_idx = self.grp_2_edges(prb.grp_dict)
