@@ -90,7 +90,6 @@ class channel_hash(object):
         self.nCh  = nCh
         self.base = base_address
         self.ch_unigroup = np.zeros(nCh)
-        self.hash_repr = ''
 
     def __setitem__(self, chNo, ch_group):
         ch_nn0, ch_nn1, ch_nn2, ch_nn3 = ch_group
@@ -106,6 +105,7 @@ class channel_hash(object):
         return struct.unpack('4B', struct.pack('<I', x))
 
     def __str__(self):
+        self.hash_repr = ''
         for i in range(self.nCh):
             self.hash_repr += '{}:{}\n'.format(i, self.__getitem__(i))
         return self.hash_repr

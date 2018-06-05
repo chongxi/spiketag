@@ -8,42 +8,42 @@ from itertools import combinations as comb
 from ..utils.utils import Picker
 
 
-white = Color("#ecf0f1")
-gray = Color("#121212")
-red = Color("#e74c3c")
-blue = Color("#2980b9")
-orange = Color("#e88834")
+# white = Color("#ecf0f1")
+# gray = Color("#121212")
+# red = Color("#e74c3c")
+# blue = Color("#2980b9")
+# orange = Color("#e88834")
 
 
-def star(inner=0.5, outer=1.0, n=5):
-    R = np.array([inner, outer] * n)
-    T = np.linspace(0, 2 * np.pi, 2 * n, endpoint=False)
-    P = np.zeros((2 * n, 3))
-    P[:, 0] = R * np.cos(T)
-    P[:, 1] = R * np.sin(T)
-    return P
+# def star(inner=0.5, outer=1.0, n=5):
+#     R = np.array([inner, outer] * n)
+#     T = np.linspace(0, 2 * np.pi, 2 * n, endpoint=False)
+#     P = np.zeros((2 * n, 3))
+#     P[:, 0] = R * np.cos(T)
+#     P[:, 1] = R * np.sin(T)
+#     return P
 
 
-def rec(left=-15, right=15, bottom=-25, top=25):
-    P = np.zeros((4, 3))
-    R = np.array([[left,  bottom],
-                  [right, bottom],
-                  [right, top   ],
-                  [left,  top   ]])
-    P[:, :2] = R
-    return P
+# def rec(left=-15, right=15, bottom=-25, top=25):
+#     P = np.zeros((4, 3))
+#     R = np.array([[left,  bottom],
+#                   [right, bottom],
+#                   [right, top   ],
+#                   [left,  top   ]])
+#     P[:, :2] = R
+#     return P
 
 
 
-class shank(object):
-    def __init__(self, pos):
-        self.pos = pos
+# class shank(object):
+#     def __init__(self, pos):
+#         self.pos = pos
 
-class probe_geometry(object):
-    """docstring for probe_geometry"""
-    def __init__(self, shanks):
-        super(probe_geometry, self).__init__()
-        self.shanks = shanks
+# class probe_geometry(object):
+#     """docstring for probe_geometry"""
+#     def __init__(self, shanks):
+#         super(probe_geometry, self).__init__()
+#         self.shanks = shanks
 
 
 class probe_view(scene.SceneCanvas):
@@ -129,6 +129,7 @@ class probe_view(scene.SceneCanvas):
             self.electrode_edge.color[:] = np.ones((self.electrode_pos.shape[0], 4))*0.5
             self.electrode_edge.color[self.grp_idx[group_id],:] = np.array([1,0,0,0.8])
             self.update()
+            self.prb.emit('select', group_id=group_id, chs=self.prb[group_id])
 
 
     def on_key_press(self, e):
@@ -163,7 +164,7 @@ class probe_view(scene.SceneCanvas):
                 try:
                     self.selected_group = self.prb.ch2g[nn_electrode]
                     self.select(self.selected_group)
-                    print('{}:{} selected'.format(self.selected_group, self.prb[self.selected_group]))
+                    # print('{}:{} selected'.format(self.selected_group, self.prb[self.selected_group]))
                 except:
                     pass
 

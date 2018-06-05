@@ -22,7 +22,7 @@ def _to_spk(data, pos, chlist, spklen=19, prelen=8):
     spk[..., _nan] = 0
     return spk
 
-class MUA():
+class MUA(object):
     def __init__(self, mua_filename, spk_filename, probe, numbytes=4, binary_radix=13):
         
         self.nCh = probe.n_ch

@@ -2,6 +2,7 @@ import numpy as np
 import json
 from collections import OrderedDict
 from spiketag.view import probe_view
+from ..utils import EventEmitter
 
 
 #------------------------------
@@ -90,10 +91,11 @@ class shank(object):
 #------------------------------
 
 
-class BaseProbe(object):
+class BaseProbe(EventEmitter):
     ''' the base class of probe
     '''
     def __init__(self):
+        super(BaseProbe, self).__init__()
         self.shanks = {}
         self._grp_dict = {}
         self.mapping = OrderedDict()
