@@ -4,12 +4,6 @@ from collections import OrderedDict
 from spiketag.view import probe_view
 
 
-class electrode(object):
-    def __init__(self, ch=None, pos=None):
-        self.id  = ch
-        self.pos = pos
-
-
 #------------------------------
 #        Channel Group
 #------------------------------
@@ -99,9 +93,7 @@ class shank(object):
 class BaseProbe(object):
     ''' the base class of probe
     '''
-    def __init__(self, type):
-        assert type is not None
-        self._type = type
+    def __init__(self):
         self.shanks = {}
         self._grp_dict = {}
         self.mapping = OrderedDict()
@@ -110,19 +102,27 @@ class BaseProbe(object):
         self.fpga_connected = False
 
     @property
-    def type(self):
-        '''
-          the string of type, some place need to distinguish the type 
-        '''
-        return self._type
-
-    @property
     def fs(self):
         return self._fs
+
+    @fs.setter
+    def fs(self, _fs):
+        self._fs = _fs
     
     @property
     def n_ch(self):
         return self._n_ch
+
+    @n_ch.setter
+    def n_ch(self, _n_ch):
+        self._n_ch = _n_ch
+        mask_chs = np.setdiff1d(np.arange(_n_ch), self.chs)
+        mask_chs = np.union1d(mask_chs, self.bad_chs)
+        self._mask_chs = mask_chs
+
+    @property
+    def mask_chs(self):
+        return self._mask_chs
 
     @property
     def n_group(self):
@@ -159,21 +159,16 @@ class BaseProbe(object):
             self._update_chs2group(chs, g)
 
     @property
+    def chs(self):
+        return np.hstack(self.grp_dict.values())
+
+    @property
     def bad_chs(self):
         return self._bad_chs
 
     @bad_chs.setter
     def bad_chs(self, v):
         self._bad_chs = v.astype(int)
-
-    @property
-    def chs(self):
-        return np.hstack(self.grp_dict.values())
-
-    def mask_chs(self, nCh):
-        mask_chs = np.setdiff1d(np.arange(nCh), self.chs)
-        mask_chs = np.union1d(mask_chs, self.bad_chs)
-        return mask_chs
 
     def _update_chs2group(self, chs, g):
        for ch in chs:
@@ -185,13 +180,19 @@ class BaseProbe(object):
 
     def __setitem__(self, group, chs):
         assert group >= 0 and group < self._n_group, 'invalid group value'
-        assert len(chs) == 4, 'invalid amount of chs in group (so far only support 4)'
+        # assert len(chs) == 4, 'invalid amount of chs in group (so far only support 4)'
         assert isinstance(chs, np.ndarray), 'chs should numpy array, make sure numba works'
         self.grp_dict[group] = np.sort(chs)
         self._update_chs2group(chs, group)  
 
     def ch_hash(self, ch):
-        return self.grp_dict[self.ch2g[ch]]
+        if ch in self.chs:
+            return self.grp_dict[self.ch2g[ch]]
+        elif ch in self.mask_chs:
+            mask_grp = self.mask_chs.reshape(-1, self.group_len)
+            return mask_grp[np.where(mask_grp == ch)[0]][0]
+        else:
+            print('ch not in range, check prb.chs and prb.mask_chs')
 
     def __str__(self):
         return '\n'.join(['{}:{}'.format(key, val) for key, val in self.grp_dict.items()]) 
@@ -217,8 +218,8 @@ class probe(BaseProbe):
         prb.shanks[0].ch_group
 
     '''
-    def __init__(self, fs=25000., n_ch=64, group_len=4, shank_no=None):
-        BaseProbe.__init__(self, type='bow_tie')
+    def __init__(self, fs=25000., n_ch=160, group_len=4, prb_type=None, shank_no=None):
+        super(probe, self).__init__()
         if shank_no is not None:
             self.shanks = {}
             for shank_id in range(shank_no):
@@ -227,6 +228,7 @@ class probe(BaseProbe):
             #TOD: load prb file
             pass
 
+        self.type = prb_type
         self._fs = fs
         self._n_ch = n_ch
         self._group_len = group_len
@@ -294,251 +296,251 @@ if __name__ == '__main__':
 #        Probe Factory 
 #------------------------------
 
-class ProbeFactory(object):
-    ''' probe factory: 
-            generate the probe by spicifying the type of probe.
+# class ProbeFactory(object):
+#     ''' probe factory: 
+#             generate the probe by spicifying the type of probe.
 
-        type
-        ------
-        LinearProbe:
-                fs : float
-                    sample rate
-                n_ch : int
-                    number of channel
-                ch_span : int
-                    cross up and down ch_span channel respectly 
-                gmaps : dist
-                    the map from goup to channel, i.e: {1:[1,2,3]}. if gmaps is None, defaut sequence maps will be applied.   
-                    for linear probe, the ch == -1 means ch not exist the ch == -1 means ch not exists.
+#         type
+#         ------
+#         LinearProbe:
+#                 fs : float
+#                     sample rate
+#                 n_ch : int
+#                     number of channel
+#                 ch_span : int
+#                     cross up and down ch_span channel respectly 
+#                 gmaps : dist
+#                     the map from goup to channel, i.e: {1:[1,2,3]}. if gmaps is None, defaut sequence maps will be applied.   
+#                     for linear probe, the ch == -1 means ch not exist the ch == -1 means ch not exists.
         
-        TetrodeProbe:
-                fs : float 
-                    sample rate
-                n_ch : int
-                    number of channel
-                gmaps : dist
-                    the map from goup to channel, i.e: {1:[1,2,3,4]}. if gmaps is None, defaut sequence maps will be applied.   
-    '''
-    @staticmethod
-    def genLinearProbe(fs, n_ch, ch_span=1, gmaps=None):
-        assert n_ch > 0, 'amount of chs should be positive'
-        assert ch_span > 0, 'span between chs should be positive'
-        if not gmaps:
-            gmaps = {}
-            chmax = n_ch - 1
-            for center_ch in range(n_ch):
-                chs = np.arange(center_ch - ch_span, center_ch + ch_span + 1, 1)
-                chs[chs>chmax] = -1 
-                chs[chs<0] = -1 
-                gmaps[center_ch] = chs
-        return LinearProbe(fs, n_ch, ch_span, gmaps)
+#         TetrodeProbe:
+#                 fs : float 
+#                     sample rate
+#                 n_ch : int
+#                     number of channel
+#                 gmaps : dist
+#                     the map from goup to channel, i.e: {1:[1,2,3,4]}. if gmaps is None, defaut sequence maps will be applied.   
+#     '''
+#     @staticmethod
+#     def genLinearProbe(fs, n_ch, ch_span=1, gmaps=None):
+#         assert n_ch > 0, 'amount of chs should be positive'
+#         assert ch_span > 0, 'span between chs should be positive'
+#         if not gmaps:
+#             gmaps = {}
+#             chmax = n_ch - 1
+#             for center_ch in range(n_ch):
+#                 chs = np.arange(center_ch - ch_span, center_ch + ch_span + 1, 1)
+#                 chs[chs>chmax] = -1 
+#                 chs[chs<0] = -1 
+#                 gmaps[center_ch] = chs
+#         return LinearProbe(fs, n_ch, ch_span, gmaps)
 
-    @staticmethod 
-    def genTetrodeProbe(fs, n_ch, gmaps=None):
-        assert n_ch > 0, 'amount of chs should be positive'
-        if not gmaps:
-            gmaps = {}
-            for g in range(n_ch/4):
-               gmaps[g] = np.arange(g*4, g*4+4)
-        return TetrodeProbe(fs, n_ch, gmaps)
+#     @staticmethod 
+#     def genTetrodeProbe(fs, n_ch, gmaps=None):
+#         assert n_ch > 0, 'amount of chs should be positive'
+#         if not gmaps:
+#             gmaps = {}
+#             for g in range(n_ch/4):
+#                gmaps[g] = np.arange(g*4, g*4+4)
+#         return TetrodeProbe(fs, n_ch, gmaps)
 
-# -------------------------------
-#         Type of Probes
-# -------------------------------
+# # -------------------------------
+# #         Type of Probes
+# # -------------------------------
 
-class Probe(object):
-    ''' the base class of probe
-    '''
-    def __init__(self, type):
-        assert type is not None
-        self._type = type
+# class Probe(object):
+#     ''' the base class of probe
+#     '''
+#     def __init__(self, type):
+#         assert type is not None
+#         self._type = type
 
-    @property
-    def type(self):
-        '''
-          the string of type, some place need to distinguish the type 
-        '''
-        return self._type
+#     @property
+#     def type(self):
+#         '''
+#           the string of type, some place need to distinguish the type 
+#         '''
+#         return self._type
 
-    @property
-    def fs(self):
-        return self._fs
+#     @property
+#     def fs(self):
+#         return self._fs
     
-    @property
-    def n_ch(self):
-        return self._n_ch
+#     @property
+#     def n_ch(self):
+#         return self._n_ch
 
-    @property
-    def n_group(self):
-        '''
-          number of groups, group can be treated as basic unit to statistic data
-        '''
-        return self._n_group
+#     @property
+#     def n_group(self):
+#         '''
+#           number of groups, group can be treated as basic unit to statistic data
+#         '''
+#         return self._n_group
     
-    @property
-    def groups(self):
-        '''
-            return all group numbers
-        '''
-        for i in range(self._n_group):
-            yield i
+#     @property
+#     def groups(self):
+#         '''
+#             return all group numbers
+#         '''
+#         for i in range(self._n_group):
+#             yield i
 
-    @property
-    def len_group(self):
-        '''
-            number of channles in a group
-        '''
-        return self._len_group
+#     @property
+#     def len_group(self):
+#         '''
+#             number of channles in a group
+#         '''
+#         return self._len_group
 
-    def __str__(self):
-        return '\n'.join(['{}:{}'.format(key, val) for key, val in self._g2chs.items()]) 
+#     def __str__(self):
+#         return '\n'.join(['{}:{}'.format(key, val) for key, val in self._g2chs.items()]) 
 
-    __repr__ = __str__
-
-
+#     __repr__ = __str__
 
 
 
 
-class LinearProbe(Probe):
-    ''' linear probe
-    '''
-    def __init__(self, fs, n_ch, ch_span, gmaps):
-        super(LinearProbe, self).__init__('linear')
+
+
+# class LinearProbe(Probe):
+#     ''' linear probe
+#     '''
+#     def __init__(self, fs, n_ch, ch_span, gmaps):
+#         super(LinearProbe, self).__init__('linear')
         
-        assert fs > 0 
-        assert n_ch > 0
-        assert ch_span >0 and ch_span < n_ch
-        assert gmaps
+#         assert fs > 0 
+#         assert n_ch > 0
+#         assert ch_span >0 and ch_span < n_ch
+#         assert gmaps
 
-        self._fs = fs
-        self._n_ch = n_ch
-        self._ch_span = ch_span
-        self._n_group = self._n_ch
-        self._len_group = 2 * ch_span + 1
-        self._g2chs = gmaps
-        self._ch2g = {}
-        for g, chs in self._g2chs.items():
-            self._update_chs2group(chs, g)
+#         self._fs = fs
+#         self._n_ch = n_ch
+#         self._ch_span = ch_span
+#         self._n_group = self._n_ch
+#         self._len_group = 2 * ch_span + 1
+#         self._g2chs = gmaps
+#         self._ch2g = {}
+#         for g, chs in self._g2chs.items():
+#             self._update_chs2group(chs, g)
         
    
-    @property
-    def ch_span(self):
-        return self._ch_span
+#     @property
+#     def ch_span(self):
+#         return self._ch_span
 
-    # -------------------------------
-    #        public method 
-    # -------------------------------
+#     # -------------------------------
+#     #        public method 
+#     # -------------------------------
 
-    def belong_group(self, ch):
-        '''
-            get the group number which ch belong
-        '''
-        assert ch >= 0 and ch < self._n_ch
-        return self._ch2g[ch] 
+#     def belong_group(self, ch):
+#         '''
+#             get the group number which ch belong
+#         '''
+#         assert ch >= 0 and ch < self._n_ch
+#         return self._ch2g[ch] 
 
-    def get_chs(self, group):
-        '''
-            get the chs which group has
-        '''
-        assert group >= 0 and group < self._n_group
-        return self._g2chs[group]
+#     def get_chs(self, group):
+#         '''
+#             get the chs which group has
+#         '''
+#         assert group >= 0 and group < self._n_group
+#         return self._g2chs[group]
 
-    def fetch_pivotal_chs(self, group):
-        '''
-            get the most important chs within group
-        '''
-        assert group >= 0 and group < self._n_group
+#     def fetch_pivotal_chs(self, group):
+#         '''
+#             get the most important chs within group
+#         '''
+#         assert group >= 0 and group < self._n_group
 
-        chs = self._g2chs[group]
-        return np.asarray([chs[len(chs)/2]])
+#         chs = self._g2chs[group]
+#         return np.asarray([chs[len(chs)/2]])
 
-    def _update_chs2group(self, chs, g):
-       for ch in chs:
-            self._ch2g[ch] = g
+#     def _update_chs2group(self, chs, g):
+#        for ch in chs:
+#             self._ch2g[ch] = g
 
-    def __getitem__(self, group):
-        assert group >=0  and group < self._n_group, 'invalid group value'
-        return self._g2chs[group]
+#     def __getitem__(self, group):
+#         assert group >=0  and group < self._n_group, 'invalid group value'
+#         return self._g2chs[group]
 
-    def __setitem__(self, group, chs):
-        assert group >=0  and group < self._n_group, 'invalid grup value'
-        assert isinstance(chs, np.ndarray), 'chs should numpy array, make sure numba works'
-        self._g2chs[group] = chs
-        self._update_chs2group(chs, group)
-
-
+#     def __setitem__(self, group, chs):
+#         assert group >=0  and group < self._n_group, 'invalid grup value'
+#         assert isinstance(chs, np.ndarray), 'chs should numpy array, make sure numba works'
+#         self._g2chs[group] = chs
+#         self._update_chs2group(chs, group)
 
 
 
-class TetrodeProbe(Probe):
-    ''' tetrode probe
-    '''
-    def __init__(self, fs, n_ch, g2chs):
-        super(TetrodeProbe, self).__init__('tetrode')
 
-        assert fs > 0
-        assert n_ch > 0 and n_ch % 4 == 0
-        assert g2chs
 
-        self._fs = fs
-        self._n_ch = n_ch
-        self._n_group = int(self._n_ch / 4)
-        self._len_group = 4
-        self._g2chs = g2chs
-        self._ch2g = {}
-        for g, chs in self._g2chs.items():
-            self._update_chs2group(chs, g)
+# class TetrodeProbe(Probe):
+#     ''' tetrode probe
+#     '''
+#     def __init__(self, fs, n_ch, g2chs):
+#         super(TetrodeProbe, self).__init__('tetrode')
+
+#         assert fs > 0
+#         assert n_ch > 0 and n_ch % 4 == 0
+#         assert g2chs
+
+#         self._fs = fs
+#         self._n_ch = n_ch
+#         self._n_group = int(self._n_ch / 4)
+#         self._len_group = 4
+#         self._g2chs = g2chs
+#         self._ch2g = {}
+#         for g, chs in self._g2chs.items():
+#             self._update_chs2group(chs, g)
             
-    # -------------------------------
-    #        public method 
-    # -------------------------------
+#     # -------------------------------
+#     #        public method 
+#     # -------------------------------
 
-    def get_chs(self, group):
-        '''
-            get the chs which group has
-        '''
-        assert group >= 0 and group < self._n_group
-        return self._g2chs[group] 
+#     def get_chs(self, group):
+#         '''
+#             get the chs which group has
+#         '''
+#         assert group >= 0 and group < self._n_group
+#         return self._g2chs[group] 
 
-    def belong_group(self, ch):
-        '''
-            return the group number which ch is belonged
-        '''
-        assert ch >= 0 and ch < self._n_ch
-        return self._ch2g[ch]
+#     def belong_group(self, ch):
+#         '''
+#             return the group number which ch is belonged
+#         '''
+#         assert ch >= 0 and ch < self._n_ch
+#         return self._ch2g[ch]
 
-    def fetch_pivotal_chs(self, group):
-        '''
-            get the most important chs within group
-        '''
-        assert group >= 0 and group < self._n_group
-        return self._g2chs[group]
+#     def fetch_pivotal_chs(self, group):
+#         '''
+#             get the most important chs within group
+#         '''
+#         assert group >= 0 and group < self._n_group
+#         return self._g2chs[group]
     
-    def _update_chs2group(self, chs, g):
-       for ch in chs:
-            self._ch2g[ch] = g
+#     def _update_chs2group(self, chs, g):
+#        for ch in chs:
+#             self._ch2g[ch] = g
 
-    def __getitem__(self, group):
-        assert group >= 0 and group < self._n_group, 'invalid group value'
-        return self._g2chs[group]
+#     def __getitem__(self, group):
+#         assert group >= 0 and group < self._n_group, 'invalid group value'
+#         return self._g2chs[group]
 
-    def __setitem__(self, group, chs):
-        assert group >= 0 and group < self._n_group, 'invalid group value'
-        assert len(chs) == 4, 'invalid amount of chs in tetrode'
-        assert isinstance(chs, np.ndarray), 'chs should numpy array, make sure numba works'
-        self._g2chs[group] = chs
-        self._update_chs2group(chs, group)
+#     def __setitem__(self, group, chs):
+#         assert group >= 0 and group < self._n_group, 'invalid group value'
+#         assert len(chs) == 4, 'invalid amount of chs in tetrode'
+#         assert isinstance(chs, np.ndarray), 'chs should numpy array, make sure numba works'
+#         self._g2chs[group] = chs
+#         self._update_chs2group(chs, group)
 
-    def fromfile(self, file, filetype='json'):
-        if filetype == 'json':
-            with open(file) as mapping_file:    
-                data = json.load(mapping_file)
-        else:
-            print 'the file needs to be json'
-        tetrode_ch_hash = np.array(data['0']['mapping'])[:self._n_ch].reshape(-1,4) - 1
-        for i, _ch_hash in enumerate(tetrode_ch_hash):
-                self[i] = _ch_hash
+#     def fromfile(self, file, filetype='json'):
+#         if filetype == 'json':
+#             with open(file) as mapping_file:    
+#                 data = json.load(mapping_file)
+#         else:
+#             print 'the file needs to be json'
+#         tetrode_ch_hash = np.array(data['0']['mapping'])[:self._n_ch].reshape(-1,4) - 1
+#         for i, _ch_hash in enumerate(tetrode_ch_hash):
+#                 self[i] = _ch_hash
 
-    def ch_hash(self, ch):
-        return self.get_chs(self.belong_group(ch))
+#     def ch_hash(self, ch):
+#         return self.get_chs(self.belong_group(ch))

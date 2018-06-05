@@ -54,7 +54,7 @@ class xike_config(object):
         self.thres[:] = self._thres_value
         # channel group hashing
         self.ch_ugp = channel_hash(nCh=self._n_ch, base_address=256)
-        for ch in self.probe.chs:
+        for ch in range(self.probe.n_ch):
             self.ch_ugp[ch] = self.probe.ch_hash(ch)
 
     def _config_FPGA_transformer(self, grpNo, P, b, a):

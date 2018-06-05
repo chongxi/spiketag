@@ -2,7 +2,7 @@ import numpy as np
 from ..base import probe
 from ..view import probe_view
 
-prb_bowtie_L = probe(shank_no=3)
+prb_bowtie_L = probe(shank_no=3, prb_type='bow_tie')
 
 prb_bowtie_L.shanks[0].l = [59,60,10,58,12,11,57,56]
 prb_bowtie_L.shanks[0].r = [5,52,3,54,53,4,13,2,55]
@@ -49,6 +49,8 @@ prb_bowtie_L[11] = np.array([45, 44, 26, 29])
 prb_bowtie_L[12] = np.array([24,  7, 40, 27])
 prb_bowtie_L[13] = np.array([32, 16, 42, 41])
 prb_bowtie_L[14] = np.array([23, 46, 28, 43])
+
+# prb_bowtie_L.n_ch = 160
 
 
 if __name__ == '__main__':
