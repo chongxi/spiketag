@@ -20,13 +20,14 @@ class MainModel(object):
        -> clu: dict, every item is a CLU on that channel; clu.merge, clu.split, clu.move  etc..
     """
 
-    def __init__(self, filename, probe=None, spktag_filename=None, 
+    def __init__(self, mua_filename, spk_filename, probe=None, spktag_filename=None, 
                  numbytes=4, binary_radix=13, spklen=19, corr_cutoff=0.9,
                  fet_method='weighted-pca', fetlen=6, fet_whiten=False,
                  clu_method='hdbscan', fall_off_size=18, n_jobs=24):
 
         # raw recording param
-        self.filename = filename
+        self.mua_filename = mua_filename
+        self.spk_filename = spk_filename
         self.spktag_filename = spktag_filename
         self.probe = probe
         self.numbytes = numbytes
@@ -60,19 +61,19 @@ class MainModel(object):
         if spktag_filename is None:
 
             info('load mua data')
-            self.mua = MUA(self.filename, self.probe, self.numbytes, self.binpoint)
+            self.mua = MUA(self.mua_filename, self.spk_filename, self.probe, self.numbytes, self.binpoint)
 
             # info('removing high corr noise from spikes pool')
             # self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
 
-            info('removing all spks on group which len(spks) less then fetlen')
-            self.mua.remove_groups_under_fetlen(self._fetlen)
+            # info('removing all spks on group which len(spks) less then fetlen')
+            # self.mua.remove_groups_under_fetlen(self._fetlen)
             
-            info('grouping spike time')
-            self.gtimes = self.mua.group_spk_times()
-
             info('extract spikes from pivital meta data')
             self.spk = self.mua.tospk()
+
+            info('grouping spike time')
+            self.gtimes = self.mua.spk_times
 
             info('extrat features with {}'.format(self.fet_method))
             self.fet = self.spk.tofet(method=self.fet_method, 
@@ -110,14 +111,14 @@ class MainModel(object):
         self.groups = self.spk.spk.keys()
 
     def cluster(self, method='hdbscan', *args, **kwargs):
-        groupNo = kwargs['groupNo'] if 'groupNo' in kwargs.keys() else None
-        if groupNo is not None:
-            self.clu[groupNo] = self.fet.toclu(method=method, *args, **kwargs)
+        group_id = kwargs['group_id'] if 'group_id' in kwargs.keys() else None
+        if group_id is not None:
+            self.clu[group_id] = self.fet.toclu(method=method, *args, **kwargs)
         else:
             pass
 
 
-    def construct_transformer(self, groupNo, ndim=4):
+    def construct_transformer(self, group_id, ndim=4):
         '''
         construct transformer parameters for a specific group
         y = a(xP+b)
@@ -126,28 +127,28 @@ class MainModel(object):
         a: _scale
         '''
         # concateated spike waveforms from one channel group
-        r = self.spk[groupNo]
+        r = self.spk[group_id]
         x = r.transpose(0,2,1).ravel().reshape(-1, r.shape[1]*r.shape[2])
         # construct transfomer params
         _pca_comp, _shift, _scale = _construct_transformer(x, ncomp=ndim)
         return _pca_comp, _shift, _scale
 
 
-    def construct_kdtree(self, groupNo, global_ids=None):
+    def construct_kdtree(self, group_id, global_ids=None):
         self.kd = {} 
-        for clu_id, value in self.clu[groupNo].index.items():
+        for clu_id, value in self.clu[group_id].index.items():
             diff_ids = np.setdiff1d(value, global_ids, assume_unique=True)
             if len(diff_ids) > 0:
-                fet = self.fet[groupNo][diff_ids]
+                fet = self.fet[group_id][diff_ids]
                 self.kd[KDTree(fet)] = clu_id
 
 
-    def predict(self, groupNo, global_ids, method='knn', k=10):
-        X = self.fet[groupNo][global_ids]
+    def predict(self, group_id, global_ids, method='knn', k=10):
+        X = self.fet[group_id][global_ids]
         if X.ndim==1: X=X.reshape(1,-1)
 
         if method == 'knn':
-            self.construct_kdtree(groupNo, global_ids)
+            self.construct_kdtree(group_id, global_ids)
             d = []
             for _kd in self.kd.iterkeys():
                 tmp = _kd.query(X, k)[0]

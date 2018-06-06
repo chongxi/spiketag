@@ -166,19 +166,19 @@ class SPK():
             fet = np.empty((0, ncomp), dtype=np.float32)
         return fet
 
-    def tofet(self, groupNo=None, method='weighted-pca', ncomp=6, whiten=False):
+    def tofet(self, group_id=None, method='weighted-pca', ncomp=6, whiten=False):
 
         fet = {}
         pca_comp = {}
         shift = {}
         scale = {}
         
-        if groupNo:
-            return self._tofet(groupNo, method, ncomp, whiten)
+        if group_id:
+            return self._tofet(group_id, method, ncomp, whiten)
         else:
             for group in self.spk.keys():
                 fet[group] = self._tofet(group, method, ncomp, whiten)
-                info('spk._tofet(groupNo={}, method={}, ncomp={}, whiten={})'.format(group, method, ncomp, whiten))
+                info('spk._tofet(group_id={}, method={}, ncomp={}, whiten={})'.format(group, method, ncomp, whiten))
             info('----------------success------------------')
             info(' ')
             return FET(fet)

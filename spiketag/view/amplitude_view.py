@@ -19,7 +19,7 @@ class amplitude_view(scatter_2d_view):
         super(amplitude_view, self).attach_xaxis()
 
         self._time_tick = time_tick 
-        self._fs = fs
+        self._fs = float(fs)
         self._scale = scale
 
 

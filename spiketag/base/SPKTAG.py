@@ -27,7 +27,7 @@ class SPKTAG(object):
             self.fetlen  = fet.fetlen
             self.dtype   = [('t', 'int32'),
                             ('group','int32'),  
-                            ('spk', 'f4', (self.spklen, self.probe.len_group)), 
+                            ('spk', 'f4', (self.spklen, self.probe.group_len)), 
                             ('fet','f4',(self.fetlen,)),
                             ('clu','int32')]
         else:

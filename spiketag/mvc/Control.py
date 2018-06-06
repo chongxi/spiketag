@@ -160,14 +160,14 @@ class Sorter(object):
                 # print fet_method
 		fet_len    = self.view.param_view.fet_No.value()
                 # print fet_len
-		self.model.fet[self.current_group] = self.model.spk.tofet(groupNo=self.current_group, method=fet_method, ncomp=fet_len)
+		self.model.fet[self.current_group] = self.model.spk.tofet(group_id=self.current_group, method=fet_method, ncomp=fet_len)
 		self.refresh()
 
 
 	def update_clu(self):
 		clu_method = str(self.view.param_view.clu_combo.currentText())
 		self.model.cluster(method = clu_method,
-						   groupNo   = self.current_group, 
+						   group_id   = self.current_group, 
 						   fall_off_size = self.view.param_view.clu_param.value())
 		self.refresh()
 
@@ -229,7 +229,7 @@ class Sorter(object):
         def _transform(self, x, P, shift, scale):
             return _transform(x, P, shift, scale) 
 
-        def construct_transformer(self, groupNo, ndim=4):
-            _pca_comp, _shift, _scale = self.model.construct_transformer(groupNo, ndim)
+        def construct_transformer(self, group_id, ndim=4):
+            _pca_comp, _shift, _scale = self.model.construct_transformer(group_id, ndim)
             return _pca_comp, _shift, _scale            
 
