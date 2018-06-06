@@ -34,8 +34,8 @@ from .CLU import CLU
 class FET(object):
     """
     feature = FET(fet)
-    fet: dictionary {groupNo:fet[groupNo], ...}
-    fet[groupNo]: n*m matrix, n is #samples, m is #features
+    fet: dictionary {group_id:fet[group_id], ...}
+    fet[group_id]: n*m matrix, n is #samples, m is #features
     """
     def __init__(self, fet):
         self.fet = fet
@@ -64,9 +64,9 @@ class FET(object):
     def toclu(self, method='hdbscan', njobs=1, *args, **kwargs):
         clu = {}
         
-        groupNo = kwargs['groupNo'] if 'groupNo' in kwargs.keys() else None
+        group_id = kwargs['group_id'] if 'group_id' in kwargs.keys() else None
         fall_off_size = kwargs['fall_off_size'] if 'fall_off_size' in kwargs.keys() else None
-        # print 'clustering method: {0}, groupNo: {1}, fall_off_size: {2}'.format(method, groupNo, fall_off_size)
+        # print 'clustering method: {0}, group_id: {1}, fall_off_size: {2}'.format(method, group_id, fall_off_size)
 
         if method == 'hdbscan':
             min_cluster_size = self.hdbscan_hyper_param['min_cluster_size']
@@ -79,7 +79,7 @@ class FET(object):
                                  algorithm='boruvka_kdtree')
 
             # automatic pool clustering
-            if groupNo is None:
+            if group_id is None:
                 if njobs!=1:
                     tic = time()
                     pool = Pool(njobs)
@@ -88,28 +88,28 @@ class FET(object):
                     pool.join()
                     toc = time()
                     info('clustering finished, used {} sec'.format(toc-tic))
-                    # info('get clustering from groupNo {}:'.format(str(_groupNo)))
-                    for _groupNo, __clu in zip(self.group, _clu):
-                        clu[_groupNo] = __clu
+                    # info('get clustering from group_id {}:'.format(str(_group_id)))
+                    for _group_id, __clu in zip(self.group, _clu):
+                        clu[_group_id] = __clu
                 else:
                     tic = time()
-                    for groupNo in self.group:
-                        clusterer = hdbcluster.fit(self.fet[groupNo])
-                        clu[groupNo] = CLU(clusterer.labels_, clusterer)
+                    for group_id in self.group:
+                        clusterer = hdbcluster.fit(self.fet[group_id])
+                        clu[group_id] = CLU(clusterer.labels_, clusterer)
                     toc = time()
                     info('clustering finished, used {} sec'.format(toc-tic))
                 return clu
 
             # semi-automatic parameter selection for a specific channel
-            elif self.nSamples[groupNo] != 0:
+            elif self.nSamples[group_id] != 0:
                 # fall_off_size in kwargs
                 hdbcluster.min_cluster_size = fall_off_size
-                clusterer = hdbcluster.fit(self.fet[groupNo])
+                clusterer = hdbcluster.fit(self.fet[group_id])
                 return CLU(clusterer.labels_, clusterer)
         else: # other methods 
             warning('Clustering not support {} yet!!'.format(method)) 
 
-    def _toclu(self, groupNo, method='hdbscan'):
+    def _toclu(self, group_id, method='hdbscan'):
         if method == 'hdbscan':
             # tic = time()
             from hdbscan import HDBSCAN
@@ -120,12 +120,12 @@ class FET(object):
                          gen_min_span_tree=False, 
                          algorithm='boruvka_kdtree',
                          core_dist_n_jobs=1)        
-            clusterer = hdbcluster.fit(self.fet[groupNo])
+            clusterer = hdbcluster.fit(self.fet[group_id])
             # toc = time()
-            # info('fet._toclu(groupNo={}, method={})  -- {} sec'.format(groupNo, method, toc-tic))
+            # info('fet._toclu(group_id={}, method={})  -- {} sec'.format(group_id, method, toc-tic))
             return CLU(clusterer.labels_, clusterer)
         #  elif method == 'reset':
-            #  clu = np.zeros((self.fet[groupNo].shape[0], )).astype(np.int64)
+            #  clu = np.zeros((self.fet[group_id].shape[0], )).astype(np.int64)
         else:
             warning('Clustering not support {} yet!!'.format(method))
         return clu

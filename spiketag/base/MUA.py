@@ -72,13 +72,14 @@ class MUA(object):
     def tospk(self):
         info('mua.tospk()')
         spkdict = {}
+        self.spk_times = {}
         for g in self.probe.grp_dict.keys():
             # pivotal_chs = self.probe.fetch_pivotal_chs(g)
             pivotal_chs = self.probe.grp_dict[g]
-            pos = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
-            if len(pos) > 0:
+            self.spk_times[g] = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
+            if len(self.spk_times[g]) > 0:
                 spkdict[g] = _to_spk( data   = self.data, 
-                                      pos    = pos, 
+                                      pos    = self.spk_times[g], 
                                       chlist = self.probe[g], 
                                       spklen = self.spklen,
                                       prelen = self.prelen)
@@ -139,21 +140,22 @@ class MUA(object):
         self.pivotal_pos = np.delete(self.pivotal_pos, nid, axis=1)
         info('removed noise ids: {} '.format(nid)) 
 
-    def remove_groups_under_fetlen(self, fetlen):
-        ids = []
-        groups = {}
-        for g in range(self.probe.n_group):
-            pivotal_chs = self.probe.fetch_pivotal_chs(g)
-            _ids = np.where(np.in1d(self.pivotal_pos[1], pivotal_chs))[0]
-            if len(_ids) < fetlen:
-                ids.extend(_ids)
-                groups[g] = len(_ids)
-        self.pivotal_pos = np.delete(self.pivotal_pos, ids, axis=1)
-        info('removed all spks on these groups: {}'.format(groups)) 
+    # def remove_groups_under_fetlen(self, fetlen):
+    #     ids = []
+    #     groups = {}
+    #     for g in self.probe.keys():
+    #         pivotal_chs = self.probe.fetch_pivotal_chs(g)
+    #         _ids = np.where(np.in1d(self.pivotal_pos[1], pivotal_chs))[0]
+    #         if len(_ids) < fetlen:
+    #             ids.extend(_ids)
+    #             groups[g] = len(_ids)
+    #     self.pivotal_pos = np.delete(self.pivotal_pos, ids, axis=1)
+    #     info('removed all spks on these groups: {}'.format(groups)) 
 
     def group_spk_times(self):
         group_with_times = {}
         for g in range(self.probe.n_group):
+            pos   = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
             times = self.pivotal_pos[0][np.where(np.in1d(self.pivotal_pos[1],self.probe[g]))[0]]
             if len(times) > 0: group_with_times[g] = times
         return group_with_times
