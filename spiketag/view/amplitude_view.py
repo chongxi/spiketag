@@ -2,6 +2,7 @@ import numpy as np
 from .color_scheme import palette
 from scatter_2d_view import scatter_2d_view
 
+
 class amplitude_view(scatter_2d_view):
     ''' Amplitude view is sub-class of scatter_2d_view. For  marker(x, y), the x pos is the time, the y pos is the peak amplitude.
         
