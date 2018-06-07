@@ -47,7 +47,7 @@
 #                 self.cluster_view.show()
 
 import sys
-from ..view import spike_view, scatter_3d_view, amplitude_view, ctree_view, trace_view
+from ..view import probe_view, spike_view, scatter_3d_view, amplitude_view, ctree_view, trace_view, correlogram_view
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QThread, QEventLoop
 from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog, QWidget, QSplitter, QComboBox, QTextBrowser, QSlider, QPushButton, QTableWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
@@ -65,6 +65,7 @@ class MainView(QWidget):
     def initUI(self):
 
         hbox = QHBoxLayout(self)
+        self.splitter0 = QSplitter(Qt.Horizontal)
         self.splitter1 = QSplitter(Qt.Horizontal)
 #         textedit = QTextEdit()
 #         self.splitter1.addWidget(self.topleft)
@@ -72,13 +73,21 @@ class MainView(QWidget):
 #         self.splitter1.setSizes([100,200])
         self.splitter2 = QSplitter(Qt.Horizontal)
         self.splitter_fet = QSplitter(Qt.Vertical)
+        # self.splitter2.addWidget(self.splitter0)
 
         self.splitter3 = QSplitter(Qt.Vertical)
+
+        # self.splitter3.addWidget(self.splitter0)
         self.splitter3.addWidget(self.splitter1)
         self.splitter3.addWidget(self.splitter2)
+
+        self.prb_view = probe_view()
+        self.prb_view.set_data(self.prb)
+        self.splitter0.addWidget(self.prb_view.native)
+        self.splitter0.addWidget(self.splitter3)
 #         self.splitter2.addWidget(self.bottom)
 
-        hbox.addWidget(self.splitter3)
+        hbox.addWidget(self.splitter0)
 
         self.setLayout(hbox)
         # QApplication.setStyle(QStyleFactory.create('Cleanlooks'))
@@ -91,19 +100,20 @@ class MainView(QWidget):
         self.fetview0 = scatter_3d_view()
         self.fetview1 = scatter_3d_view()
         self.ampview = amplitude_view(fs=self.prb.fs, scale=1)
+        self.corview = correlogram_view(fs=self.prb.fs)
         self.treeview = ctree_view()
         self.traceview = trace_view(fs=self.prb.fs)
         
-
         self.splitter1.addWidget(self.traceview.native)
         self.splitter1.addWidget(self.splitter_fet)
         self.splitter_fet.addWidget(self.fetview0.native)
         self.splitter_fet.addWidget(self.fetview1.native)
         self.splitter1.addWidget(self.spkview.native)
 
+        self.splitter2.addWidget(self.corview.native) 
         self.splitter2.addWidget(self.treeview.native)
         self.splitter2.addWidget(self.ampview.native)
-        
+
 
     def set_data(self, group_id, mua, spk, fet, clu):
         ### init view and set_data
@@ -118,4 +128,5 @@ class MainView(QWidget):
         self.ampview.set_data(spk, clu, mua.spk_times[group_id])
         self.treeview.set_data(clu) 
         self.traceview.set_data(mua.data[:,chs], clu, mua.spk_times[group_id])
+        self.corview.set_data(clu, mua.spk_times[group_id])
 #         self.traceview.locate_buffer = 2000

@@ -1,6 +1,6 @@
 import numpy as np
 import numexpr as ne
-from spiketag.view import spike_view
+# from spiketag.view import spike_view
 from .FET import FET
 from ..utils.conf import info
 
@@ -184,7 +184,7 @@ class SPK():
             return FET(fet)
 
 
-    def show(self, group_id):
-        self.spk_view = spike_view()
-        self.spk_view.set_data(self.spk[group_id])
-        self.spk_view.show()
+    # def show(self, group_id):
+    #     self.spk_view = spike_view()
+    #     self.spk_view.set_data(self.spk[group_id])
+    #     self.spk_view.show()
