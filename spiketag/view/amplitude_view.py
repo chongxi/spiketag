@@ -3,6 +3,7 @@ from .color_scheme import palette
 from scatter_2d_view import scatter_2d_view
 
 
+
 class amplitude_view(scatter_2d_view):
     ''' Amplitude view is sub-class of scatter_2d_view. For  marker(x, y), the x pos is the time, the y pos is the peak amplitude.
         
@@ -22,6 +23,7 @@ class amplitude_view(scatter_2d_view):
         self._time_tick = time_tick 
         self._fs = float(fs)
         self._scale = scale
+
 
 
     ### ----------------------------------------------
@@ -101,11 +103,15 @@ class amplitude_view(scatter_2d_view):
         '''
             locate the peak of amplitude, return index and peak value
         '''
-        times = self._spike_time[self._clu.index[clu]]
+        self.times = self._spike_time[self._clu.index[clu]]
         # peak always heppenned one offset before
-        amplitudes = self._spk[self._clu.index[clu], 7].min(axis=1) / self._scale
+        self.amplitudes = self._spk[self._clu.index[clu], :].min(axis=1).min(axis=1) / self._scale
+        # print amplitudes.shape
+        # amplitudes = self._spk[self._clu.index[clu], 7].min(axis=1) / self._scale
+        # print amplitudes.shape
+        # print self._spk.shape
         
-        return  times / self.binsize, amplitudes
+        return  self.times / self.binsize, self.amplitudes
  
 
     def _draw(self, clus, delimit=True):
@@ -113,7 +119,7 @@ class amplitude_view(scatter_2d_view):
             The x pos is time, the y pos is amplitude, and the color and pos is pairwise.
             Draw clu by clu because have to match the color
         '''
-        poses = None
+        self.poses = None
         colors = None
         
         for clu in clus:
@@ -121,12 +127,13 @@ class amplitude_view(scatter_2d_view):
             pos = np.column_stack((x, y))
             color = np.tile(np.hstack((palette[clu],1)),(pos.shape[0],1))
         
-            if poses is None and colors is None:
-                poses = pos
+            if self.poses is None and colors is None:
+                self.poses = pos
                 colors = color
             else:
-                poses = np.concatenate((poses, pos))
+                self.poses = np.concatenate((self.poses, pos))
                 colors = np.concatenate((colors, color))
 
-        super(amplitude_view, self).set_data(pos=poses, colors=colors, delimit=delimit) 
+        super(amplitude_view, self).set_data(pos=self.poses, colors=colors, delimit=delimit) 
+
 

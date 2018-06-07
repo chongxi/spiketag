@@ -1,7 +1,9 @@
 import numpy as np
 from vispy import scene, app
 from vispy.util import keys
+from trace_view import Cross
 from ..utils.utils import Picker
+from ..utils import EventEmitter
 
 class scatter_2d_view(scene.SceneCanvas):
     ''' Basic scatter 2d view, any view need markers can extend this view.
@@ -42,6 +44,9 @@ class scatter_2d_view(scene.SceneCanvas):
         self._picker = Picker(self.scene, self._transform2view)
         self._key_option = 0
 
+
+        self.clip = EventEmitter() 
+
     ### ----------------------------------------------
     ###              public method 
     ### ----------------------------------------------
@@ -75,11 +80,17 @@ class scatter_2d_view(scene.SceneCanvas):
             Provide x axis. This method is optional for child class.
         '''
         fg = axis_color
+        # text show amplitude
+        self.amp_text = scene.Text("", pos=(0, 0), italic=False, bold=True, anchor_x='left', anchor_y='center',
+                                       color=axis_color, font_size=13, parent=self._view)
+        self.amp_text.pos  = (0, 12)
+
+        # x axis shows time and can be moved horizontally for clipping
         self._xaxis = scene.AxisWidget(orientation='bottom', text_color=fg, axis_color=fg, tick_color=fg)
         self._xaxis.stretch = (0.9, 0.1)
         self._grid.add_widget(self._xaxis, row=1, col=0)
-
         self._xaxis.link_view(self._view)
+        self.x_axis_lock = True
 
     '''
         Child class can override this function, to recieve datas which picked after picker operating. But the position is view coordinate, 
@@ -90,10 +101,23 @@ class scatter_2d_view(scene.SceneCanvas):
             view_idx: array-like
                 the position within the view of selected datas.
     '''
+
+    def attach_cross(self, cross_color=(0,1,1,0.8)):
+        self.cross = Cross(cursor_color=cross_color)
+        self.cross.attach(self._grid)
+        self.cross.link_view(self._view)
+
+
     def select(self, view_idx):
         pass
 
+
+    def imap(self, mouse_pos):
+        tr = self._view.scene.transform
+        pos = tr.imap(mouse_pos)[:2]
+        return pos
        
+
     def on_key_press(self, e):
         '''
             Control: control + mouse wheel to adjust the transparency 
@@ -106,8 +130,14 @@ class scatter_2d_view(scene.SceneCanvas):
         elif e.text == 'r':
             self._view.camera.reset()
             self._view.camera.set_range()
+        elif e.text == 'c':
+            self.x_axis_lock = not self.x_axis_lock 
+        elif e.text == 'x':
+            self.clip.emit('clip', thres=self.amp)
 
         self._key_option = e.key.name
+
+
 
     def on_mouse_press(self, e):
         """
@@ -134,6 +164,12 @@ class scatter_2d_view(scene.SceneCanvas):
                 mask = self._get_nearest_spikes(e.pos)
                 self._highlight(mask)
                 self.select(mask)
+        elif self.x_axis_lock is False:
+            pos = e.pos - self._view.margin
+            self._xaxis.transform.translate = (0, pos[1])
+            self.amp = self.imap(e.pos)[1]
+            self.amp_text.text = '{}'.format(self.amp)
+
 
     def on_mouse_release(self, e):
         """
