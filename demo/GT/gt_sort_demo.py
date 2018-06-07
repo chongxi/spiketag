@@ -22,4 +22,3 @@ if __name__ == '__main__':
     view.set_data(0, model.mua, model.spk[0], model.fet[0], model.clu[0])
     view.show()
     sys.exit(app.exec_())
-

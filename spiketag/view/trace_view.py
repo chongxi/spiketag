@@ -352,9 +352,12 @@ class trace_view(scene.SceneCanvas):
         #     print 'next page'
         if e.text == 'r':
             self.view2.camera.reset()
-        
         if e.text == 'c':
             self.cross.flip_state()
+        if e.text == '+':
+            self.locate_buffer += 30
+        if e.text == '_':
+            self.locate_buffer -= 30
     
     def on_mouse_move(self, e):
         if 1 in e.buttons and e.modifiers is not ():
