@@ -26,6 +26,15 @@ class controller(object):
             print('delete {} spikes'.format(idx.shape))
             self.delete_spk(spk_idx=idx)
 
+    @property
+    def current_group(self):
+        return self._current_group
+
+    @current_group.setter
+    def current_group(self, group_id):
+        self._current_group = group_id
+        self.show(group_id)
+
 
 
     def delete_spk(self, spk_idx):
@@ -35,7 +44,6 @@ class controller(object):
         self.model.fet[i] = self.model.spk._tofet(i, method='pca')
         self.model.cluster(group_id=i, method='hdbscan', fall_off_size=self.model._fall_off_size)
         self.update_view()
-
 
 
     def update_view(self):
