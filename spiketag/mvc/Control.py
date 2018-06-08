@@ -1,8 +1,6 @@
 import numpy as np
 from .Model import MainModel
 from .View import MainView
-from ..view import scatter_3d_view
-from ..view import wave_view
 from ..base import CLU
 from ..utils import warning, conf
 from ..utils.utils import Timer
@@ -10,8 +8,55 @@ from ..base.SPK import _transform
 
 
 
-# class controller(object):
-    
+class controller(object):
+    def __init__(self, *args, **kwargs):
+        self.model = MainModel(*args, **kwargs)
+        self.prb   = self.model.probe
+        self.view  = MainView(self.prb)
+        self.current_group = 0
+
+        @self.view.prb.connect
+        def on_select(group_id, chs):
+            print(group_id, chs)
+            self.current_group = group_id
+
+        @self.view.ampview.clip.connect
+        def on_clip(thres):
+            idx = np.where(self.model.spk[self.current_group].min(axis=1).min(axis=1)>thres)[0]
+            print('delete {} spikes'.format(idx.shape))
+            self.delete_spk(spk_idx=idx)
+
+
+
+    def delete_spk(self, spk_idx):
+        i = self.current_group
+        self.model.mua.spk_times[i] = np.delete(self.model.mua.spk_times[i], spk_idx, axis=0)
+        self.model.spk[i] = np.delete(self.model.spk[i], spk_idx, axis=0)
+        self.model.fet[i] = self.model.spk._tofet(i, method='pca')
+        self.model.cluster(group_id=i, method='hdbscan', fall_off_size=self.model._fall_off_size)
+        self.update_view()
+
+
+
+    def update_view(self):
+        i = self.current_group
+        self.view.set_data(i, self.model.mua, self.model.spk[i], self.model.fet[i], self.model.clu[i])
+
+
+    def show(self, group_id=None):
+        if group_id is None:
+            self.update_view()
+            self.view.show()
+        else:
+            self.view.set_data(group_id, self.model.mua, self.model.spk[group_id], self.model.fet[group_id], self.model.clu[group_id])
+            self.view.show()
+
+
+
+
+
+
+
 
 class Sorter(object):
 	"""docstring for Sorter"""
