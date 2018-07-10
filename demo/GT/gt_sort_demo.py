@@ -15,11 +15,11 @@ tritrode.fs = 20000.
 tritrode.n_ch = 3
 tritrode.reorder_by_chip=False
 
-def model_view():
-    model = MainModel('./cell_0109.bin', './cell_0109.spk.bin', tritrode, binary_radix=11)
-    view = MainView(tritrode)
-    view.set_data(0, model.mua, model.spk[0], model.fet[0], model.clu[0])
-    view.show()
+# def model_view():
+#     model = MainModel('./cell_0109.bin', './cell_0109.spk.bin', tritrode, binary_radix=11)
+#     view = MainView(tritrode)
+#     view.set_data(0, model.mua, model.spk[0], model.fet[0], model.clu[0])
+#     view.show()
 
 def sorter():
     ctrl = controller('./cell_0109.bin', './cell_0109.spk.bin', tritrode, binary_radix=11)
