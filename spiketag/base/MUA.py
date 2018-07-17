@@ -160,6 +160,14 @@ class MUA(object):
             if len(times) > 0: group_with_times[g] = times
         return group_with_times
 
-    def show(self, chs):
-        wview = wave_view(self.data, chs=chs, spks=self.pivotal_pos)
+    def show(self, chs, span=None, time=None):
+        if span is None:
+            wview = wave_view(self.data, chs=chs, spks=self.pivotal_pos)
+            wview.slideto(time * self.fs)
+        else:
+            start = int((time-span)*self.fs) if time>span else 0
+            stop  = int((time+span)*self.fs) if (time+span)*self.fs<self.data.shape[0] else self.data.shape[0]
+            # print start,stop
+            wview = wave_view(self.data[start:stop], chs=chs, spks=self.pivotal_pos)
+            wview.slideto(span * self.fs)
         wview.show()

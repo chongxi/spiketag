@@ -11,12 +11,15 @@ def instack_membership(func):
 
 class CLU(EventEmitter):
     """docstring for Clu"""
-    def __init__(self, clu, clusterer=None):
+    def __init__(self, clu, clusterer=None, treeinfo=None):
         super(CLU, self).__init__()
         self.membership = clu.copy()
         if clusterer:
             self._extra_info = self._extract_extra_info(clusterer)       
             self._select_clusters = self._extra_info['default_select_clusters']
+        if treeinfo:
+            self._extra_info = treeinfo
+            self._select_clusters = treeinfo['default_select_clusters']
         self.__membership = self.membership.copy()
         while min(self.membership) < 0:
             self.membership += 1
@@ -205,6 +208,12 @@ class CLU(EventEmitter):
         
         self.__construct__()
         self.emit('cluster', action = 'exchange')
+
+
+    @instack_membership
+    def delete(self, idx):
+        self.membership = np.delete(self.membership, idx)
+        self.__construct__()
 
     def fill(self, global_idx, clu_to):
         assert len(global_idx) == len(clu_to)

@@ -220,7 +220,7 @@ class probe(BaseProbe):
         prb.shanks[0].ch_group
 
     '''
-    def __init__(self, fs=25000., n_ch=160, group_len=4, prb_type=None, shank_no=None):
+    def __init__(self, fs=25000., nch=160, group_len=4, prb_type=None, shank_no=None):
         super(probe, self).__init__()
         if shank_no is not None:
             self.shanks = {}
@@ -231,8 +231,8 @@ class probe(BaseProbe):
             pass
 
         self.type = prb_type
+        self._n_ch = nch
         self._fs = fs
-        self._n_ch = n_ch
         self._group_len = group_len
         self._n_group = int(self._n_ch / self._group_len)
         
@@ -280,6 +280,21 @@ class probe(BaseProbe):
         self.prb_view = probe_view()
         self.prb_view.set_data(self, font_size=font_size)
         self.prb_view.run()
+
+
+    def save(self, filename):
+        self.n_ch = self._n_ch
+        ch_list = np.hstack((self.chs, self.mask_chs))
+        ch_dict = {}
+        ch_dict['refs'] = {"channels": [-2, -1, -1, -1]}
+        ch_dict['recording'] = {}
+        ch_dict['recording']['channels'] = 175*[False]
+        ch_dict['0'] = {}
+        ch_dict['0']['enabled'] = 175*[True]
+        ch_dict['0']['mapping'] = list(ch_list+1)
+        ch_dict['0']['reference'] = 175*[0]
+        with open(filename, 'w') as fp:
+            json.dump(ch_dict, fp, indent=4, separators=(',', ': '))
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@ import mmap
 from numba import jit
 import numexpr as ne
 import numpy as np
+import torch
 from ..utils import Timer 
 from ..utils.conf import info
 
@@ -60,7 +61,7 @@ class bload(object):
     4. (bf._npts, bf._nCh, bf._nbytes) are metadata
     '''
     
-    def __init__(self, nCh=16, fs=30000):
+    def __init__(self, nCh=160, fs=25000):
         self._nCh = nCh
         self.fs = float(fs)
 
@@ -74,6 +75,7 @@ class bload(object):
         self.dtype = dtype
         self._npts = len(self.npmm)/self._nCh #full #pts/ch
         self._nbytes = self.npmm.nbytes
+        self.data = torch.from_numpy(self.npmm)
         info("#############  load data  ###################")
         info('{0} loaded, it contains: '.format(file_name))
         info('{0} * {1} points ({2} bytes) '.format(self._npts, self._nCh, self._nbytes))
@@ -89,15 +91,17 @@ class bload(object):
 
     def asarray(self, binpoint=13):
         ne.set_num_threads(32)
-        data = np.asarray(self.npmm).reshape(-1, self._nCh)
+        data = self.data.reshape(-1, self._nCh).numpy()
         _scale = np.float32(2**binpoint)
-        return ne.evaluate('data/_scale')
+        self.data = torch.from_numpy(ne.evaluate('data/_scale'))
+        return self.data.numpy()
 
     def reorder_by_chip(self, nchips=5):
         nch_perchip = self._nCh/nchips
-        self.npmm = self.npmm.reshape(-1, nch_perchip, nchips)
-        self.npmm = self.npmm.swapaxes(1,2)
-        self.npmm = self.npmm.reshape(-1, self._nCh)
+        # self.npmm = self.npmm.reshape(-1, nch_perchip, nchips)
+        # self.npmm = self.npmm.swapaxes(1,2)
+        # self.npmm = self.npmm.reshape(-1, self._nCh)
+        self.data = self.data.reshape(-1,nch_perchip, nchips).transpose(1,2).reshape(-1, self._nCh)
         info('reordered with nchips={0} and nch_perchip={1}'.format(nchips,nch_perchip))
 
     def to_threshold(self, data, k=4.5):

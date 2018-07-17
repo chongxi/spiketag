@@ -25,6 +25,30 @@ class controller(object):
             idx = np.where(self.model.spk[self.current_group].min(axis=1).min(axis=1)>thres)[0]
             print('delete {} spikes'.format(idx.shape))
             self.delete_spk(spk_idx=idx)
+            self.recluster()
+
+        @self.view.spkview.event.connect
+        def on_clip(idx):
+            idx = np.array(idx)
+            print('delete {} spikes'.format(idx.shape))
+            self.delete_spk(spk_idx=idx)
+            self.update_view()
+
+        @self.view.spkview.event.connect
+        def on_recluster():
+            self.recluster()
+
+        @self.view.traceview.event.connect
+        def on_view_trace():
+            if self.current_group>min(self.prb.grp_dict.keys()) and self.current_group<max(self.prb.grp_dict.keys()):
+                vchs = np.hstack((self.prb[self.current_group-1], self.prb[self.current_group], self.prb[self.current_group+1]))
+            elif self.current_group == min(self.prb.grp_dict.keys()):
+                vchs = np.hstack((self.prb[self.current_group], self.prb[self.current_group+1]))
+            elif self.current_group == max(prb.grp_dict.keys()):
+                vchs = np.hstack((self.prb[self.current_group-1], self.prb[self.current_group]))
+            if len(self.view.spkview.selected_spk) == 1:
+                current_time = self.model.mua.spk_times[self.current_group][self.view.spkview.selected_spk]/self.model.mua.fs
+                self.model.mua.show(time = current_time, chs=vchs)
 
     @property
     def current_group(self):
@@ -36,15 +60,20 @@ class controller(object):
         self.show(group_id)
 
 
-
     def delete_spk(self, spk_idx):
         i = self.current_group
         self.model.mua.spk_times[i] = np.delete(self.model.mua.spk_times[i], spk_idx, axis=0)
         self.model.spk[i] = np.delete(self.model.spk[i], spk_idx, axis=0)
         self.model.fet[i] = self.model.spk._tofet(i, method='pca')
-        self.model.cluster(group_id=i, method='hdbscan', fall_off_size=self.model._fall_off_size)
-        self.update_view()
+        self.model.clu[i].delete(spk_idx)
 
+    def recluster(self, fall_off_size=None):
+        i = self.current_group
+        if fall_off_size is None:
+            self.model.cluster(group_id=i, method='hdbscan', fall_off_size=self.model._fall_off_size)
+        else:
+            self.model.cluster(group_id=i, method='hdbscan', fall_off_size=fall_off_size)
+        self.update_view()
 
     def update_view(self):
         i = self.current_group
@@ -59,8 +88,8 @@ class controller(object):
             self.view.set_data(group_id, self.model.mua, self.model.spk[group_id], self.model.fet[group_id], self.model.clu[group_id])
             self.view.show()
 
-
-
+    def save(self, filename):
+        self.model.tofile(filename)
 
 
 

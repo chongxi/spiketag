@@ -94,18 +94,17 @@ class MainModel(object):
 
         # After first time
         else:
-            self.spktag = SPKTAG()
+            self.spktag = SPKTAG(probe=self.probe)
             info('load spktag file')
             self.spktag.fromfile(spktag_filename)
             self.gtimes = self.spktag.to_gtimes()
             self.spk = self.spktag.tospk()
             self.fet = self.spktag.tofet()
             self.clu = self.spktag.toclu()
-            self.probe = self.spktag.probe
 
             info('load mua data for wave view')
-            self.mua = MUA(self.filename, self.spktag.probe, self.numbytes, self.binpoint)
-
+            self.mua = MUA(self.mua_filename, self.spk_filename, self.probe, self.numbytes, self.binpoint)
+            self.mua.spk_times = self.gtimes
             info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 
         self.groups = self.spk.spk.keys()

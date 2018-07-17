@@ -4,6 +4,7 @@ from vispy.util import keys
 from .MyWaveVisual import MyWaveVisual
 from .color_scheme import palette
 from ..utils.utils import Picker
+from ..utils import EventEmitter
 
 
 class Axis(scene.AxisWidget):
@@ -182,7 +183,8 @@ class trace_view(scene.SceneCanvas):
         self.grid2 = self.view2.add_grid(spacing=0, bgcolor=(0, 0, 0, 0), border_color='k')
         self.cross = Cross(cursor_color=self.cursor_color)
         self.timer_cursor = app.Timer(connect=self.update_cursor, interval=0.01, start=False)
-    
+        self.event = EventEmitter()
+
     def _render(self, data):
         '''
           For now,wave_visual is the best place  where store the view information,
@@ -387,3 +389,6 @@ class trace_view(scene.SceneCanvas):
             mask = self._picker.pick(self.waves1.get_gl_pos())
             selected = [i for (p,i) in self.all_pos if p in mask]
             self.clu.select(np.array(selected))
+
+    def on_mouse_double_click(self, e):
+        self.event.emit('view_trace')
