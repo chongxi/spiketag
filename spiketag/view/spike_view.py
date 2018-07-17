@@ -4,7 +4,7 @@ from collections import OrderedDict
 from phy.plot import View, base, visuals
 from vispy.util.event import Event
 from .color_scheme import palette
-from ..utils.utils import Timer
+from ..utils.utils import Timer, EventEmitter
 from ..utils import conf 
 from ..utils.conf import error, warning
 from ..base.CLU import CLU
@@ -23,7 +23,8 @@ class spike_view(View):
         self.interactive = interactive
         self._selected = {}
         self._view_lock = True
-        self.events.add(model_modified=Event)
+        self.event = EventEmitter() 
+        # self.events.add(model_modified=Event)
         
     def attach(self, gui):
         gui.add_view(self)
@@ -530,11 +531,15 @@ class spike_view(View):
                 target_clu_No = max(self.clu.index_id) + 1
                 self._move_spikes(target_clu_No)
         
-        if e.text == 'd':
+        if e.text == 'x':
             if len(self.selected_spk) > 0:
-                with Timer('[VIEW] Spikeview -- Delete spks from spk view.', verbose=conf.ENABLE_PROFILER): 
-                    self.events.model_modified(Event('delete'))
-                    self._selected = {}
+                self.event.emit('clip', idx=list(self.selected_spk))
+                # with Timer('[VIEW] Spikeview -- Delete spks from spk view.', verbose=conf.ENABLE_PROFILER): 
+                #     self.events.model_modified(Event('delete'))
+                #     self._selected = {}
+
+        if e.text == 'w':
+            self.event.emit('recluster')
 
         if e.text == 'f':
             if len(self.selected_spk) > 0:
