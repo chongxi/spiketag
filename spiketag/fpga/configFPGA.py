@@ -23,7 +23,8 @@ class xike_config(object):
         self.probe = probe
         self._offset_value = offset_value
         self._thres_value = thres_value
-        self._config_FPGA_detector()
+        self.set_channel_group()
+        self.init_FPGA_detector()
         self.transfomer_constructed = {}
         for i in range(self.probe.n_group):
             self.transfomer_constructed[i]=0
@@ -43,7 +44,13 @@ class xike_config(object):
         self.pca   =   pca_hash(nCh=ngrp, base_address=ngrp * (p_dim + 1))
         self.vq    =    vq_hash(nCh=ngrp, base_address=ngrp * (p_dim + 1 + spklen*ch_span))
 
-    def _config_FPGA_detector(self):
+    def set_channel_group(self):
+        # channel group hashing
+        self.ch_ugp = channel_hash(nCh=self._n_ch, base_address=256)
+        for ch in range(self.probe.n_ch):
+            self.ch_ugp[ch] = self.probe.ch_hash(ch)
+
+    def init_FPGA_detector(self):
         # dc offset
         write_mem_16(0, 1)
         self.dc = bram_thres.offset(nCh=self._n_ch)
@@ -52,10 +59,7 @@ class xike_config(object):
         self.thres = bram_thres.threshold(nCh=self._n_ch)
         self.thres.enable(True)
         self.thres[:] = self._thres_value
-        # channel group hashing
-        self.ch_ugp = channel_hash(nCh=self._n_ch, base_address=256)
-        for ch in range(self.probe.n_ch):
-            self.ch_ugp[ch] = self.probe.ch_hash(ch)
+
 
     def _config_FPGA_transformer(self, grpNo, P, b, a):
         self.transfomer_constructed[grpNo] = 1

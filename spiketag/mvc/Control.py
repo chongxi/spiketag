@@ -5,20 +5,27 @@ from ..base import CLU
 from ..utils import warning, conf
 from ..utils.utils import Timer
 from ..base.SPK import _transform
+from ..fpga import xike_config
 
 
 
 class controller(object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, fpga=False, *args, **kwargs):
+
         self.model = MainModel(*args, **kwargs)
         self.prb   = self.model.probe
         self.view  = MainView(self.prb)
         self.current_group = 0
 
+        if fpga is True:
+            # initialize FPGA channel grouping
+            self.fpga = xike_config(probe=self.prb, offset_value=32, thres_value=-500)
+            
         @self.view.prb.connect
         def on_select(group_id, chs):
             print(group_id, chs)
             self.current_group = group_id
+            self.show(group_id)
 
         @self.view.ampview.clip.connect
         def on_clip(thres):
@@ -57,8 +64,7 @@ class controller(object):
     @current_group.setter
     def current_group(self, group_id):
         self._current_group = group_id
-        self.show(group_id)
-
+        # self.show(group_id)
 
     def delete_spk(self, spk_idx):
         i = self.current_group
@@ -79,6 +85,8 @@ class controller(object):
         i = self.current_group
         self.view.set_data(i, self.model.mua, self.model.spk[i], self.model.fet[i], self.model.clu[i])
 
+    def sort(self):
+        self.model.sort()
 
     def show(self, group_id=None):
         if group_id is None:
@@ -92,8 +100,12 @@ class controller(object):
         self.model.tofile(filename)
 
 
-
-
+    ##### FPGA #####
+    def set_threshold(self, beta=4.0):
+        self.fpga.thres[:] = self.model.mua.get_threshold(beta)
+        for ch in self.prb.mask_chs:
+            self.fpga.thres[ch] = -5000. 
+            
 
 class Sorter(object):
 	"""docstring for Sorter"""

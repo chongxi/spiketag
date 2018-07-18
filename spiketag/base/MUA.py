@@ -7,7 +7,7 @@ from .SPK import SPK
 from .Binload import bload
 from ..utils.conf import info
 
-def _calculate_threshold(x, beta=4.0):
+def _calculate_threshold(x, beta):
     thr = -beta*np.median(abs(x)/0.6745,axis=0)
     return thr
 
@@ -62,8 +62,8 @@ class MUA(object):
         info('----------------success------------------')
         info(' ')
 
-    def get_threshold(self):
-        return _calculate_threshold(self.data[::100])
+    def get_threshold(self, beta=4.0):
+        return _calculate_threshold(self.data[::100], beta)
 
     def tofile(self, file_name, nchs, dtype=np.int32):
         data = self.data[:, nchs].astype(dtype)

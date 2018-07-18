@@ -63,35 +63,6 @@ class MainModel(object):
             info('load mua data')
             self.mua = MUA(self.mua_filename, self.spk_filename, self.probe, self.numbytes, self.binpoint)
 
-            # info('removing high corr noise from spikes pool')
-            # self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
-
-            # info('removing all spks on group which len(spks) less then fetlen')
-            # self.mua.remove_groups_under_fetlen(self._fetlen)
-            
-            info('extract spikes from pivital meta data')
-            self.spk = self.mua.tospk()
-
-            info('grouping spike time')
-            self.gtimes = self.mua.spk_times
-
-            info('extrat features with {}'.format(self.fet_method))
-            self.fet = self.spk.tofet(method=self.fet_method, 
-                                      whiten=self._fet_whiten,
-                                      ncomp=self._fetlen)
-
-            info('clustering with {}'.format(self.clu_method))
-            self.clu = self.fet.toclu(method=self.clu_method, 
-                                      fall_off_size=self._fall_off_size,
-                                      njobs=self._n_jobs)
-
-            self.spktag = SPKTAG(self.probe,
-                                 self.spk, 
-                                 self.fet, 
-                                 self.clu,
-                                 self.gtimes)
-            info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
-
         # After first time
         else:
             self.spktag = SPKTAG(probe=self.probe)
@@ -107,7 +78,39 @@ class MainModel(object):
             self.mua.spk_times = self.gtimes
             info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 
-        self.groups = self.spk.spk.keys()
+        self.groups = self.probe.grp_dict.keys()
+
+
+    def sort(self):
+        # info('removing high corr noise from spikes pool')
+        # self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
+
+        # info('removing all spks on group which len(spks) less then fetlen')
+        # self.mua.remove_groups_under_fetlen(self._fetlen)
+        
+        info('extract spikes from pivital meta data')
+        self.spk = self.mua.tospk()
+
+        info('grouping spike time')
+        self.gtimes = self.mua.spk_times
+
+        info('extrat features with {}'.format(self.fet_method))
+        self.fet = self.spk.tofet(method=self.fet_method, 
+                                  whiten=self._fet_whiten,
+                                  ncomp=self._fetlen)
+
+        info('clustering with {}'.format(self.clu_method))
+        self.clu = self.fet.toclu(method=self.clu_method, 
+                                  fall_off_size=self._fall_off_size,
+                                  njobs=self._n_jobs)
+
+        self.spktag = SPKTAG(self.probe,
+                             self.spk, 
+                             self.fet, 
+                             self.clu,
+                             self.gtimes)
+        info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
+
 
     def cluster(self, method='hdbscan', *args, **kwargs):
         group_id = kwargs['group_id'] if 'group_id' in kwargs.keys() else None
