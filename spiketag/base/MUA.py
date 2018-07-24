@@ -95,7 +95,9 @@ class MUA(object):
                                       prelen = self.prelen,
                                       cutoff_neg = self.cutoff_neg,
                                       cutoff_pos = self.cutoff_pos)
-                info('dlete {} spks via cutoff'.format(noise_idx.shape[0]))
+                n_noise = float(noise_idx.shape[0])
+                n_spk   = float(spks.shape[0])
+                info('group {} delete {}%({}/{}) spks via cutoff'.format(g, n_noise/n_spk*100, n_noise, n_spk))
                 spkdict[g] = np.delete(spks, noise_idx, axis=0)
                 self.spk_times[g] = np.delete(self.spk_times[g], noise_idx, axis=0)
         info('----------------success------------------')     
