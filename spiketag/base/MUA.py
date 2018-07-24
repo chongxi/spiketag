@@ -11,19 +11,27 @@ def _calculate_threshold(x, beta):
     thr = -beta*np.median(abs(x)/0.6745,axis=0)
     return thr
 
-@jit(cache=True, nopython=True)
-def _to_spk(data, pos, chlist, spklen=19, prelen=8):
+
+
+@jit(cache=True)
+def _to_spk(data, pos, chlist, spklen=19, prelen=8, cutoff_neg=-1000, cutoff_pos=1000):
     n = len(pos)
     spk = np.empty((n, spklen, len(chlist)), dtype=np.float32)
+    noise_idx = []
     for i in range(n):
         # i spike in chlist
-        spk[i, ...]  = data[pos[i]-prelen+2:pos[i]-prelen+spklen+2, chlist]
+        spike_wav  = data[pos[i]-prelen+2:pos[i]-prelen+spklen+2, chlist]
+        spk[i, ...] = spike_wav
+        if max(spike_wav.ravel())>cutoff_pos or min(spike_wav.ravel())<cutoff_neg:
+            noise_idx.append(i)
     _nan = np.where(chlist==-1)[0]
     spk[..., _nan] = 0
-    return spk
+    return spk, np.array(noise_idx)
+
+
 
 class MUA(object):
-    def __init__(self, mua_filename, spk_filename, probe, numbytes=4, binary_radix=13):
+    def __init__(self, mua_filename, spk_filename, probe, numbytes=4, binary_radix=13, cutoff=[-1500, 1000]):
         
         self.nCh = probe.n_ch
         self.fs  = probe.fs*1.0
@@ -41,6 +49,8 @@ class MUA(object):
         self.npts = self.bf._npts
         self.spklen = 19
         self.prelen = 9 
+        self.cutoff_neg, self.cutoff_pos = cutoff[0], cutoff[1]
+
 
         # acquire pivotal_pos from spk.bin under same folder
         foldername = '/'.join(self.mua_file.split('/')[:-1])+'/'
@@ -78,11 +88,16 @@ class MUA(object):
             pivotal_chs = self.probe.grp_dict[g]
             self.spk_times[g] = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
             if len(self.spk_times[g]) > 0:
-                spkdict[g] = _to_spk( data   = self.data, 
+                spks, noise_idx = _to_spk( data   = self.data, 
                                       pos    = self.spk_times[g], 
                                       chlist = self.probe[g], 
                                       spklen = self.spklen,
-                                      prelen = self.prelen)
+                                      prelen = self.prelen,
+                                      cutoff_neg = self.cutoff_neg,
+                                      cutoff_pos = self.cutoff_pos)
+                info('dlete {} spks via cutoff'.format(noise_idx.shape[0]))
+                spkdict[g] = np.delete(spks, noise_idx, axis=0)
+                self.spk_times[g] = np.delete(self.spk_times[g], noise_idx, axis=0)
         info('----------------success------------------')     
         info(' ')               
         return SPK(spkdict)
