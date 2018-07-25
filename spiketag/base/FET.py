@@ -81,6 +81,7 @@ class FET(object):
             # automatic pool clustering
             if group_id is None:
                 if njobs!=1:
+                    info('clustering start with {} cpus'.format(njobs))
                     tic = time()
                     pool = Pool(njobs)
                     _clu = pool.map(self._toclu, self.group)
@@ -92,6 +93,7 @@ class FET(object):
                     for _group_id, __clu in zip(self.group, _clu):
                         clu[_group_id] = __clu
                 else:
+                    info('clustering start with {} cpus'.format(1))
                     tic = time()
                     for group_id in self.group:
                         clusterer = hdbcluster.fit(self.fet[group_id])

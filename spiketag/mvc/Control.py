@@ -66,6 +66,11 @@ class controller(object):
         self._current_group = group_id
         # self.show(group_id)
 
+    def get_spk_times(self, group_id, cluster_id):
+        idx = self.model.clu[group_id][cluster_id]
+        spk_times = self.model.gtimes[group_id][idx]/float(self.model.mua.fs)
+        return spk_times
+
     def delete_spk(self, spk_idx):
         i = self.current_group
         self.model.mua.spk_times[i] = np.delete(self.model.mua.spk_times[i], spk_idx, axis=0)

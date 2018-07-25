@@ -128,5 +128,9 @@ class MainView(QWidget):
         self.ampview.set_data(spk, clu, mua.spk_times[group_id])
         self.treeview.set_data(clu) 
         self.traceview.set_data(mua.data[:,chs], clu, mua.spk_times[group_id])
-        self.corview.set_data(clu, mua.spk_times[group_id])
+        try:
+            self.corview.set_data(clu, mua.spk_times[group_id])
+        except Exception as e:
+            pass
+        
 #         self.traceview.locate_buffer = 2000
