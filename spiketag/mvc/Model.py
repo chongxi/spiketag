@@ -23,7 +23,8 @@ class MainModel(object):
     def __init__(self, mua_filename, spk_filename, probe=None, spktag_filename=None, 
                  numbytes=4, binary_radix=13, spklen=19, corr_cutoff=0.9, cutoff=[-1500, 1000],
                  fet_method='weighted-pca', fetlen=6, fet_whiten=False,
-                 clu_method='hdbscan', fall_off_size=18, n_jobs=24):
+                 clu_method='hdbscan', fall_off_size=18, n_jobs=24,
+                 time_segs=None):
 
         # raw recording param
         self.mua_filename = mua_filename
@@ -37,6 +38,7 @@ class MainModel(object):
         self._corr_cutoff = corr_cutoff
         self._spklen = spklen 
         self._cutoff = cutoff
+        self._time_segs = time_segs
 
         # fet param
         self.fet_method = fet_method
@@ -63,7 +65,7 @@ class MainModel(object):
 
             info('load mua data')
             self.mua = MUA(self.mua_filename, self.spk_filename, self.probe, self.numbytes, self.binpoint,
-                           self._cutoff)
+                           self._cutoff, self._time_segs)
 
         # After first time
         else:
@@ -77,7 +79,7 @@ class MainModel(object):
 
             info('load mua data for wave view')
             self.mua = MUA(self.mua_filename, self.spk_filename, self.probe, self.numbytes, self.binpoint,
-                           self._cutoff)
+                           self._cutoff, self._time_segs)
             self.mua.spk_times = self.gtimes
             info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 

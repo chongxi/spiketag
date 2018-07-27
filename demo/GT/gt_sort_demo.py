@@ -25,12 +25,17 @@ tritrode.reorder_by_chip=False
 
 
 def sort():
-    ctrl = controller(probe = tritrode,
+    ctrl = controller(
+                      probe = tritrode,
                       mua_filename='./cell_0109.bin', 
                       spk_filename='./cell_0109.spk.bin', 
-                      binary_radix=11, cutoff=[-100, 100])
+                      binary_radix=11, 
+                      cutoff=[-100, 100],
+                      time_segs=[[0, 40], [100., 200.]]
+                     )
     ctrl.sort()
     ctrl.show()
+
 
 if __name__ == '__main__':
     app  = QApplication(sys.argv)

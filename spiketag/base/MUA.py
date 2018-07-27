@@ -12,6 +12,13 @@ def _calculate_threshold(x, beta):
     return thr
 
 
+def find_spk_in_time_seg(spk_times, time_segs):
+    spk_times_in_range = []
+    for time_seg in time_segs:
+        spk_in_time_seg = spk_times[np.logical_and(spk_times<time_seg[1], spk_times>time_seg[0])]
+        spk_times_in_range.append(spk_in_time_seg)
+    return np.hstack(np.array(spk_times_in_range))
+
 
 @jit(cache=True)
 def _to_spk(data, pos, chlist, spklen=19, prelen=8, cutoff_neg=-1000, cutoff_pos=1000):
@@ -31,8 +38,16 @@ def _to_spk(data, pos, chlist, spklen=19, prelen=8, cutoff_neg=-1000, cutoff_pos
 
 
 class MUA(object):
-    def __init__(self, mua_filename, spk_filename, probe, numbytes=4, binary_radix=13, cutoff=[-1500, 1000]):
-        
+    def __init__(self, mua_filename, spk_filename, probe, numbytes=4, binary_radix=13, cutoff=[-1500, 1000], time_segs=None):
+        '''
+        mua_filename:
+        spk_filename:
+        probe:
+        numbytes:
+        binary_radix:
+        cutoff: [a, b] is voltage range for the pivotal peak. Value < a or Value > b will be filtered
+        time_segs: [[a,b],[c,d]] The time segments for extracting spikes for sorting (unit in seconds) 
+        ''' 
         self.nCh = probe.n_ch
         self.fs  = probe.fs*1.0
         self.probe = probe
@@ -50,6 +65,7 @@ class MUA(object):
         self.spklen = 19
         self.prelen = 9 
         self.cutoff_neg, self.cutoff_pos = cutoff[0], cutoff[1]
+        self.time_segs = np.array(time_segs)
 
 
         # acquire pivotal_pos from spk.bin under same folder
@@ -86,15 +102,17 @@ class MUA(object):
         for g in self.probe.grp_dict.keys():
             # pivotal_chs = self.probe.fetch_pivotal_chs(g)
             pivotal_chs = self.probe.grp_dict[g]
-            self.spk_times[g] = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
+            spk_times = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
+            spk_times_for_sorting = find_spk_in_time_seg(spk_times, self.time_segs*self.fs)
+            self.spk_times[g] = spk_times_for_sorting
             if len(self.spk_times[g]) > 0:
-                spks, noise_idx = _to_spk( data   = self.data, 
-                                      pos    = self.spk_times[g], 
-                                      chlist = self.probe[g], 
-                                      spklen = self.spklen,
-                                      prelen = self.prelen,
-                                      cutoff_neg = self.cutoff_neg,
-                                      cutoff_pos = self.cutoff_pos)
+                spks, noise_idx = _to_spk(data   = self.data, 
+                                          pos    = self.spk_times[g], 
+                                          chlist = self.probe[g], 
+                                          spklen = self.spklen,
+                                          prelen = self.prelen,
+                                          cutoff_neg = self.cutoff_neg,
+                                          cutoff_pos = self.cutoff_pos)
                 n_noise = float(noise_idx.shape[0])
                 n_spk   = float(spks.shape[0])
                 info('group {} delete {}%({}/{}) spks via cutoff'.format(g, n_noise/n_spk*100, n_noise, n_spk))
