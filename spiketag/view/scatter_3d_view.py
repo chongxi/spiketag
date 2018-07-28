@@ -39,6 +39,7 @@ class scatter_3d_view(scene.SceneCanvas):
         self._noise_toggle = False
         self.mode = ''
         self.dimension = None
+        self.dimension_text = scene.visuals.Text(parent=self.scene)
         self.debug = debug
         # Add a 3D axis to keep us oriented
         scene.visuals.XYZAxis(parent=self.view.scene)
@@ -96,6 +97,7 @@ class scatter_3d_view(scene.SceneCanvas):
     def set_dimension(self, dimension):
         self.dimension = dimension
         self._render()
+        self.mode = ''
 
     def _render(self):
         #######################################################
@@ -123,6 +125,10 @@ class scatter_3d_view(scene.SceneCanvas):
             self.dimension = [0,1,2]
         self.scatter.set_data(self.fet[:, self.dimension], size=self._size, edge_color=self.color, face_color=self.color)
 
+        self.dimension_text.text = str(self.dimension) 
+        self.dimension_text.pos  = np.array([20,10])
+        self.dimension_text.color = (1,1,1,0.5) 
+        self.dimension_text.font_size = 5 
 
     def _stream_in_data(self, fet, clu=None):
         stream_size = fet.shape[0]
@@ -271,16 +277,13 @@ class scatter_3d_view(scene.SceneCanvas):
         if e.text == 'd':
             self.mode = 'dimension'
             self.dimension = []
-            print self.mode
-            print self.dimension
 
         if self.mode == 'dimension':
-            print e.text
             if e.text.isdigit() and len(self.dimension)<3:
                 self.dimension.append(int(e.text))
+                self.dimension_text.text = str(self.dimension) 
                 if len(self.dimension)==3:
                     self.set_dimension(self.dimension)
-                print self.dimension
 
 
         if self.mode != 'dimension':
