@@ -25,6 +25,7 @@ class CLU(EventEmitter):
             self.membership += 1
         self._membership_stack = []
         self.__construct__()
+        self.selectlist = np.array([])
 
     def __construct__(self):
         '''

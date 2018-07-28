@@ -36,6 +36,7 @@ class scatter_3d_view(scene.SceneCanvas):
         self._picker = Picker(self.scene,self.scatter.node_transform(self.view))
         self.key_option = 0
 
+        self._noise_toggle = False
         self.debug = debug
         # Add a 3D axis to keep us oriented
         scene.visuals.XYZAxis(parent=self.view.scene)
@@ -227,7 +228,6 @@ class scatter_3d_view(scene.SceneCanvas):
                 self._picker.origin_point(e.pos)
 
 
-
     def on_mouse_move(self, e):
         if keys.CONTROL in e.modifiers and e.is_dragging:
             if self.key_option == '1':
@@ -235,19 +235,41 @@ class scatter_3d_view(scene.SceneCanvas):
             if self.key_option == '2':
                 self._picker.cast_net(e.pos,ptype='lasso')
 
+
     def on_mouse_release(self,e):
         if keys.CONTROL in e.modifiers and e.is_dragging:
             if self.key_option in ['1','2']:
-                mask = self._picker.pick(self.fet[:, :3])
+                if self.clu.selectlist.shape[0]==0:
+                    mask = self._picker.pick(self.fet[:, :3])
+                elif self.clu.selectlist.shape[0]>0:
+                    mask = self._picker.pick(self.fet[:, :3])
+                    mask = np.intersect1d(mask, self.clu.selectlist)
                 self.highlight(mask)
                 self.clu.select(mask)
 
+
+    def toggle_noise_clu(self):
+        if self._noise_toggle == False:
+            self.color[self.clu[0],-1] = 0.02
+            self._update()
+            self._noise_toggle = True
+        elif self._noise_toggle == True:
+            self.color[self.clu[0],-1] = self._transparency
+            self._update()
+            self._noise_toggle = False
+
+
     def on_key_press(self, e):
+        if e.text == 'c':
+            self.clu.select(np.array([]))
+        if e.text == 'e':
+            self.toggle_noise_clu()
         if keys.CONTROL in e.modifiers and not self._control_transparency:
             self.view.events.mouse_wheel.disconnect(self.view.camera
                     .viewbox_mouse_event)
             self._control_transparency = not self._control_transparency 
         self.key_option = e.key.name
+
 
     def on_key_release(self, e):
         if self._control_transparency:
