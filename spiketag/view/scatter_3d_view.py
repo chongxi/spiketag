@@ -37,6 +37,8 @@ class scatter_3d_view(scene.SceneCanvas):
         self.key_option = 0
 
         self._noise_toggle = False
+        self.mode = ''
+        self.dimension = None
         self.debug = debug
         # Add a 3D axis to keep us oriented
         scene.visuals.XYZAxis(parent=self.view.scene)
@@ -91,6 +93,10 @@ class scatter_3d_view(scene.SceneCanvas):
             self.highlight(self.clu.selectlist)
 
 
+    def set_dimension(self, dimension):
+        self.dimension = dimension
+        self._render()
+
     def _render(self):
         #######################################################
         ### step1: set the color for clustering
@@ -113,7 +119,9 @@ class scatter_3d_view(scene.SceneCanvas):
         self._cache_mask_ = np.array([])
         self._cache_color = self.color.copy()
         # TODO: add functionality to change :3 to input specific 3 dims
-        self.scatter.set_data(self.fet[:, :3], size=self._size, edge_color=self.color, face_color=self.color)
+        if self.dimension is None:
+            self.dimension = [0,1,2]
+        self.scatter.set_data(self.fet[:, self.dimension], size=self._size, edge_color=self.color, face_color=self.color)
 
 
     def _stream_in_data(self, fet, clu=None):
@@ -260,10 +268,28 @@ class scatter_3d_view(scene.SceneCanvas):
 
 
     def on_key_press(self, e):
-        if e.text == 'c':
-            self.clu.select(np.array([]))
-        if e.text == 'e':
-            self.toggle_noise_clu()
+        if e.text == 'd':
+            self.mode = 'dimension'
+            self.dimension = []
+            print self.mode
+            print self.dimension
+
+        if self.mode == 'dimension':
+            print e.text
+            if e.text.isdigit() and len(self.dimension)<3:
+                self.dimension.append(int(e.text))
+                if len(self.dimension)==3:
+                    self.set_dimension(self.dimension)
+                print self.dimension
+
+
+        if self.mode != 'dimension':
+            if e.text == 'c':
+                self.clu.select(np.array([]))
+            if e.text == 'e':
+                self.toggle_noise_clu()
+
+
         if keys.CONTROL in e.modifiers and not self._control_transparency:
             self.view.events.mouse_wheel.disconnect(self.view.camera
                     .viewbox_mouse_event)

@@ -120,11 +120,13 @@ class MainView(QWidget):
         
         chs = self.prb[group_id]
         self.spkview.set_data(spk, clu)
-        self.fetview0.set_data(fet[:,[0,1,2]].copy(), clu)
-        if fet.shape[1]>3:
-            self.fetview1.set_data(fet[:,[0,1,3]].copy(), clu)
-        else:
-            self.fetview0.set_data(fet[:,[0,1,2]].copy(), clu)   
+        # self.fetview0.set_data(fet, clu)
+        # if fet.shape[1]>3:
+        self.fetview0.dimension = [0,1,2]
+        self.fetview0.set_data(fet, clu)   #[:,[0,1,2]].copy()
+        self.fetview1.dimension = [0,1,3]
+        self.fetview1.set_data(fet, clu)   #[:,[0,1,3]].copy()
+        # else:
         self.ampview.set_data(spk, clu, mua.spk_times[group_id])
         self.treeview.set_data(clu) 
         self.traceview.set_data(mua.data[:,chs], clu, mua.spk_times[group_id])
