@@ -113,6 +113,8 @@ class spike_view(View):
         def on_select(*args, **kwargs):
             self._selected = self.clu.global2local(self.clu.selectlist)
             self.highlight(self._selected, external=True)
+            if self.clu.selectlist.shape[0]>0:
+                self.view_lock = True
 
     def render(self, update=False):
 
