@@ -254,9 +254,9 @@ class scatter_3d_view(scene.SceneCanvas):
         if keys.CONTROL in e.modifiers and e.is_dragging:
             if self.key_option in ['1','2']:
                 if self.clu.selectlist.shape[0]==0:
-                    mask = self._picker.pick(self.fet[:, :3])
+                    mask = self._picker.pick(self.fet[:, self.dimension])
                 elif self.clu.selectlist.shape[0]>0:
-                    mask = self._picker.pick(self.fet[:, :3])
+                    mask = self._picker.pick(self.fet[:, self.dimension])
                     mask = np.intersect1d(mask, self.clu.selectlist)
                 self.highlight(mask)
                 self.clu.select(mask)
