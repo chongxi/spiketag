@@ -65,7 +65,10 @@ class MUA(object):
         self.spklen = 19
         self.prelen = 9 
         self.cutoff_neg, self.cutoff_pos = cutoff[0], cutoff[1]
-        self.time_segs = np.array(time_segs)
+        if time_segs is None:
+            self.time_segs = np.array([[self.t[0], self.t[-1]]])
+        else:
+            self.time_segs = np.array(time_segs)
 
 
         # acquire pivotal_pos from spk.bin under same folder

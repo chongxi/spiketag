@@ -31,7 +31,8 @@ def sort():
                       spk_filename='./cell_0109.spk.bin', 
                       binary_radix=11, 
                       cutoff=[-100, 100],
-                      time_segs=[[0, 40], [100., 200.]]
+                      # time_segs=[[0,320]],
+                      fall_off_size=15
                      )
     ctrl.sort()
     ctrl.show()
