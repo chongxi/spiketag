@@ -105,6 +105,9 @@ class controller(object):
         self.model.tofile(filename)
 
 
+    
+
+
     ##### FPGA #####
     def set_threshold(self, beta=4.0):
         self.fpga.thres[:] = self.model.mua.get_threshold(beta)
