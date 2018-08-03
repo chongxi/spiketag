@@ -6,7 +6,7 @@ from ..utils import warning, conf
 from ..utils.utils import Timer
 from ..base.SPK import _transform
 from ..fpga import xike_config
-
+from ..analysis.place_field import place_field
 
 
 class controller(object):
@@ -16,6 +16,9 @@ class controller(object):
         self.prb   = self.model.probe
         self.view  = MainView(self.prb)
         self.current_group = 0
+        self.fields = {}
+        for group_id in range(self.n_group):
+            self.fields[group_id] = {}
 
         if fpga is True:
             # initialize FPGA channel grouping
@@ -66,7 +69,21 @@ class controller(object):
         self._current_group = group_id
         # self.show(group_id)
 
-    def get_spk_times(self, group_id, cluster_id):
+    @property
+    def n_group(self):
+        return len(self.prb.grp_dict.keys())
+
+    @property
+    def spk_times(self):
+        self._spk_times = {}
+        for group_id in range(self.n_group):
+            self._spk_times[group_id] = {}
+            for clu_id in self.model.clu[group_id].index.keys():
+                self._spk_times[group_id][clu_id] = self.get_spk_times(group_id, i)
+
+    def get_spk_times(self, group_id=-1, cluster_id=1):
+        if group_id==-1:
+            group_id = self.current_group
         idx = self.model.clu[group_id][cluster_id]
         spk_times = self.model.gtimes[group_id][idx]/float(self.model.mua.fs)
         return spk_times
@@ -105,7 +122,22 @@ class controller(object):
         self.model.tofile(filename)
 
 
-    
+    #### Analysis ####
+    # def load_logfile(self, logfile, session_id=0, v_cutoff=5):
+    #     self.pc = place_field(logfile=logfile, session_id=session_id, v_cutoff=v_cutoff)
+
+
+    def get_fields(self, group_id=-1, kernlen=21, std=3):
+        if group_id == -1:
+            group_id = self.current_group
+        spk_time = {}
+        for clu_id in self.model.clu[group_id].index.keys():
+            spk_time[clu_id] = self.get_spk_times(group_id, clu_id)
+        self.model.pc.get_fields(spk_time, kernlen, std)
+        self.fields[group_id] = self.model.pc.fields
+
+    def plot_fields(self, N=4, size=3):
+        self.model.pc.plot_fields(N, size)
 
 
     ##### FPGA #####

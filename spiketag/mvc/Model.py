@@ -5,6 +5,7 @@ from ..base import *
 from ..utils.conf import info 
 from ..utils import conf
 from ..utils.utils import Timer
+from ..analysis.place_field import place_field
 
 
 class MainModel(object):
@@ -24,7 +25,8 @@ class MainModel(object):
                  numbytes=4, binary_radix=13, spklen=19, corr_cutoff=0.9, cutoff=[-1500, 1000],
                  fet_method='weighted-pca', fetlen=6, fet_whiten=False,
                  clu_method='hdbscan', fall_off_size=18, n_jobs=24,
-                 time_segs=None):
+                 time_segs=None,
+                 playground_log=None, session_id=0, v_cutoff=5):
 
         # raw recording param
         self.mua_filename = mua_filename
@@ -49,6 +51,13 @@ class MainModel(object):
         self.clu_method = clu_method
         self._fall_off_size = fall_off_size
         self._n_jobs = n_jobs
+
+        # playground log
+        if playground_log is not None:
+            self.pc = place_field(logfile=playground_log, session_id=session_id, v_cutoff=v_cutoff)
+            self.ts, self.pos = self.pc.ts, self.pc.pos
+            self.v_smoothed, self.v = self.pc.v_smoothed, self.pc.v
+            self.v_still_idx = self.pc.v_still_idx
 
         self._model_init_(self.spktag_filename)
 
