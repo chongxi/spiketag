@@ -53,11 +53,13 @@ class MainModel(object):
         self._n_jobs = n_jobs
 
         # playground log
+        self.time_still = None
         if playground_log is not None:
             self.pc = place_field(logfile=playground_log, session_id=session_id, v_cutoff=v_cutoff)
             self.ts, self.pos = self.pc.ts, self.pc.pos
             self.v_smoothed, self.v = self.pc.v_smoothed, self.pc.v
             self.v_still_idx = self.pc.v_still_idx
+            self.time_still = self.ts[self.v_still_idx] 
 
         self._model_init_(self.spktag_filename)
 
@@ -74,7 +76,7 @@ class MainModel(object):
 
             info('load mua data')
             self.mua = MUA(self.mua_filename, self.spk_filename, self.probe, self.numbytes, self.binpoint,
-                           self._cutoff, self._time_segs)
+                           self._cutoff, self._time_segs, self.time_still)
 
         # After first time
         else:
@@ -88,7 +90,7 @@ class MainModel(object):
 
             info('load mua data for wave view')
             self.mua = MUA(self.mua_filename, self.spk_filename, self.probe, self.numbytes, self.binpoint,
-                           self._cutoff, self._time_segs)
+                           self._cutoff, self._time_segs, self.time_still)
             self.mua.spk_times = self.gtimes
             info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 
