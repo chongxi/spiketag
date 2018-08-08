@@ -7,6 +7,9 @@ import torch
 from ..utils import Timer, interpNd
 from ..utils.conf import info
 from ..view import wave_view
+# from numpy.fft import fft, ifft
+from torch import rfft, irfft
+
 
 
 def fs2t(N, fs):
@@ -14,6 +17,21 @@ def fs2t(N, fs):
     t = np.arange(0, N*dt, dt)
     return t
 
+def fft(x):
+    fx = rfft(torch.from_numpy(x), 1, onesided=False)
+    return fx[:,0].numpy() + fx[:,1].numpy()*1j
+
+def ifft(complex_x):
+    x = np.vstack((complex_x.real, complex_x.imag)).T
+    ifx = irfft(torch.from_numpy(x), 1, onesided=False)
+    return ifx.numpy()
+
+def _deconvolve(signal, kernel):
+    length = len(signal) - len(kernel) + 1
+    kernel = np.hstack((kernel, np.zeros(len(signal) - len(kernel), dtype=np.float32))) # zero pad the kernel to same length
+    H = fft(kernel)
+    deconvolved = np.real(ifft(fft(signal)*np.conj(H)/(H*np.conj(H))))
+    return deconvolved[:length]
 
 def memory_map(filename, access=mmap.ACCESS_WRITE):
     size = os.path.getsize(filename)
@@ -98,12 +116,14 @@ class bload(object):
     def __repr__(self):
         return self.info0 + self.info1 + self.info2 + self.info3
 
+
     def asarray(self, binpoint=13):
         ne.set_num_threads(32)
         data = self.data.reshape(-1, self._nCh).numpy()
         _scale = np.float32(2**binpoint)
         self.data = torch.from_numpy(ne.evaluate('data/_scale'))
         return self.data.numpy()
+
 
     def reorder_by_chip(self, nchips=5):
         nch_perchip = self._nCh/nchips
@@ -113,13 +133,38 @@ class bload(object):
         self.data = self.data.reshape(-1,nch_perchip, nchips).transpose(1,2).reshape(-1, self._nCh)
         info('reordered with nchips={0} and nch_perchip={1}'.format(nchips,nch_perchip))
 
+
     def resample(self, new_fs):
         self.data = torch.from_numpy(interpNd(self.data.numpy().reshape(-1, self._nCh), self.fs, new_fs, method='quadratic'))
         self.fs = new_fs
 
+
     def show(self):
-        self.wview = wave_view(data=self.data.numpy().reshape(-1, self._nCh), fs=self.fs)
+        if type(self.data) != np.ndarray:
+            self.wview = wave_view(data=self.data.numpy().reshape(-1, self._nCh), fs=self.fs)
+        else:
+            self.wview = wave_view(data=self.data.reshape(-1, self._nCh), fs=self.fs)
         self.wview.show()
+
+
+    def convolve(self, kernel):
+        data = self.data.numpy().reshape(-1, self._nCh)
+        new_data = []
+        for datum in data.T:
+            new_data.append(np.convolve(datum, kernel))
+        self.data = np.vstack((new_data)).T
+
+
+    def deconvolve(self, kernel):
+        if type(self.data) != np.ndarray:
+            self.data = self.data.numpy().reshape(-1, self._nCh)
+        length = self.data.shape[0] - len(kernel) + 1
+        new_data = np.zeros((length, self.data.shape[1]), dtype=np.float32)
+        # print(new_data.shape)
+        for i in range(self.data.shape[1]):
+            print('deconvolve {}th channel'.format(i))
+            new_data[:, i] = _deconvolve(self.data[:,i], kernel)
+        self.data = new_data
 
 
     def to_threshold(self, data, k=4.5):
