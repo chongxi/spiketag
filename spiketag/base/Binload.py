@@ -4,8 +4,16 @@ from numba import jit
 import numexpr as ne
 import numpy as np
 import torch
-from ..utils import Timer 
+from ..utils import Timer, interpNd
 from ..utils.conf import info
+from ..view import wave_view
+
+
+def fs2t(N, fs):
+    dt = 1./fs
+    t = np.arange(0, N*dt, dt)
+    return t
+
 
 def memory_map(filename, access=mmap.ACCESS_WRITE):
     size = os.path.getsize(filename)
@@ -75,6 +83,7 @@ class bload(object):
         self.dtype = dtype
         self._npts = len(self.npmm)/self._nCh #full #pts/ch
         self._nbytes = self.npmm.nbytes
+        self.t = fs2t(self._npts, self.fs)
         self.data = torch.from_numpy(self.npmm)
         info("#############  load data  ###################")
         info('{0} loaded, it contains: '.format(file_name))
@@ -83,8 +92,8 @@ class bload(object):
         info('{0:.3f} secs ({1:.3f} mins) of data'.format(self._npts/self.fs, self._npts/self.fs/60))
         info("#############################################")
 
-        dt = 1/self.fs
-        self.t = np.linspace(0,self._npts*dt,self._npts,endpoint='false')
+        # dt = 1/self.fs
+        # self.t = np.linspace(0,self._npts*dt,self._npts,endpoint='false')
 
     def __repr__(self):
         return self.info0 + self.info1 + self.info2 + self.info3
@@ -103,6 +112,15 @@ class bload(object):
         # self.npmm = self.npmm.reshape(-1, self._nCh)
         self.data = self.data.reshape(-1,nch_perchip, nchips).transpose(1,2).reshape(-1, self._nCh)
         info('reordered with nchips={0} and nch_perchip={1}'.format(nchips,nch_perchip))
+
+    def resample(self, new_fs):
+        self.data = torch.from_numpy(interpNd(self.data.numpy().reshape(-1, self._nCh), self.fs, new_fs, method='quadratic'))
+        self.fs = new_fs
+
+    def show(self):
+        self.wview = wave_view(data=self.data.numpy().reshape(-1, self._nCh), fs=self.fs)
+        self.wview.show()
+
 
     def to_threshold(self, data, k=4.5):
         # QQ threshold for spike detection

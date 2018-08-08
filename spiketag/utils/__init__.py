@@ -3,6 +3,13 @@ from .cameras import YSyncCamera
 from conf import logger, debug, info, warning, error, critical
 import conf 
 import numpy as np
+from scipy.interpolate import interp1d
+
+
+def fs2t(N, fs):
+    dt = 1./fs
+    t = np.arange(0, N*dt, dt)
+    return t
 
 
 def inNd(a, b, axis=0, assume_unique=False):
@@ -36,3 +43,14 @@ def inNd(a, b, axis=0, assume_unique=False):
     # print a.shape
     # print b.shape
     return np.in1d(a, b, assume_unique)
+
+
+def interpNd(data, fs_old, fs_new, method='quadratic'):
+    N = data.shape[0]
+    t = fs2t(N, fs_old)
+    new_t = np.arange(0, t[-1], 1/fs_new)
+    new_data = []
+    for datum in data.T:
+        f = interp1d(t, datum, method)
+        new_data.append(f(new_t))
+    return np.vstack((new_data)).T

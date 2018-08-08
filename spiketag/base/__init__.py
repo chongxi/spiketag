@@ -3,8 +3,11 @@ from .SPK import SPK
 from .FET import FET
 from .CLU import CLU
 from .SPKTAG import SPKTAG
-from .Binload import bload
+from .Binload import fs2t, bload
 from .Probe import probe
+
+
+
 
 #######################################################################
 # This is just a patch for multiprocessing 
