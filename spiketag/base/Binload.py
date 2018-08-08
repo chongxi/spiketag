@@ -138,11 +138,17 @@ class bload(object):
         self.fs = new_fs
 
 
-    def show(self):
+    def show(self, chs=None):
         if type(self.data) != np.ndarray:
-            self.wview = wave_view(data=self.data.numpy().reshape(-1, self._nCh), fs=self.fs)
+            if chs is not None:
+                self.wview = wave_view(data=self.data.numpy().reshape(-1, self._nCh), fs=self.fs, chs=chs)
+            else:
+                self.wview = wave_view(data=self.data.numpy().reshape(-1, self._nCh), fs=self.fs)
         else:
-            self.wview = wave_view(data=self.data.reshape(-1, self._nCh), fs=self.fs)
+            if chs is not None:
+                self.wview = wave_view(data=self.data.numpy().reshape(-1, self._nCh), fs=self.fs, chs=chs)
+            else:
+                self.wview = wave_view(data=self.data.numpy().reshape(-1, self._nCh), fs=self.fs)
         self.wview.show()
 
 

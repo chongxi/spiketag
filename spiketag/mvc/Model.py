@@ -75,8 +75,15 @@ class MainModel(object):
         if spktag_filename is None:
 
             info('load mua data')
-            self.mua = MUA(self.mua_filename, self.spk_filename, self.probe, self.numbytes, self.binpoint,
-                           self._cutoff, self._time_segs, self.time_still)
+            self.mua = MUA(probe        = self.probe,
+                           mua_filename = self.mua_filename, 
+                           spk_filename = self.spk_filename, 
+                           numbytes     = self.numbytes, 
+                           binary_radix = self.binpoint,
+                           cutoff       = self._cutoff, 
+                           time_segs    = self._time_segs, 
+                           time_still   = self.time_still,
+                           lfp          = False)
 
         # After first time
         else:
@@ -89,8 +96,15 @@ class MainModel(object):
             self.clu = self.spktag.toclu()
 
             info('load mua data for wave view')
-            self.mua = MUA(self.mua_filename, self.spk_filename, self.probe, self.numbytes, self.binpoint,
-                           self._cutoff, self._time_segs, self.time_still)
+            self.mua = MUA(probe        = self.probe,
+                           mua_filename = self.mua_filename, 
+                           spk_filename = self.spk_filename, 
+                           numbytes     = self.numbytes, 
+                           binary_radix = self.binpoint,
+                           cutoff       = self._cutoff, 
+                           time_segs    = self._time_segs, 
+                           time_still   = self.time_still,
+                           lfp          = False)
             self.mua.spk_times = self.gtimes
             info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 

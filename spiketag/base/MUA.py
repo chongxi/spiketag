@@ -46,7 +46,7 @@ def idx_still_spike(time_spike, time_still, dt):
 
 class MUA(object):
     def __init__(self, mua_filename, spk_filename, probe, numbytes=4, binary_radix=13, 
-                 cutoff=[-1500, 1000], time_segs=None, time_still=None):
+                 cutoff=[-1500, 1000], time_segs=None, time_still=None, lfp=False):
         '''
         mua_filename:
         spk_filename:
@@ -67,7 +67,8 @@ class MUA(object):
         if probe.reorder_by_chip is True:
             self.bf.reorder_by_chip(probe._nchips)
         self.data = self.bf.asarray(binpoint=binary_radix)
-        self.scale = self.data.max() - self.data.min()
+        # self.data = self.bf.data.numpy().reshape(-1, self.nCh)
+        # self.scale = self.data.max() - self.data.min()
         self.t    = self.bf.t
         self.npts = self.bf._npts
         self.spklen = 19
@@ -96,6 +97,9 @@ class MUA(object):
 
         self.pivotal_pos = np.delete(self.pivotal_pos, 
                            np.where((self.pivotal_pos[0] - self.prelen) < 0)[0], axis=1)        
+
+        if lfp:
+            self.pivotal_pos[0] -= 20
 
         info('raw data have {} spks'.format(self.pivotal_pos.shape[1]))
         info('----------------success------------------')
@@ -219,7 +223,7 @@ class MUA(object):
             if len(times) > 0: group_with_times[g] = times
         return group_with_times
 
-    def show(self, chs, span=None, time=None):
+    def show(self, chs, span=None, time=0):
         if span is None:
             wview = wave_view(self.data, chs=chs, spks=self.pivotal_pos)
             wview.slideto(time * self.fs)
