@@ -154,7 +154,7 @@ class bload(object):
         self.data = np.vstack((new_data)).T
 
 
-    def deconvolve(self, kernel, normalize=True, absmax=15000, dtype='int16'):
+    def deconvolve(self, kernel):
         if type(self.data) != np.ndarray:
             self.data = self.data.numpy().reshape(-1, self._nCh)
         length = self.data.shape[0] - len(kernel) + 1
@@ -163,9 +163,17 @@ class bload(object):
         for i in range(self.data.shape[1]):
             print('deconvolve {}th channel'.format(i))
             new_data[:, i] = _deconvolve(self.data[:,i], kernel)
-            if normalize:
-                new_data[:, i] /= abs(new_data[:, i]).max()*absmax
-                new_data[:, i] =  np.floor(new_data[:, i]).astype(dtype)
+        self.data = new_data
+
+
+    def normalize_columns(self, absmax=15000, dtype='int16'):
+        if type(self.data) != np.ndarray:
+            self.data = self.data.numpy().reshape(-1, self._nCh)
+        rows, cols = self.data.shape
+        new_data = np.zeros((rows, cols), dtype=dtype)
+        for col in xrange(cols):
+            new_data[:,col] = np.floor(self.data[:,col])/abs(self.data[:,col]).max()*absmax
+            new_data[:,col] = new_data[:,col].astype(dtype)
         self.data = new_data
 
 
