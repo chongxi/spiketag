@@ -29,7 +29,7 @@ def _deconvolve(signal, kernel):
     length = len(signal) - len(kernel) + 1
     kernel = np.hstack((kernel, np.zeros(len(signal) - len(kernel), dtype=np.float32))) # zero pad the kernel to same length
     H = fft(kernel)
-    deconvolved = np.real(ifft(fft(signal)*np.conj(H)/(H*np.conj(H))))
+    deconvolved = np.real(ifft(fft(signal.astype(np.float32))*np.conj(H)/(H*np.conj(H))))
     return deconvolved[:length]
 
 def memory_map(filename, access=mmap.ACCESS_WRITE):
@@ -154,7 +154,7 @@ class bload(object):
         self.data = np.vstack((new_data)).T
 
 
-    def deconvolve(self, kernel):
+    def deconvolve(self, kernel, normalize=True, absmax=15000, dtype='int16'):
         if type(self.data) != np.ndarray:
             self.data = self.data.numpy().reshape(-1, self._nCh)
         length = self.data.shape[0] - len(kernel) + 1
@@ -163,6 +163,9 @@ class bload(object):
         for i in range(self.data.shape[1]):
             print('deconvolve {}th channel'.format(i))
             new_data[:, i] = _deconvolve(self.data[:,i], kernel)
+            if normalize:
+                new_data[:, i] /= abs(new_data[:, i]).max()*absmax
+                new_data[:, i] =  np.floor(new_data[:, i]).astype(dtype)
         self.data = new_data
 
 
