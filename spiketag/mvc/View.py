@@ -82,7 +82,7 @@ class MainView(QWidget):
         self.splitter3.addWidget(self.splitter2)
 
         self.prb_view = probe_view()
-        self.prb_view.set_data(self.prb)
+        self.prb_view.set_data(self.prb, font_size=35)
         self.splitter0.addWidget(self.prb_view.native)
         self.splitter0.addWidget(self.splitter3)
 #         self.splitter2.addWidget(self.bottom)

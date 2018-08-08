@@ -82,6 +82,7 @@ class place_field(object):
         self.FR = self.firing_map/self.O/self.dt
         self.FR = np.nan_to_num(self.FR)
         self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(kernlen, std), boundary='symm', mode='same')
+        # self.FR_smoothed = self.FR_smoothed[::-1]
 
 
     def plot_field(self, trajectory=False):
