@@ -6,7 +6,8 @@ from ..utils import warning, conf
 from ..utils.utils import Timer
 from ..base.SPK import _transform
 from ..fpga import xike_config
-
+from ..analysis.place_field import place_field
+from playground.view import maze_view
 
 
 class controller(object):
@@ -16,6 +17,9 @@ class controller(object):
         self.prb   = self.model.probe
         self.view  = MainView(self.prb)
         self.current_group = 0
+        self.fields = {}
+        for group_id in range(self.n_group):
+            self.fields[group_id] = {}
 
         if fpga is True:
             # initialize FPGA channel grouping
@@ -66,7 +70,25 @@ class controller(object):
         self._current_group = group_id
         # self.show(group_id)
 
-    def get_spk_times(self, group_id, cluster_id):
+    @property
+    def n_group(self):
+        return len(self.prb.grp_dict.keys())
+
+    @property
+    def spk_time(self):
+        self._spk_time = {}
+        cluNo = self.model.clu[self.current_group].index.keys()
+        for i in cluNo:
+            self._spk_time[i] = self.get_spk_times(cluster_id=i)
+        return self._spk_time
+        # for group_id in range(self.n_group):
+        #     self._spk_times[group_id] = {}
+        #     for clu_id in self.model.clu[group_id].index.keys():
+        #         self._spk_times[group_id][clu_id] = self.get_spk_times(group_id, i)
+
+    def get_spk_times(self, group_id=-1, cluster_id=1):
+        if group_id==-1:
+            group_id = self.current_group
         idx = self.model.clu[group_id][cluster_id]
         spk_times = self.model.gtimes[group_id][idx]/float(self.model.mua.fs)
         return spk_times
@@ -103,6 +125,42 @@ class controller(object):
 
     def save(self, filename):
         self.model.tofile(filename)
+
+
+    #### Analysis ####
+    # def load_logfile(self, logfile, session_id=0, v_cutoff=5):
+    #     self.pc = place_field(logfile=logfile, session_id=session_id, v_cutoff=v_cutoff)
+
+
+    def get_fields(self, group_id=-1, kernlen=21, std=3):
+        if group_id == -1:
+            group_id = self.current_group
+        spk_time = {}
+        for clu_id in self.model.clu[group_id].index.keys():
+            spk_time[clu_id] = self.get_spk_times(group_id, clu_id)
+        self.model.pc.get_fields(spk_time, kernlen, std)
+        self.fields[group_id] = self.model.pc.fields
+
+    def plot_fields(self, N=4, size=3):
+        self.model.pc.plot_fields(N, size)
+
+
+    def replay(self, maze_folder, neuron_id, replay_speed=10, replay_start_time=0.):
+        self.nav_view = maze_view()
+        self.nav_view.load_maze(maze_folder+'maze_2d.obj',
+                                maze_folder+'maze_2d.coords',
+                                mirror=False)
+
+        t, pos = self.model.ts, self.model.pos
+        pos = self.nav_view._to_jovian_coord(pos).astype(np.float32)
+        self.nav_view.replay_t = t
+        self.nav_view.replay_pos = pos
+        self.nav_view.load_neurons(spk_time=self.spk_time)
+
+        self.nav_view.neuron_id = neuron_id
+        self.nav_view.replay_speed = replay_speed
+        self.nav_view.replay_time = replay_start_time
+        self.nav_view.show()
 
 
     ##### FPGA #####
