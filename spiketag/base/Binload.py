@@ -7,9 +7,7 @@ import torch
 from ..utils import Timer, interpNd
 from ..utils.conf import info
 from ..view import wave_view
-# from numpy.fft import fft, ifft
-from torch import rfft, irfft
-
+import torch
 
 
 def fs2t(N, fs):
@@ -18,13 +16,14 @@ def fs2t(N, fs):
     return t
 
 def fft(x):
-    fx = rfft(torch.from_numpy(x), 1, onesided=False)
+    fx = torch.rfft(torch.from_numpy(x), 1, onesided=False)
     return fx[:,0].numpy() + fx[:,1].numpy()*1j
 
 def ifft(complex_x):
     x = np.vstack((complex_x.real, complex_x.imag)).T
-    ifx = irfft(torch.from_numpy(x), 1, onesided=False)
-    return ifx.numpy()
+    # ifx = irfft(torch.from_numpy(x), 1, onesided=False)
+    ifx = torch.ifft(torch.from_numpy(x), 1)
+    return ifx.numpy()[:,0]
 
 def _deconvolve(signal, kernel):
     length = len(signal) - len(kernel) + 1
