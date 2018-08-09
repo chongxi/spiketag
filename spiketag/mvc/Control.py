@@ -160,6 +160,9 @@ class controller(object):
         self.nav_view.neuron_id = neuron_id
         self.nav_view.replay_speed = replay_speed
         self.nav_view.replay_time = replay_start_time
+
+        self.nav_view.view.camera.azimuth = 0.
+        self.nav_view.view.camera.elevation = 90.
         self.nav_view.show()
 
 

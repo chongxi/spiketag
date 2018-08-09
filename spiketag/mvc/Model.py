@@ -26,7 +26,7 @@ class MainModel(object):
                  fet_method='weighted-pca', fetlen=6, fet_whiten=False,
                  clu_method='hdbscan', fall_off_size=18, n_jobs=24,
                  time_segs=None,
-                 playground_log=None, session_id=0, v_cutoff=5):
+                 playground_log=None, session_id=0, v_cutoff=5, behavior_start_time=0.):
 
         # raw recording param
         self.mua_filename = mua_filename
@@ -56,6 +56,7 @@ class MainModel(object):
         self.time_still = None
         if playground_log is not None:
             self.pc = place_field(logfile=playground_log, session_id=session_id, v_cutoff=v_cutoff)
+            self.pc.ts += behavior_start_time
             self.ts, self.pos = self.pc.ts, self.pc.pos
             self.v_smoothed, self.v = self.pc.v_smoothed, self.pc.v
             self.v_still_idx = self.pc.v_still_idx
