@@ -6,6 +6,8 @@ from collections import OrderedDict
 from sklearn.neighbors import KDTree
 from itertools import combinations as comb
 from ..utils.utils import Picker
+from matplotlib import path
+from spiketag.utils import key_buffer
 
 
 # white = Color("#ecf0f1")
@@ -46,6 +48,15 @@ from ..utils.utils import Picker
 #         self.shanks = shanks
 
 
+SCV_Color = np.repeat(np.array([1.,1.,1.]).reshape(1,-1), 800, axis=0)
+SCV_Color[:,1] = np.linspace(1, 0, 800)
+SCV_Color[:,2] = np.linspace(1, 0, 800)
+# sns.palplot(SCV_Color[::10])
+
+
+# def from_scv_to_color(scv):
+
+
 class probe_view(scene.SceneCanvas):
     '''probe view
     '''
@@ -62,9 +73,12 @@ class probe_view(scene.SceneCanvas):
         # Picker
         self._picker = Picker(self.scene, self.electrode_pads.node_transform(self.view))
         self.key_option = '2' 
+
+        # keybuf
+        self.key_buf = key_buffer()
         
 
-    def set_data(self, prb, font_size=17):
+    def set_data(self, prb, font_size=28):
         '''
         both mapping and grp_dict are dictionary
         mapping is electrode_id to position
@@ -74,14 +88,22 @@ class probe_view(scene.SceneCanvas):
         '''
         self.prb = prb
         mapping = prb.mapping
+        pos = np.vstack((prb.mapping.values()))
+        self.xmin = pos[:,0].min() - 50
+        self.xmax = pos[:,0].max() + 50
+        self.ymin = pos[:,1].min() - 25
+        self.ymax = pos[:,1].max() + 25
+        self.font_size = font_size
+
 
         self.electrode_id = np.array(mapping.keys())
         self.electrode_pos = np.vstack(mapping.values())
         self.electrode_pos_KD = KDTree(self.electrode_pos, leaf_size=30, metric='euclidean')
-        self.electrode_pads.set_data(self.electrode_pos, symbol='square', size=font_size)
+        self.electrode_pads.set_data(self.electrode_pos, symbol='square', size=self.font_size)
         self.electrode_text.text = [str(i) for i in self.electrode_id]
         self.electrode_text.pos  = self.electrode_pos
-        self.electrode_text.font_size = int(font_size * 0.40)
+        self.electrode_text.font_size = int(self.font_size * 0.40)
+
 
         if hasattr(prb, 'grp_dict'):
             self.edges, self.grp_idx = self.grp_2_edges(prb.grp_dict)
@@ -91,7 +113,7 @@ class probe_view(scene.SceneCanvas):
             self.electrode_edge = scene.visuals.Line(pos=self.electrode_pos, connect=self.edges, antialias=False, method='gl',
                                                      color=self.edeges_color, parent=self.view.scene)
 
-        self.view.camera.set_range([-150,150])
+        self.view.camera.set_range([self.xmin, self.xmax])
 
 
     def grp_2_edges(self, grp_dict):
@@ -107,15 +129,38 @@ class probe_view(scene.SceneCanvas):
         # print edges
         return edges, _grp_idx
 
+    def get_range_of_electrodes(self, selected_group_id):
+        # get the selected electrodes pos from group_id
+        selected_electrodes_pos = self.electrode_pos[self.grp_idx[self.selected_group]]
+        # get the range of those electrodes
+        xmin, xmax = selected_electrodes_pos[:,0].min(), selected_electrodes_pos[:,0].max()
+        ymin, ymax = selected_electrodes_pos[:,1].min(), selected_electrodes_pos[:,1].max()
+        return np.array([xmin, xmax, ymin, ymax])
+
 
     def imap_2_group_id(self, mouse_pos):
+        # get mouse position
         tr = self.view.scene.transform
         pos = tr.imap(mouse_pos)[:2]
         pos = pos.reshape(1, -1)
+        # get the 1nn electrode number
         _, nn = self.electrode_pos_KD.query(pos, k=1)
         nn_electrode = self.electrode_id[nn[0]][0]
-        #TODO: from nn_electrode to group number (_ch2grp) which should be the function of prb
-        return nn_electrode
+        # get the group_id of that electrode using prb.ch2g (channel_id to group_id mapping)
+        try:
+            self.selected_group = self.prb.ch2g[nn_electrode]
+            # get the range of those electrodes in that group_id
+            electrodes_range = self.get_range_of_electrodes(self.selected_group) 
+            # print electrodes_range, pos
+            # p = path.Path(self.electrode_pos[self.grp_idx[self.selected_group]]) 
+            # if p.contains_points(pos):
+            #     return self.selected_group
+            if pos[0][0] < electrodes_range[1] and pos[0][0] > electrodes_range[0] and pos[0][1] < electrodes_range[3] and pos[0][1] > electrodes_range[2]:
+                return self.selected_group
+            else:
+                return None
+        except:
+            return None
 
 
     def imap(self, mouse_pos):
@@ -125,16 +170,37 @@ class probe_view(scene.SceneCanvas):
 
 
     def select(self, group_id):
-        if hasattr(self.prb, 'grp_dict'):
-            self.electrode_edge.color[:] = np.ones((self.electrode_pos.shape[0], 4))*0.5
-            self.electrode_edge.color[self.grp_idx[group_id],:] = np.array([1,0,0,0.8])
-            self.update()
-            self.prb.emit('select', group_id=group_id, chs=self.prb[group_id])
+        if group_id is not None:
+            if hasattr(self.prb, 'grp_dict'):
+                self.electrode_edge.color[:] = np.ones((self.electrode_pos.shape[0], 4))*0.5
+                self.electrode_edge.color[self.grp_idx[group_id],:] = np.array([1,0,0,0.8])
+                self.update()
+                self.prb.emit('select', group_id=group_id, chs=self.prb[group_id])
+
+
+    def update_scv(self, scv):
+        '''
+        spike count vector (scv) modulates color in electrode_pads
+        '''
+        self.scv = scv
+        normalized_scv = self.scv/self.scv.max()
+        color = (0,1,1,1)
+        self.electrode_pads.set_data(self.electrode_pos, symbol='square', face_color=color, size=self.font_size)
 
 
     def on_key_press(self, e):
         if e.text == 'r':
-            self.view.camera.set_range([-150,150])
+            self.view.camera.set_range([self.xmin, self.xmax])
+        if e.text == 'g':
+            try:
+                self.selected_group = int(self.key_buf.pop())
+                if self.selected_group in self.prb.grp_dict.keys():
+                    self.select(self.selected_group)
+            except:
+                self.key_buf.pop()
+                pass
+        elif e.text.isdigit():
+            self.key_buf.push(e.text)
 
 
     def on_mouse_press(self, e):
@@ -160,13 +226,8 @@ class probe_view(scene.SceneCanvas):
 
         else:
             if e.button == 1:
-                nn_electrode = self.imap_2_group_id(e.pos)
-                try:
-                    self.selected_group = self.prb.ch2g[nn_electrode]
-                    self.select(self.selected_group)
-                    # print('{}:{} selected'.format(self.selected_group, self.prb[self.selected_group]))
-                except:
-                    pass
+                self.selected_group = self.imap_2_group_id(e.pos)
+                self.select(self.selected_group)
 
 
     def run(self):
