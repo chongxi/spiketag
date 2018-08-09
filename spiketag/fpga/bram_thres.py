@@ -11,6 +11,8 @@ import struct
 
 class chgpNo(object):
     """
+    Must configure for FPGA tranformation to report the groupNo when spike is found
+    and transformed
     """
     def __init__(self, nCh=32, base_address=768):
         self.nCh  = nCh
@@ -137,7 +139,7 @@ class threshold(object):
     def __init__(self, nCh=32):
         self.enable_reg_addres = 0
         self.nCh = nCh
-        thr_reset(nCh)
+        # thr_reset(nCh)
         self.enable(True)
         self.thres = np.zeros(nCh)
 
@@ -171,6 +173,6 @@ class threshold(object):
 
     def __repr__(self):
         for ch in np.arange(self.nCh):
-            print('threshold of ch{0} is {1}'.format(ch, self.thres[ch]))
+            print('threshold of ch{0} is {1}'.format(ch, self[ch]))
         return 'threshold enable status: {0}'.format(bool(read_mem_16(self.enable_reg_addres)))
 

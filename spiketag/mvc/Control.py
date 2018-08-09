@@ -23,7 +23,9 @@ class controller(object):
 
         if fpga is True:
             # initialize FPGA channel grouping
-            self.fpga = xike_config(probe=self.prb, offset_value=32, thres_value=-500)
+            # both ch_hash and ch_grpNo are configured
+            # every channel has a `ch_hash` and a `ch_grpNo` 
+            self.fpga = xike_config(probe=self.prb, offset_value=32)
             
         @self.view.prb.connect
         def on_select(group_id, chs):
@@ -171,6 +173,8 @@ class controller(object):
         self.fpga.thres[:] = self.model.mua.get_threshold(beta)
         for ch in self.prb.mask_chs:
             self.fpga.thres[ch] = -5000. 
+        for ch in self.prb.bad_chs:
+            self.fpga.thres[ch] = -5000.
 
     def _transform(self, x, P, shift, scale):
         return _transform(x, P, shift, scale) 
@@ -178,9 +182,17 @@ class controller(object):
     def construct_transformer(self, group_id, ndim=4):
         _pca_comp, _shift, _scale = self.model.construct_transformer(group_id, ndim)
         return _pca_comp, _shift, _scale      
+
+    def set_transformer(self):
+        for i in self.model.groups:
+            _pca_comp, _shift, _scale = self.construct_transformer(group_id=i, ndim=4)
+            self.fpga._config_FPGA_transformer(grpNo=i, P=_pca_comp, b=_shift, a=_scale) 
+            assert(np.allclose(self.fpga.pca[i], _pca_comp, atol=1e-3))
+            assert(np.allclose(self.fpga.shift[i], _shift,  atol=1e-3))
+            assert(np.allclose(self.fpga.scale[i], _scale,  atol=1e-3))
             
 
-            
+
 
 class Sorter(object):
 	"""docstring for Sorter"""

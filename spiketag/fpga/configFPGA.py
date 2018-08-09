@@ -1,7 +1,7 @@
 import numpy as np
 import bram_thres as bram_thres
 from ..fpga.memory_api import read_mem_16, write_mem_16
-from ..fpga.bram_thres import channel_hash
+from ..fpga import bram_thres
 from ..fpga.bram_xike  import pca_hash, scale_hash, shift_hash, vq_hash
 
 
@@ -22,7 +22,7 @@ class xike_config(object):
         self._n_ch = probe.n_ch
         self.probe = probe
         self._offset_value = offset_value
-        self._thres_value = thres_value
+        # self._thres_value = thres_value
         self.set_channel_group()
         self.init_FPGA_detector()
         self.transfomer_constructed = {}
@@ -44,11 +44,20 @@ class xike_config(object):
         self.pca   =   pca_hash(nCh=ngrp, base_address=ngrp * (p_dim + 1))
         self.vq    =    vq_hash(nCh=ngrp, base_address=ngrp * (p_dim + 1 + spklen*ch_span))
 
+
     def set_channel_group(self):
         # channel group hashing
-        self.ch_ugp = channel_hash(nCh=self._n_ch, base_address=256)
+        # the channel hashing for spike grouping protocol in FPGA
+        self.ch_hash = bram_thres.channel_hash(nCh=self._n_ch, base_address=256)
+        # the channel groupNo for transformer to report in FPGA
+        self.ch_grpNo = bram_thres.chgpNo(nCh=self._n_ch)
         for ch in range(self.probe.n_ch):
-            self.ch_ugp[ch] = self.probe.ch_hash(ch)
+            self.ch_hash[ch] = self.probe.ch_hash(ch)
+            try:
+                self.ch_grpNo[ch] = self.probe.ch2g[ch]
+            except:
+                self.ch_grpNo[ch] = 100            
+
 
     def init_FPGA_detector(self):
         # dc offset
@@ -57,8 +66,8 @@ class xike_config(object):
         self.dc[:] = np.ones((self._n_ch,)) * self._offset_value
         # threshold
         self.thres = bram_thres.threshold(nCh=self._n_ch)
-        self.thres.enable(True)
-        self.thres[:] = self._thres_value
+        # self.thres.enable(True)
+        # self.thres[:] = self._thres_value
 
 
     def _config_FPGA_transformer(self, grpNo, P, b, a):
