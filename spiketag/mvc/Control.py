@@ -171,6 +171,15 @@ class controller(object):
         self.fpga.thres[:] = self.model.mua.get_threshold(beta)
         for ch in self.prb.mask_chs:
             self.fpga.thres[ch] = -5000. 
+
+    def _transform(self, x, P, shift, scale):
+        return _transform(x, P, shift, scale) 
+
+    def construct_transformer(self, group_id, ndim=4):
+        _pca_comp, _shift, _scale = self.model.construct_transformer(group_id, ndim)
+        return _pca_comp, _shift, _scale      
+            
+
             
 
 class Sorter(object):
