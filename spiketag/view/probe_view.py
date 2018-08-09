@@ -5,9 +5,8 @@ from vispy.color import Color
 from collections import OrderedDict
 from sklearn.neighbors import KDTree
 from itertools import combinations as comb
-from ..utils.utils import Picker
+from ..utils import Picker, key_buffer
 from matplotlib import path
-from spiketag.utils import key_buffer
 
 
 # white = Color("#ecf0f1")
@@ -49,8 +48,8 @@ from spiketag.utils import key_buffer
 
 
 SCV_Color = np.repeat(np.array([1.,1.,1.]).reshape(1,-1), 800, axis=0)
-SCV_Color[:,1] = np.linspace(1, 0, 800)
-SCV_Color[:,2] = np.linspace(1, 0, 800)
+# SCV_Color[:,1] = np.linspace(1, 0, 800)
+# SCV_Color[:,2] = np.linspace(1, 0, 800)
 # sns.palplot(SCV_Color[::10])
 
 
@@ -78,7 +77,7 @@ class probe_view(scene.SceneCanvas):
         self.key_buf = key_buffer()
         
 
-    def set_data(self, prb, font_size=28):
+    def set_data(self, prb, font_size=30):
         '''
         both mapping and grp_dict are dictionary
         mapping is electrode_id to position
@@ -99,7 +98,8 @@ class probe_view(scene.SceneCanvas):
         self.electrode_id = np.array(mapping.keys())
         self.electrode_pos = np.vstack(mapping.values())
         self.electrode_pos_KD = KDTree(self.electrode_pos, leaf_size=30, metric='euclidean')
-        self.electrode_pads.set_data(self.electrode_pos, symbol='square', size=self.font_size)
+        self.electrode_pads_color = np.repeat(np.array([1., 1., 1., 1.]).reshape(1,-1), self.electrode_pos.shape[0], axis=0)
+        self.electrode_pads.set_data(self.electrode_pos, symbol='square', face_color=self.electrode_pads_color, size=self.font_size)
         self.electrode_text.text = [str(i) for i in self.electrode_id]
         self.electrode_text.pos  = self.electrode_pos
         self.electrode_text.font_size = int(self.font_size * 0.40)
@@ -131,7 +131,8 @@ class probe_view(scene.SceneCanvas):
 
     def get_range_of_electrodes(self, selected_group_id):
         # get the selected electrodes pos from group_id
-        selected_electrodes_pos = self.electrode_pos[self.grp_idx[self.selected_group]]
+        group_id = selected_group_id
+        selected_electrodes_pos = self.electrode_pos[self.grp_idx[group_id]]
         # get the range of those electrodes
         xmin, xmax = selected_electrodes_pos[:,0].min(), selected_electrodes_pos[:,0].max()
         ymin, ymax = selected_electrodes_pos[:,1].min(), selected_electrodes_pos[:,1].max()
@@ -173,19 +174,25 @@ class probe_view(scene.SceneCanvas):
         if group_id is not None:
             if hasattr(self.prb, 'grp_dict'):
                 self.electrode_edge.color[:] = np.ones((self.electrode_pos.shape[0], 4))*0.5
-                self.electrode_edge.color[self.grp_idx[group_id],:] = np.array([1,0,0,0.8])
+                self.electrode_edge.color[self.grp_idx[group_id],:] = np.array([0,1,1,0.8])
                 self.update()
                 self.prb.emit('select', group_id=group_id, chs=self.prb[group_id])
 
 
-    def update_scv(self, scv):
+    def set_scv(self, scv, upper_bound_sc=1000):
         '''
-        spike count vector (scv) modulates color in electrode_pads
+        spike count vector (scv): every group has spike counts over a time bin (30 or 100 ms etc)
+        function: modulates color in electrode_pads
         '''
         self.scv = scv
-        normalized_scv = self.scv/self.scv.max()
-        color = (0,1,1,1)
-        self.electrode_pads.set_data(self.electrode_pos, symbol='square', face_color=color, size=self.font_size)
+        if scv.shape[0] != self.electrode_pads_color.shape[0]:
+            print('spike count vector length mismatch: there are {} electrodes to update spike count'.format(self.electrode_pads_color.shape[0]))
+        # the nearer scv to upper_bound_sc, the redder it would be
+        else:
+            red_score = (upper_bound_sc-scv)/upper_bound_sc
+            for i in range(self.electrode_pads_color.shape[0]):
+                self.electrode_pads_color[i] = np.array([1, red_score[i], red_score[i], 1])
+            self.electrode_pads.set_data(self.electrode_pos, symbol='square', face_color=self.electrode_pads_color, size=self.font_size)
 
 
     def on_key_press(self, e):
