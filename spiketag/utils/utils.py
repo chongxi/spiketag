@@ -311,3 +311,24 @@ class Picker(object):
         radius = np.array([.0,.0,.0,.0])
         return rectangle._generate_vertices(center=center,radius=radius,height=height,width=width)[1:, ..., :2]
 
+
+#------------------------------------------------------------------------------
+# key buffer: press number key to push, press 'g' to pop and execute
+#------------------------------------------------------------------------------
+class key_buffer(object):
+    '''
+    string of numbers that can be pop and push
+    '''
+    def __init__(self):
+        self._buf = ''
+
+    def push(self, v):
+        self._buf += v
+
+    def pop(self):
+        buf = self._buf
+        self._buf = ''
+        return buf
+
+    def __repr__(self):
+        return self._buf
