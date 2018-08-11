@@ -138,7 +138,7 @@ class scatter_3d_view(scene.SceneCanvas):
         self.clu.membership[-stream_size:] = clu
         self.clu.__construct__()
 
-    def _stream_in_render(self, fet, clu=None, rho=None):
+    def _stream_in_render(self, fet, clu=None, rho=None, highlight_no=None):
         #######################################################
         ### step0: roll the previous data for stream_size
         stream_size = fet.shape[0]
@@ -147,17 +147,20 @@ class scatter_3d_view(scene.SceneCanvas):
         #######################################################
         ### step1: set the color for clustering
         _base_color = np.asarray([palette[i] for i in clu])
-        _transparency = np.ones((stream_size, 1)) * self._transparency
-        _edge_color = np.hstack((_base_color, _transparency))
+        # _transparency = np.ones((stream_size, 1)) # * self._transparency
+        # _edge_color = np.hstack((_base_color, _transparency))
 
         #######################################################
         ### step2: set transparency for density
-        if self.rho is None:
+        if rho is None:
             _transparency = np.ones((stream_size, 1)) * self._transparency
             _edge_color = np.hstack((_base_color, _transparency))
         else:
-            _transparency = self.rho.reshape(-1, 1)
+            _transparency = np.ones((stream_size, 1)) * rho
             _edge_color = np.hstack((_base_color, _transparency))
+
+        if highlight_no is not None:
+            _edge_color[-highlight_no:, -1] = 1.
 
         #######################################################
         ### step3: update scatter._data for the latest stream_size
@@ -169,7 +172,7 @@ class scatter_3d_view(scene.SceneCanvas):
         self.scatter._vbo.set_data(self.scatter._data)
         self.scatter.update() 
 
-    def stream_in(self, fet, clu=None, rho=None):
+    def stream_in(self, fet, clu=None, rho=None, highlight_no=None):
         '''
         stream new data into previous data
         but the total number of data is fixed through self._n
@@ -185,7 +188,7 @@ class scatter_3d_view(scene.SceneCanvas):
             # update self.fet and self.clu
             self._stream_in_data(fet, clu)
             # update self.scatter._data which is used for rendering(bind to scatter._vbo)
-            self._stream_in_render(fet, clu, rho)
+            self._stream_in_render(fet, clu, rho, highlight_no)
 
 
     def set_range(self):
