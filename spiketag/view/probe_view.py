@@ -185,12 +185,13 @@ class probe_view(scene.SceneCanvas):
         spike count vector (scv): every group has spike counts over a time bin (30 or 100 ms etc)
         function: modulates color in electrode_pads
         '''
-        self.scv = scv
+        self.scv = np.clip(scv, 0, upper_bound_sc)
         if scv.shape[0] != self.n_grp:
             print('spike count vector length mismatch: there are {} electrodes to update spike count'.format(self.electrode_pads_color.shape[0]))
         # the nearer scv to upper_bound_sc, the redder it would be
         else:
             red_score = (upper_bound_sc-scv)/upper_bound_sc
+            red_score = np.clip(red_score, 0, 1)
             for group_id in range(self.n_grp):
                 self.electrode_pads_color[self.grp_idx[group_id]] = np.repeat(np.array([1, red_score[group_id], red_score[group_id], 1]).reshape(1,-1) ,4, axis=0)
             self.electrode_pads.set_data(self.electrode_pos, symbol='square', face_color=self.electrode_pads_color, size=self.font_size)

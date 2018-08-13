@@ -100,6 +100,10 @@ class controller(object):
     def clu(self):
         return self.model.clu[self.current_group]   # CLU
 
+    @property
+    def nclu(self):
+        return len(self.model.clu[self.current_group].index_id)
+
 
     @property
     def spk_time(self):
@@ -152,6 +156,32 @@ class controller(object):
 
     def save(self, filename):
         self.model.tofile(filename)
+
+    #####################################
+    ####  sorting improvement
+    #####################################
+    # cluNo is a noisy cluster, usually 0, assign it's member to other clusters
+    # using knn classifier: for each grey points:
+    # 1. Get its knn in each other clusters (which require KDTree for each cluster)
+    # 2. Get the mean distance of these knn points in each KDTree (Cluster)
+    # 3. Assign the point to the closet cluster
+    def refine(self, cluNo=0, k=30):
+        # get the features of targeted cluNo
+        #  X = self.fet[self.clu[cluNo]]
+        # classification on these features
+            lables_X = self.model.predict(self.current_group, self.clu[cluNo], method='knn', k=10)
+        # reconstruct current cluster membership
+            self.clu.membership[self.clu[cluNo]] = lables_X
+            if self.clu.membership.min()>0:
+                self.clu.membership -= 1
+            self.clu.__construct__()
+            self.update_view()
+
+
+    # cluNo is a good cluster, absorb its member from other clusters
+    def absorb(self, cluNo=0):
+        # TODO: 
+        pass
 
 
     #### Analysis ####
@@ -217,17 +247,24 @@ class controller(object):
             assert(np.allclose(self.fpga.scale[i], _scale,  atol=1e-3))
             
 
-    def build_vq(self, all=False):
+    def build_vq(self, all=False, n_dim=4, n_vq=None):
         import warnings
         warnings.filterwarnings('ignore')
         # get the vq and vq labels
         from sklearn.cluster import MiniBatchKMeans
-        km = MiniBatchKMeans(self._vq_npts)
-        X = self.fet
-        km.fit(X)
-        self.points = km.cluster_centers_   # these are vq
-        self.labels = self._predict(self.points) # these are vq labels
-        self.scores = self._validate_vq()
+        
+        vq = []
+        for _clu_id in self.clu.index_id:
+            if n_vq is None:
+                km = MiniBatchKMeans(self._vq_npts)
+            else:
+                km = MiniBatchKMeans(n_vq[_clu_id])
+            X = self.fet[self.clu.index[_clu_id]][:,:n_dim]
+            km.fit(X)
+            vq.append(km.cluster_centers_ )
+        self.points = np.vstack(vq)  # these are vq
+        self.labels = self._predict(self.points, n_dim) # these are vq labels
+        self.scores = self._validate_vq(n_dim)
 
         self.vq['points'][self.current_group] = self.points
         self.vq['labels'][self.current_group] = self.labels
@@ -240,15 +277,15 @@ class controller(object):
         self.vq_view.show()
 
 
-    def _validate_vq(self):
+    def _validate_vq(self, n_dim=4):
         from sklearn.neighbors import KNeighborsClassifier as KNN
         knn = KNN(n_neighbors=1)
         knn.fit(self.points, self.labels)
-        return knn.score(self.fet, self.clu.membership)
+        return knn.score(self.fet[:,:n_dim], self.clu.membership)
 
 
-    def _predict(self, points):
-        self.model.construct_kdtree(self.current_group)
+    def _predict(self, points, n_dim=4):
+        self.model.construct_kdtree(self.current_group, n_dim)
         d = []
         for _kd in self.model.kd.iterkeys():
             tmp = _kd.query(points, 10)[0]
@@ -257,6 +294,11 @@ class controller(object):
         labels = np.asarray(self.model.kd.values())[np.argmin(d, axis=0)]
         return labels
 
+    def set_vq(self):
+        for grpNo in self.vq['points'].keys():
+            x = self.vq['points'][grpNo]
+            print('group {} vq configured with shape {}'.format(grpNo, x.shape))
+            self.fpga.vq[grpNo] = x
 
 
 

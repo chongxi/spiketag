@@ -167,17 +167,17 @@ class MainModel(object):
         return _pca_comp, _shift, _scale
 
 
-    def construct_kdtree(self, group_id, global_ids=None):
+    def construct_kdtree(self, group_id, global_ids=None, n_dim=4):
         self.kd = {} 
         for clu_id, value in self.clu[group_id].index.items():
             diff_ids = np.setdiff1d(value, global_ids, assume_unique=True)
             if len(diff_ids) > 0:
-                fet = self.fet[group_id][diff_ids]
+                fet = self.fet[group_id][diff_ids][:, :n_dim]
                 self.kd[KDTree(fet)] = clu_id
 
 
-    def predict(self, group_id, global_ids, method='knn', k=10):
-        X = self.fet[group_id][global_ids]
+    def predict(self, group_id, global_ids, method='knn', k=10, n_dim=4):
+        X = self.fet[group_id][global_ids][:,:n_dim]
         if X.ndim==1: X=X.reshape(1,-1)
 
         if method == 'knn':
