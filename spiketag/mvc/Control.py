@@ -17,9 +17,19 @@ class controller(object):
         self.prb   = self.model.probe
         self.view  = MainView(self.prb)
         self.current_group = 0
+
+        # place fields
         self.fields = {}
         for group_id in range(self.n_group):
             self.fields[group_id] = {}
+
+        # vq
+        self.vq = {}
+        self.vq['points'] = {}
+        self.vq['labels'] = {}
+        self.vq['scores'] = {}
+        self._vq_npts = 100  # size of codebook to download to FPGA, there are many codebooks
+
 
         if fpga is True:
             # initialize FPGA channel grouping
@@ -75,6 +85,20 @@ class controller(object):
     @property
     def n_group(self):
         return len(self.prb.grp_dict.keys())
+
+
+    @property
+    def spk(self):
+        return self.model.spk[self.current_group]   # spk ndarray
+
+    @property
+    def fet(self):
+        return self.model.fet[self.current_group]   # fet ndarray
+
+    @property
+    def clu(self):
+        return self.model.clu[self.current_group]   # CLU
+
 
     @property
     def spk_time(self):
@@ -168,7 +192,7 @@ class controller(object):
         self.nav_view.show()
 
 
-    ##### FPGA #####
+    ##### FPGA related #####
     def set_threshold(self, beta=4.0):
         self.fpga.thres[:] = self.model.mua.get_threshold(beta)
         for ch in self.prb.mask_chs:
@@ -191,6 +215,50 @@ class controller(object):
             assert(np.allclose(self.fpga.shift[i], _shift,  atol=1e-3))
             assert(np.allclose(self.fpga.scale[i], _scale,  atol=1e-3))
             
+
+    def build_vq(self, all=False):
+        import warnings
+        warnings.filterwarnings('ignore')
+        # get the vq and vq labels
+        from sklearn.cluster import MiniBatchKMeans
+        km = MiniBatchKMeans(self._vq_npts)
+        X = self.fet
+        km.fit(X)
+        self.points = km.cluster_centers_   # these are vq
+        self.labels = self._predict(self.points) # these are vq labels
+        self.scores = self._validate_vq()
+
+        self.vq['points'][self.current_group] = self.points
+        self.vq['labels'][self.current_group] = self.labels
+        self.vq['scores'][self.current_group] = self.scores
+
+        self.vq_view = scatter_3d_view()
+        self.vq_view._size = 5
+        self.vq_view.set_data(self.points, CLU(self.labels))
+        self.vq_view.transparency = 0.8
+        self.vq_view.show()
+
+
+    def _validate_vq(self):
+        from sklearn.neighbors import KNeighborsClassifier as KNN
+        knn = KNN(n_neighbors=1)
+        knn.fit(self.points, self.labels)
+        return knn.score(self.fet, self.clu.membership)
+
+
+    def _predict(self, points):
+        self.model.construct_kdtree(self.current_group)
+        d = []
+        for _kd in self.model.kd.iterkeys():
+            tmp = _kd.query(points, 10)[0]
+            d.append(tmp.mean(axis=1))
+        d = np.vstack(np.asarray(d))
+        labels = np.asarray(self.model.kd.values())[np.argmin(d, axis=0)]
+        return labels
+
+
+
+
 
 
 
