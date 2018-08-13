@@ -7,6 +7,7 @@ from ..utils.utils import Timer
 from ..base.SPK import _transform
 from ..fpga import xike_config
 from ..analysis.place_field import place_field
+from ..view import scatter_3d_view
 from playground.view import maze_view
 
 
