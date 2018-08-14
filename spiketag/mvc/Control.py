@@ -160,6 +160,16 @@ class controller(object):
     #####################################
     ####  sorting improvement
     #####################################
+    def select_noise(self, thres=0.3):
+        noise_leve = []
+        group_id = self.current_group
+        for i in range(self.model.spk[group_id].shape[0]):
+            current_pts = self.model.mua.spk_times[group_id][i]
+            noise_leve.append(self.model.mua.data[current_pts, self.prb.chs].mean()/self.model.mua.data[current_pts, self.prb[group_id]].mean())
+        noise_leve = np.array(noise_leve)
+        idx = np.where(abs(noise_leve)>thres)[0]
+        self.clu.select(idx)
+
     # cluNo is a noisy cluster, usually 0, assign it's member to other clusters
     # using knn classifier: for each grey points:
     # 1. Get its knn in each other clusters (which require KDTree for each cluster)
