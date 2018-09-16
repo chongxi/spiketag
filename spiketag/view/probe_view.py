@@ -103,16 +103,16 @@ class probe_view(scene.SceneCanvas):
         self.electrode_pads.set_data(self.electrode_pos, symbol='square', face_color=self.electrode_pads_color, size=self.font_size)
         self.electrode_text.text = [str(i) for i in self.electrode_id]
         self.electrode_text.pos  = self.electrode_pos
-        self.electrode_text.font_size = int(self.font_size * 0.40)
+        self.electrode_text.font_size = int(self.font_size * 0.35) # 40% of the square size
 
 
         if hasattr(prb, 'grp_dict'):
             self.edges, self.grp_idx = self.grp_2_edges(prb.grp_dict)
             # print edges
-            self.edeges_color = np.ones((self.electrode_pos.shape[0], 4))*0.5
+            self.edeges_color = np.ones((self.electrode_pos.shape[0], 4))*0.7
             # color[grp_idx[1],:] = np.array([1,0,0,0.5])
             self.electrode_edge = scene.visuals.Line(pos=self.electrode_pos, connect=self.edges, antialias=False, method='gl',
-                                                     color=self.edeges_color, parent=self.view.scene)
+                                                     color=self.edeges_color, width=3, parent=self.view.scene)
 
         self.view.camera.set_range([self.xmin, self.xmax])
 
