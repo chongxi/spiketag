@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.neighbors import KDTree
 from .Model import MainModel
 from .View import MainView
 from ..base import CLU
@@ -169,6 +170,22 @@ class controller(object):
         noise_leve = np.array(noise_leve)
         idx = np.where(abs(noise_leve)>thres)[0]
         self.clu.select(idx)
+
+
+    def transfer(self, source_clu_id, sink_clu_id, k=1):
+        '''
+        transfer source to sink the N*sink.shape[0] NN pts
+        '''
+        source = self.fet[self.clu[source_clu_id]]
+        sink   = self.fet[self.clu[sink_clu_id]]
+        KT = KDTree(source)
+        nn_ids = KT.query(sink, k, dualtree=True)[1].ravel()
+        global_nn_ids = self.clu.local2global({source_clu_id:nn_ids})
+        self.clu.select(global_nn_ids)
+        # sink = np.append(sink, source[nn_ids], axis=0)
+        # source = np.delete(source, nn_ids, axis=0)
+        # return source, sink
+        # self.model.fet[self.current_group]
 
     # cluNo is a noisy cluster, usually 0, assign it's member to other clusters
     # using knn classifier: for each grey points:
