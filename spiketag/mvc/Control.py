@@ -225,6 +225,7 @@ class controller(object):
         self.model.pc.get_fields(spk_time, kernlen, std)
         self.fields[group_id] = self.model.pc.fields
 
+
     def plot_fields(self, N=4, size=3):
         self.model.pc.plot_fields(N, size)
 
