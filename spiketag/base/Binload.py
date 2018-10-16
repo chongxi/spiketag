@@ -160,16 +160,7 @@ class bload(object):
         self.data = np.vstack((new_data)).T
 
 
-    def deconvolve(self, kernel):
-        if type(self.data) != np.ndarray:
-            self.data = self.data.numpy().reshape(-1, self._nCh)
-        length = self.data.shape[0] - len(kernel) + 1
-        new_data = np.zeros((length, self.data.shape[1]), dtype=np.float32)
-        # print(new_data.shape)
-        for i in range(self.data.shape[1]):
-            print('deconvolve {}th channel'.format(i))
-            new_data[:, i] = _deconvolve(self.data[:,i], kernel)
-        self.data = new_data
+
 
 
     def normalize_columns(self, absmax=15000, dtype='int16'):
