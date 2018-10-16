@@ -7,11 +7,12 @@ from matplotlib.pyplot import cm
 
 class place_field(object):
     """getting the place fields from subspaces"""
-    def __init__(self, logfile, session_id=0, v_cutoff=5, maze_range=[[-100,100], [-100,100]], bin_size=4):
+    def __init__(self, logfile, session_id=0, v_cutoff=5, maze_range=[[-100,100], [-100,100]], bin_size=4, sync=True):
         super(place_field, self).__init__()
         self.logfile = logfile
-        self.log = logger(self.logfile)
+        self.log = logger(self.logfile, sync=sync)
         self.ts, self.pos = self.log.to_trajectory(session_id)
+        self.pos[:,1] = -self.pos[:,1]
         self.dt = self.ts[1] - self.ts[0]
         self.v_smoothed, self.v = self.log.get_speed(self.ts, self.pos, smooth_window=60, std=15)
         self.v_cutoff = v_cutoff
@@ -19,7 +20,7 @@ class place_field(object):
         self.occupation_map(maze_range, bin_size)
         
 
-    def occupation_map(self, maze_range=[[-100,100], [-100,100]], bin_size=4):
+    def occupation_map(self, maze_range=[[-100,100], [-100,100]], bin_size=4, time_cutoff=None):
         '''
         f, ax = plt.subplots(1,2,figsize=(20,9))
         ax[0].plot(self.pos[:,0], self.pos[:,1])
@@ -33,7 +34,12 @@ class place_field(object):
         self.bin_size  = bin_size
         self.nbins = self.maze_size/bin_size
         self.nbins = self.nbins.astype(int)
-        occupation, self.x_edges, self.y_edges = np.histogram2d(x=self.pos[1:,0], y=self.pos[1:,1], 
+        # occupation, self.x_edges, self.y_edges = np.histogram2d(x=self.pos[1:,0], y=self.pos[1:,1], 
+        #                                                         bins=self.nbins, range=self.maze_range)
+        idx = np.where(self.v_smoothed >= self.v_cutoff)[0]
+        if time_cutoff is not None:
+            idx = np.delete(idx, np.where(self.ts[idx]>time_cutoff)[0])
+        occupation, self.x_edges, self.y_edges = np.histogram2d(x=self.pos[idx,0], y=self.pos[idx,1], 
                                                                 bins=self.nbins, range=self.maze_range)
         self.X, self.Y = np.meshgrid(self.x_edges, self.y_edges)
         self.O = occupation.T.astype(int)  # Let each row list bins with common y range.
@@ -101,6 +107,7 @@ class place_field(object):
             self.get_field(spk_time, i, kernlen, std)
             self.fields[i] = self.FR_smoothed
 
+
     def plot_fields(self, N, size=1.8):
         cluNo = self.fields.keys()[-1]
         nrow = cluNo/N+1
@@ -112,4 +119,6 @@ class place_field(object):
             if i != 0:
                 ax = fig.add_subplot(nrow, ncol, i);
                 pcm = ax.pcolormesh(self.X, self.Y, self.fields[i], cmap=cm.hot);
+        plt.grid('off')
         plt.show();
+        return fig
