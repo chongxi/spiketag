@@ -140,7 +140,87 @@ prb_bowtie_LL[14] = np.array([23, 46, 28, 43])
 
 for prb_id_LL in range(15):
     prb_bowtie_LL[prb_id_LL+15] = prb_bowtie_LL[prb_id_LL] + 64
+#####################################
+# bowtie_RR
+#####################################
+prb_bowtie_RR = probe(shank_no=6, prb_type='bow_tie')
 
+prb_bowtie_RR.shanks[0].l = [22, 35, 20, 37, 27, 43, 25, 24, 44, 26, 42, 28]
+prb_bowtie_RR.shanks[0].r = [21, 36, 23, 34, 45, 29, 16, 15, 32, 38, 30, 46, 41]
+prb_bowtie_RR.shanks[0].xl = -100.
+prb_bowtie_RR.shanks[0].yl = 20
+prb_bowtie_RR.shanks[0].xr = -80.
+prb_bowtie_RR.shanks[0].yr = 5
+
+prb_bowtie_RR.shanks[1].l = [57, 63, 56, 39,  0, 12, 62, 14, 55, 48,  1]
+prb_bowtie_RR.shanks[1].r = [49, 54,  2, 50, 18, 19, 31, 47, 40, 17, 33]
+prb_bowtie_RR.shanks[1].xl = -10.
+prb_bowtie_RR.shanks[1].yl = 15
+prb_bowtie_RR.shanks[1].xr = 10.
+prb_bowtie_RR.shanks[1].yr = 0
+
+prb_bowtie_RR.shanks[2].l = [3, 53,  5, 51,  7, 13, 52,  6]
+prb_bowtie_RR.shanks[2].r = [4, 58, 11, 60,  9, 10, 61,  8, 59]
+prb_bowtie_RR.shanks[2].xl = 80.
+prb_bowtie_RR.shanks[2].yl = 10
+prb_bowtie_RR.shanks[2].xr = 100.
+prb_bowtie_RR.shanks[2].yr = -5
+
+prb_bowtie_RR.shanks[3].l = [86,  99,  84, 101,  91, 107,  89,  88, 108,  90, 106,  92]
+prb_bowtie_RR.shanks[3].r = [85, 100,  87,  98, 109,  93,  80,  79,  96, 102,  94, 110, 105]
+prb_bowtie_RR.shanks[3].xl = 350
+prb_bowtie_RR.shanks[3].yl = 10
+prb_bowtie_RR.shanks[3].xr = 370.
+prb_bowtie_RR.shanks[3].yr = -5
+
+prb_bowtie_RR.shanks[4].l = [121, 127, 120, 103,  64,  76, 126,  78, 119, 112,  65]
+prb_bowtie_RR.shanks[4].r = [113, 118,  66, 114,  82,  83,  95, 111, 104,  81,  97]
+prb_bowtie_RR.shanks[4].xl = 260.
+prb_bowtie_RR.shanks[4].yl = 15
+prb_bowtie_RR.shanks[4].xr = 280.
+prb_bowtie_RR.shanks[4].yr = 0
+
+prb_bowtie_RR.shanks[5].l = [67, 117,  69, 115,  71,  77, 116,  70]
+prb_bowtie_RR.shanks[5].r = [68, 122,  75, 124,  73,  74, 125,  72, 123]
+prb_bowtie_RR.shanks[5].xl = 170.
+prb_bowtie_RR.shanks[5].yl = 20
+prb_bowtie_RR.shanks[5].xr = 190.
+prb_bowtie_RR.shanks[5].yr = 5
+
+prb_bowtie_RR.auto_pos()
+prb_bowtie_RR.mapping[21]  += np.array([-10,2])
+prb_bowtie_RR.mapping[36] += np.array([-2, 0])
+prb_bowtie_RR.mapping[49]  += np.array([-10,2])
+prb_bowtie_RR.mapping[54]  += np.array([-2, 0])
+prb_bowtie_RR.mapping[4] += np.array([-10,2])
+prb_bowtie_RR.mapping[58] += np.array([-2, 0])
+prb_bowtie_RR.mapping[85]  += np.array([-10,2])
+prb_bowtie_RR.mapping[100] += np.array([-2, 0])
+prb_bowtie_RR.mapping[113]  += np.array([-10,2])
+prb_bowtie_RR.mapping[118]  += np.array([-2, 0])
+prb_bowtie_RR.mapping[68] += np.array([-10,2])
+prb_bowtie_RR.mapping[122] += np.array([-2, 0])
+
+prb_bowtie_RR[0] = np.array([21, 36, 22, 23])
+prb_bowtie_RR[1] = np.array([35, 34, 20, 45])
+prb_bowtie_RR[2] = np.array([37, 29, 27, 16])
+prb_bowtie_RR[3] = np.array([43, 15, 25, 32])
+
+prb_bowtie_RR[4] = np.array([24, 38, 44, 30])
+prb_bowtie_RR[5] = np.array([26, 46, 42, 41])
+prb_bowtie_RR[6] = np.array([49, 57, 54, 63])
+prb_bowtie_RR[7] = np.array([2, 56, 50, 39])
+prb_bowtie_RR[8] = np.array([18,  0, 19, 12])
+
+prb_bowtie_RR[9]  = np.array([31, 62, 47, 14])
+prb_bowtie_RR[10] = np.array([40, 55, 17, 48])
+prb_bowtie_RR[11] = np.array([4, 58,  3, 11])
+prb_bowtie_RR[12] = np.array([53, 60,  5,  9])
+prb_bowtie_RR[13] = np.array([51, 10,  7, 61])
+prb_bowtie_RR[14] = np.array([13,  8, 52, 59])
+
+for prb_id_RR in range(15):
+   prb_bowtie_RR[prb_id_RR+15] = prb_bowtie_RR[prb_id_RR] + 64
 #####################################
 # neuronexus
 #####################################
