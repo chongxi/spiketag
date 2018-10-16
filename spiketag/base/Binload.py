@@ -15,22 +15,6 @@ def fs2t(N, fs):
     t = np.arange(0, N*dt, dt)
     return t
 
-def fft(x):
-    fx = torch.rfft(torch.from_numpy(x), 1, onesided=False)
-    return fx[:,0].numpy() + fx[:,1].numpy()*1j
-
-def ifft(complex_x):
-    x = np.vstack((complex_x.real, complex_x.imag)).T
-    # ifx = irfft(torch.from_numpy(x), 1, onesided=False)
-    ifx = torch.ifft(torch.from_numpy(x), 1)
-    return ifx.numpy()[:,0]
-
-def _deconvolve(signal, kernel):
-    length = len(signal) - len(kernel) + 1
-    kernel = np.hstack((kernel, np.zeros(len(signal) - len(kernel), dtype=np.float32))) # zero pad the kernel to same length
-    H = fft(kernel)
-    deconvolved = np.real(ifft(fft(signal.astype(np.float32))*np.conj(H)/(H*np.conj(H))))
-    return deconvolved[:length]
 
 def memory_map(filename, access=mmap.ACCESS_WRITE):
     size = os.path.getsize(filename)
@@ -160,7 +144,16 @@ class bload(object):
         self.data = np.vstack((new_data)).T
 
 
-
+    def deconvolve(self, kernel):
+        if type(self.data) != np.ndarray:
+            self.data = self.data.numpy().reshape(-1, self._nCh)
+        length = self.data.shape[0] - len(kernel) + 1
+        new_data = np.zeros((length, self.data.shape[1]), dtype=np.float32)
+        # print(new_data.shape)
+        for i in range(self.data.shape[1]):
+            print('deconvolve {}th channel'.format(i))
+            new_data[:, i] = _deconvolve(self.data[:,i], kernel)
+        self.data = new_data
 
 
     def normalize_columns(self, absmax=15000, dtype='int16'):
