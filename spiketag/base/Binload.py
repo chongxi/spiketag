@@ -146,9 +146,9 @@ class bload(object):
                 self.wview = wave_view(data=self.data.numpy().reshape(-1, self._nCh), fs=self.fs)
         else:
             if chs is not None:
-                self.wview = wave_view(data=self.data.numpy().reshape(-1, self._nCh), fs=self.fs, chs=chs)
+                self.wview = wave_view(data=self.data.reshape(-1, self._nCh), fs=self.fs, chs=chs)
             else:
-                self.wview = wave_view(data=self.data.numpy().reshape(-1, self._nCh), fs=self.fs)
+                self.wview = wave_view(data=self.data.reshape(-1, self._nCh), fs=self.fs)
         self.wview.show()
 
 
