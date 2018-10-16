@@ -12,6 +12,7 @@ class place_field(object):
         self.logfile = logfile
         self.log = logger(self.logfile, sync=sync)
         self.ts, self.pos = self.log.to_trajectory(session_id)
+        self.pos[:,1] = -self.pos[:,1]
         self.dt = self.ts[1] - self.ts[0]
         self.v_smoothed, self.v = self.log.get_speed(self.ts, self.pos, smooth_window=60, std=15)
         self.v_cutoff = v_cutoff
@@ -106,6 +107,7 @@ class place_field(object):
             self.get_field(spk_time, i, kernlen, std)
             self.fields[i] = self.FR_smoothed
 
+
     def plot_fields(self, N, size=1.8):
         cluNo = self.fields.keys()[-1]
         nrow = cluNo/N+1
@@ -117,4 +119,6 @@ class place_field(object):
             if i != 0:
                 ax = fig.add_subplot(nrow, ncol, i);
                 pcm = ax.pcolormesh(self.X, self.Y, self.fields[i], cmap=cm.hot);
+        plt.grid('off')
         plt.show();
+        return fig

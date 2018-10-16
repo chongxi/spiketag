@@ -230,14 +230,17 @@ class controller(object):
         self.model.pc.plot_fields(N, size)
 
 
-    def replay(self, maze_folder, neuron_id, replay_speed=10, replay_start_time=0.):
+    def replay(self, maze_folder, neuron_id, replay_speed=10, replay_start_time=0., mirror=True):
         self.nav_view = maze_view()
         self.nav_view.load_maze(maze_folder+'maze_2d.obj',
                                 maze_folder+'maze_2d.coords',
-                                mirror=False)
+                                mirror=mirror)
 
-        t, pos = self.model.ts, self.model.pos
+        t, pos = self.model.ts.copy(), self.model.pos.copy()
+        if mirror:
+            pos[:,1] = -pos[:,1]
         pos = self.nav_view._to_jovian_coord(pos).astype(np.float32)
+
         self.nav_view.replay_t = t
         self.nav_view.replay_pos = pos
         self.nav_view.load_neurons(spk_time=self.spk_time)
@@ -247,7 +250,7 @@ class controller(object):
         self.nav_view.replay_time = replay_start_time
 
         self.nav_view.view.camera.azimuth = 0.
-        self.nav_view.view.camera.elevation = 90.
+        self.nav_view.view.camera.elevation = -90.
         self.nav_view.show()
 
 
