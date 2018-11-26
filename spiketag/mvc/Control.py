@@ -230,7 +230,7 @@ class controller(object):
         self.model.pc.plot_fields(N, size)
 
 
-    def replay(self, maze_folder, neuron_id, replay_speed=10, replay_start_time=0., mirror=True):
+    def replay(self, maze_folder, neuron_id, replay_speed=10, replay_start_time=0., mirror=True, spk_time=None):
         self.nav_view = maze_view()
         self.nav_view.load_maze(maze_folder+'maze_2d.obj',
                                 maze_folder+'maze_2d.coords',
@@ -243,7 +243,10 @@ class controller(object):
 
         self.nav_view.replay_t = t
         self.nav_view.replay_pos = pos
-        self.nav_view.load_neurons(spk_time=self.spk_time)
+        if spk_time is None:
+            self.nav_view.load_neurons(spk_time=self.spk_time)
+        else:
+            self.nav_view.load_neurons(spk_time=spk_time)
 
         self.nav_view.neuron_id = neuron_id
         self.nav_view.replay_speed = replay_speed
