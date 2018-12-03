@@ -18,6 +18,10 @@ class place_field(object):
         self.v_cutoff = v_cutoff
         self.v_still_idx = np.where(self.v_smoothed < self.v_cutoff)[0]
         self.occupation_map(maze_range, bin_size)
+
+
+        ### place fields parameters ###
+        self.n_fields = 0
         
 
     def occupation_map(self, maze_range=[[-100,100], [-100,100]], bin_size=4, time_cutoff=None):
@@ -103,9 +107,12 @@ class place_field(object):
 
     def get_fields(self, spk_time, kernlen=21, std=3):
         self.fields = {}
+        self.n_fields = len(spk_time.keys())
+        self.fields_matrix = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
         for i in spk_time.keys():
             self.get_field(spk_time, i, kernlen, std)
             self.fields[i] = self.FR_smoothed
+            self.fields_matrix[i-1] = self.FR_smoothed
 
 
     def plot_fields(self, N, size=1.8):
