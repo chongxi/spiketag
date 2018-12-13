@@ -39,11 +39,11 @@ class place_field(object):
         self.n_fields = 0
 
 
-    def initialize(self, maze_range, bin_size, v_cutoff):
+    def initialize(self, bin_size, v_cutoff, maze_range=None):
         self.dt = self.ts[1] - self.ts[0]
-        self.get_maze_range()
+        self.get_maze_range(maze_range)
         self.get_speed(smooth_window=60, std=15, v_cutoff=5) 
-        self.occupation_map(maze_range, bin_size)
+        self.occupation_map(bin_size)
 
 
     def interp_pos(self, t, pos, N=1):
@@ -58,10 +58,13 @@ class place_field(object):
         return new_t, new_pos 
         
 
-    def get_maze_range(self):
-        self.maze_range = np.vstack((self.pos.min(axis=0), self.pos.max(axis=0))).T
-        self._maze_original = self.maze_range[:,0] # the left, down corner location
-
+    def get_maze_range(self, maze_range=None):
+        if maze_range is None:
+            self.maze_range = np.vstack((self.pos.min(axis=0), self.pos.max(axis=0))).T
+            self._maze_original = self.maze_range[:,0] # the left, down corner location
+        else:
+            self.maze_range = np.array(maze_range)
+            self._maze_original = self.maze_range[:,0] # the left, down corner location
 
     @property
     def maze_original(self):
@@ -92,7 +95,7 @@ class place_field(object):
         # return v_smoothed, v
         
 
-    def occupation_map(self, maze_range, bin_size=4, time_cutoff=None):
+    def occupation_map(self, bin_size=4, time_cutoff=None):
         '''
         f, ax = plt.subplots(1,2,figsize=(20,9))
         ax[0].plot(self.pos[:,0], self.pos[:,1])
@@ -101,8 +104,8 @@ class place_field(object):
         ax[0].pcolormesh(self.X, self.Y, self.O, cmap=cm.hot_r)
         sns.heatmap(self.O[::-1]*self.dt, annot=False, cbar=False, ax=ax[1])
         '''
-        if maze_range != 'auto':
-            self.maze_range = maze_range
+        # if maze_range != 'auto':
+        #     self.maze_range = maze_range
         self.maze_size = np.array([self.maze_range[0][1]-self.maze_range[0][0], self.maze_range[1][1]-self.maze_range[1][0]])
         self.bin_size  = bin_size
         self.nbins = self.maze_size/bin_size
