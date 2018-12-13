@@ -60,6 +60,12 @@ class place_field(object):
 
     def get_maze_range(self):
         self.maze_range = np.vstack((self.pos.min(axis=0), self.pos.max(axis=0))).T
+        self._maze_original = self.maze_range[:,0] # the left, down corner location
+
+
+    @property
+    def maze_original(self):
+        return self._maze_original
 
 
     def get_speed(self, smooth_window=59, std=6, v_cutoff=5):
