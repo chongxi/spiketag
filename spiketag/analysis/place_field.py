@@ -3,28 +3,90 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
+from scipy.interpolate import interp1d
 
 
 class place_field(object):
     """getting the place fields from subspaces"""
-    def __init__(self, logfile, session_id=0, v_cutoff=5, maze_range=[[-100,100], [-100,100]], bin_size=4, sync=True):
+    def __init__(self, logfile=None, session_id=0, v_cutoff=5, maze_range=[[-100,100], [-100,100]], bin_size=4, sync=True):
         super(place_field, self).__init__()
-        self.logfile = logfile
-        self.log = logger(self.logfile, sync=sync)
-        self.ts, self.pos = self.log.to_trajectory(session_id)
-        self.pos[:,1] = -self.pos[:,1]
-        self.dt = self.ts[1] - self.ts[0]
-        self.v_smoothed, self.v = self.log.get_speed(self.ts, self.pos, smooth_window=60, std=15)
-        self.v_cutoff = v_cutoff
-        self.v_still_idx = np.where(self.v_smoothed < self.v_cutoff)[0]
-        self.occupation_map(maze_range, bin_size)
+        # default mode:
+        # 1: ts, pos, dt 
+        # 2: v_smoothed, v_cutoff
+        # 3: maze_range, bin_size 
+        if logfile is None:
+            pass
+             
+        # logfile mode
+        else:
+            self.logfile = logfile
+            self.log = logger(self.logfile, sync=sync)
+            self.ts, self.pos = self.log.to_trajectory(session_id)
+            self.pos[:,1] = -self.pos[:,1]
+            
+
+            # self.v_smoothed, self.v = self.log.get_speed(self.ts, self.pos, smooth_window=60, std=15)
+            # self.v_cutoff = v_cutoff
+            # self.get_still_idx() 
+
+            # self.get_speed(smooth_window=60, std=15, v_cutoff=5) 
+            # self.maze_range = maze_range
+            # self.occupation_map(bin_size)
+            self.initialize(maze_range, bin_size, v_cutoff)
 
 
         ### place fields parameters ###
         self.n_fields = 0
+
+
+    def initialize(self, maze_range, bin_size, v_cutoff):
+        self.dt = self.ts[1] - self.ts[0]
+        self.get_maze_range()
+        self.get_speed(smooth_window=60, std=15, v_cutoff=5) 
+        self.occupation_map(maze_range, bin_size)
+
+
+    def interp_pos(self, t, pos, N=1):
+        '''
+        convert irregularly sampled pos into regularly sampled pos
+        N is the dilution sampling factor. N=2 means half of the resampled pos
+        '''
+        dt = np.mean(np.diff(t))
+        x, y = interp1d(t, pos[:,0], fill_value="extrapolate"), interp1d(t, pos[:,1], fill_value="extrapolate")
+        new_t = np.arange(0.0, dt*len(t), dt*N)
+        new_pos = np.hstack((x(new_t).reshape(-1,1), y(new_t).reshape(-1,1)))
+        return new_t, new_pos 
         
 
-    def occupation_map(self, maze_range=[[-100,100], [-100,100]], bin_size=4, time_cutoff=None):
+    def get_maze_range(self):
+        self.maze_range = np.vstack((self.pos.min(axis=0), self.pos.max(axis=0))).T
+
+
+    def get_speed(self, smooth_window=59, std=6, v_cutoff=5):
+        '''
+        self.ts, self.pos is required
+        '''
+        v = np.linalg.norm(np.diff(self.pos, axis=0), axis=1)/np.diff(self.ts)
+        w = signal.gaussian(smooth_window, std) # window size 59 frame (roughly 1 sec), std = 6 frame
+        w /= sum(w)
+        v_smoothed = np.convolve(v, w, mode='same')
+
+        self.v = np.hstack((0.01, v))
+        self.v_smoothed = np.hstack((0.01, v_smoothed))
+        self.v_cutoff   = v_cutoff
+        self.v_still_idx = np.where(self.v_smoothed < self.v_cutoff)[0]
+        '''
+        # check speed:
+        f, ax = plt.subplots(1,1, figsize=(18,8))
+        offset=20000
+        plot(ts[offset:1000+offset], v[offset:1000+offset])
+        plot(ts[offset:1000+offset], v_smoothed[offset:1000+offset])
+        ax.axhline(5, c='m', ls='-.')
+        '''
+        # return v_smoothed, v
+        
+
+    def occupation_map(self, maze_range, bin_size=4, time_cutoff=None):
         '''
         f, ax = plt.subplots(1,2,figsize=(20,9))
         ax[0].plot(self.pos[:,0], self.pos[:,1])
@@ -33,8 +95,9 @@ class place_field(object):
         ax[0].pcolormesh(self.X, self.Y, self.O, cmap=cm.hot_r)
         sns.heatmap(self.O[::-1]*self.dt, annot=False, cbar=False, ax=ax[1])
         '''
-        self.maze_range = maze_range
-        self.maze_size = np.array([maze_range[0][1]-maze_range[0][0], maze_range[1][1]-maze_range[1][0]])
+        if maze_range != 'auto':
+            self.maze_range = maze_range
+        self.maze_size = np.array([self.maze_range[0][1]-self.maze_range[0][0], self.maze_range[1][1]-self.maze_range[1][0]])
         self.bin_size  = bin_size
         self.nbins = self.maze_size/bin_size
         self.nbins = self.nbins.astype(int)
