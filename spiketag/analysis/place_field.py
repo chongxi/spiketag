@@ -6,6 +6,7 @@ from matplotlib.pyplot import cm
 from scipy.interpolate import interp1d
 
 
+
 class place_field(object):
     """getting the place fields from subspaces"""
     def __init__(self, logfile=None, session_id=0, v_cutoff=5, maze_range=[[-100,100], [-100,100]], bin_size=4, sync=True):
@@ -32,7 +33,7 @@ class place_field(object):
             # self.get_speed(smooth_window=60, std=15, v_cutoff=5) 
             # self.maze_range = maze_range
             # self.occupation_map(bin_size)
-            self.initialize(maze_range, bin_size, v_cutoff)
+            self.initialize(bin_size=bin_size, v_cutoff=v_cutoff, maze_range=maze_range)
 
 
         ### place fields parameters ###
@@ -185,6 +186,7 @@ class place_field(object):
             self.get_field(spk_time, i, kernlen, std)
             self.fields[i] = self.FR_smoothed
             self.fields_matrix[i-1] = self.FR_smoothed
+        self.fields_matrix[self.fields_matrix==0] = 1e-15
 
 
     def plot_fields(self, N, size=1.8):
