@@ -7,6 +7,18 @@ from scipy.interpolate import interp1d
 
 
 
+def info_bits(Fr, P):
+    Fr[Fr==0] = 1e-25
+    MFr = sum(P.ravel()*Fr.ravel())
+    return sum(P.ravel()*(Fr.ravel()/MFr)*np.log2(Fr.ravel()/MFr))
+
+
+def info_sparcity(Fr, P):
+    Fr[Fr==0] = 1e-25
+    MFr = sum(P.ravel()*Fr.ravel())
+    return sum(P.ravel()*Fr.ravel()**2/MFr**2)
+
+
 class place_field(object):
     """getting the place fields from subspaces"""
     def __init__(self, logfile=None, session_id=0, v_cutoff=5, maze_range=[[-100,100], [-100,100]], bin_size=4, sync=True):
@@ -120,6 +132,7 @@ class place_field(object):
                                                                 bins=self.nbins, range=self.maze_range)
         self.X, self.Y = np.meshgrid(self.x_edges, self.y_edges)
         self.O = occupation.T.astype(int)  # Let each row list bins with common y range.
+        self.P = self.O/float(self.O.sum()) # occupation prabability
 
 
     def plot_occupation_map(self):
@@ -168,28 +181,50 @@ class place_field(object):
         # self.FR_smoothed = self.FR_smoothed[::-1]
 
 
-    def plot_field(self, trajectory=False):
+    def plot_field(self, trajectory=False, cmap='gray', marker=True, alpha=0.5, markersize=5):
         f, ax = plt.subplots(1,1,figsize=(13,10));
-        ax.plot(self.pos[:,0], self.pos[:,1], alpha=0.8);
-        ax.plot(self.pos[0,0], self.pos[0,1], 'ro');
-        ax.plot(self.pos[-1,0],self.pos[-1,1], 'ko');
-        ax.plot(self.firing_pos[:,0], self.firing_pos[:,1], 'mo', alpha=0.5);
-        pcm = ax.pcolormesh(self.X, self.Y, self.FR_smoothed, cmap=cm.hot);
+        pcm = ax.pcolormesh(self.X, self.Y, self.FR_smoothed, cmap=cmap);
         plt.colorbar(pcm, ax=ax, label='Hz');
+        if trajectory:
+            ax.plot(self.pos[:,0], self.pos[:,1], alpha=0.8);
+            ax.plot(self.pos[0,0], self.pos[0,1], 'ro');
+            ax.plot(self.pos[-1,0],self.pos[-1,1], 'ko');
+        if marker:
+            ax.plot(self.firing_pos[:,0], self.firing_pos[:,1], 'mo', alpha=alpha, markersize=markersize);
+        return f,ax
+
 
 
     def get_fields(self, spk_time, kernlen=21, std=3):
-        self.fields = {}
+        '''
+        spk_time is dictionary start from 1: {1: ... 2: ... 3: ...}
+        '''
         self.n_fields = len(spk_time.keys())
+        self.fields = {}
         self.fields_matrix = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
+
+        self.metric = {}
+        self.metric['spatial_bit_spike'] = np.zeros((self.n_fields,))
+        self.metric['spatial_bit_smoothed_spike'] = np.zeros((self.n_fields,))
+        self.metric['spatial_sparcity'] = np.zeros((self.n_fields,))
+
+        self.firing_poshd = {}
+
         for i in spk_time.keys():
+            ### get place fields from neuron i
             self.get_field(spk_time, i, kernlen, std)
             self.fields[i] = self.FR_smoothed
+            self.firing_poshd[i] = self.firing_pos
             self.fields_matrix[i-1] = self.FR_smoothed
-        self.fields_matrix[self.fields_matrix==0] = 1e-15
+            ### metrics for place fields
+            self.metric['spatial_bit_spike'][i-1] = info_bits(self.FR, self.P) 
+            self.metric['spatial_bit_smoothed_spike'][i-1] = info_bits(self.FR_smoothed, self.P)
+            self.metric['spatial_sparcity'][i-1] = info_sparcity(self.FR, self.P)
+
+        self.fields_matrix[self.fields_matrix==0] = 1e-25
 
 
-    def plot_fields(self, N, size=1.8):
+    def plot_fields(self, N, size=1.8, cmap='gray', marker=True, order=None):
         cluNo = self.fields.keys()[-1]
         nrow = cluNo/N+1
         ncol = N
@@ -199,7 +234,13 @@ class place_field(object):
         for i in self.fields.keys():
             if i != 0:
                 ax = fig.add_subplot(nrow, ncol, i);
-                pcm = ax.pcolormesh(self.X, self.Y, self.fields[i], cmap=cm.hot);
+                pcm = ax.pcolormesh(self.X, self.Y, self.fields[i], cmap=cmap);
+                if marker:
+                    ax.plot(self.firing_poshd[i][:,0], self.firing_poshd[i][:,1], 'mo', markersize=1, alpha=0.5)
         plt.grid('off')
         plt.show();
         return fig
+
+
+
+

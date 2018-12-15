@@ -1,4 +1,5 @@
 from place_field import place_field
+from place_field import info_bits, info_sparcity
 from numba import njit, prange
 import torch
 import numpy as np
@@ -77,3 +78,8 @@ def smooth(y, box_pts):
     box = np.ones(box_pts)/box_pts
     y_smooth = np.convolve(y, box, mode='same')
     return y_smooth
+
+
+
+
+
