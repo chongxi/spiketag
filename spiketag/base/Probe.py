@@ -254,9 +254,9 @@ class probe(BaseProbe):
                     y += delta_y
                 # print shank.mapping
                 self.mapping.update(shank.mapping)
-	#shinsuke added	
-	if self.type == 'neuronexus':
-	    delta_x = 3
+    #shinsuke added	
+    if self.type == 'neuronexus':
+        delta_x = 3
             delta_y = 10
             for shank_id, shank in self.shanks.items():
                 # print shank_id, shank
@@ -283,6 +283,8 @@ class probe(BaseProbe):
 
 
     def save(self, filename):
+
+        # for open-ephys gui and regular use
         self.n_ch = self._n_ch
         ch_list = np.hstack((self.chs, self.mask_chs))
         ch_dict = {}
@@ -293,8 +295,23 @@ class probe(BaseProbe):
         ch_dict['0']['enabled'] = 175*[True]
         ch_dict['0']['mapping'] = list(ch_list+1)
         ch_dict['0']['reference'] = 175*[0]
+
+        # for spiketag loading probe position mapping
+        ch_dict['shank_no'] = self.shanks.keys()
+        ch_dict['pos'] = {}
+        for key, value in self.mapping.items():
+            ch_dict['pos'][key] = list(value)
         with open(filename, 'w') as fp:
             json.dump(ch_dict, fp, indent=4, separators=(',', ': '))
+
+
+    def load(self, filename):
+        with open('./new_prb_nxdusty.json') as ff:
+            prb_json = json.load(ff)
+            for i in prb_json['pos'].keys():
+                self.mapping[int(i)] = prb_json['pos'][i] 
+            for i, chs in enumerate(np.array(pp['0']['mapping']).reshape(-1,4)):
+                self.__setitem__(i, chs)
 
 
 if __name__ == '__main__':
