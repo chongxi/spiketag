@@ -215,28 +215,39 @@ class place_field(object):
             self.get_field(spk_time, i, kernlen, std)
             self.fields[i] = self.FR_smoothed
             self.firing_poshd[i] = self.firing_pos
-            self.fields_matrix[i-1] = self.FR_smoothed
+            self.fields_matrix[i] = self.FR_smoothed
             ### metrics for place fields
-            self.metric['spatial_bit_spike'][i-1] = info_bits(self.FR, self.P) 
-            self.metric['spatial_bit_smoothed_spike'][i-1] = info_bits(self.FR_smoothed, self.P)
-            self.metric['spatial_sparcity'][i-1] = info_sparcity(self.FR, self.P)
+            self.metric['spatial_bit_spike'][i] = info_bits(self.FR, self.P) 
+            self.metric['spatial_bit_smoothed_spike'][i] = info_bits(self.FR_smoothed, self.P)
+            self.metric['spatial_sparcity'][i] = info_sparcity(self.FR, self.P)
 
         self.fields_matrix[self.fields_matrix==0] = 1e-25
 
 
-    def plot_fields(self, N, size=1.8, cmap='gray', marker=True, order=None):
-        cluNo = self.fields.keys()[-1]
-        nrow = cluNo/N+1
+    def rank_fields(self, metric):
+        '''
+        metric: spatial_bit_spike, spatial_bit_smoothed_spike, spatial_sparcity
+        '''
+        self.sorted_fields_id = np.argsort(self.metric[metric])[::-1]
+
+
+    def plot_fields(self, N, size=1.8, cmap='gray', marker=True, order=True):
+        '''
+        order: if True will plot with ranked fields according to the metric 
+        '''
+        nrow = self.n_fields/N + 1
         ncol = N
         fig = plt.figure(figsize=(ncol*size, nrow*size));
         plt.tight_layout();
         plt.subplots_adjust(wspace=None, hspace=None);
-        for i in self.fields.keys():
-            if i != 0:
-                ax = fig.add_subplot(nrow, ncol, i);
-                pcm = ax.pcolormesh(self.X, self.Y, self.fields[i], cmap=cmap);
-                if marker:
-                    ax.plot(self.firing_poshd[i][:,0], self.firing_poshd[i][:,1], 'mo', markersize=1, alpha=0.5)
+
+        for i in range(self.n_fields):
+            ax = fig.add_subplot(nrow, ncol, i+1);
+            field_id = self.sorted_fields_id[i]
+            pcm = ax.pcolormesh(self.X, self.Y, self.fields[field_id], cmap=cmap);
+            if marker:
+                ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 'mo', markersize=1, alpha=0.5)
+
         plt.grid('off')
         plt.show();
         return fig
