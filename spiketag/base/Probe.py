@@ -311,7 +311,7 @@ class probe(BaseProbe):
             prb_json = json.load(ff)
             for i in prb_json['pos'].keys():
                 self.mapping[int(i)] = prb_json['pos'][i] 
-            for i, chs in enumerate(np.array(pp['0']['mapping']).reshape(-1,4)):
+            for i, chs in enumerate(np.array(prb_json['0']['mapping']).reshape(-1,4)):
                 self.__setitem__(i, chs)
 
 
