@@ -254,9 +254,10 @@ class probe(BaseProbe):
                     y += delta_y
                 # print shank.mapping
                 self.mapping.update(shank.mapping)
-    #shinsuke added	
-    if self.type == 'neuronexus':
-        delta_x = 3
+
+        #shinsuke added	
+        if self.type == 'neuronexus':
+            delta_x = 3
             delta_y = 10
             for shank_id, shank in self.shanks.items():
                 # print shank_id, shank
@@ -264,13 +265,13 @@ class probe(BaseProbe):
                 x, y = shank.xl, shank.yl
                 for ch in shank.l:
                     shank.mapping[ch] = np.array([x,y])
-		    x -= delta_x
+            x -= delta_x
                     y += delta_y
                 # right side
                 x, y = shank.xr, shank.yr
                 for ch in shank.r:
                     shank.mapping[ch] = np.array([x,y])
-		    x += delta_x
+            x += delta_x
                     y += delta_y
                 # print shank.mapping
                 self.mapping.update(shank.mapping)
