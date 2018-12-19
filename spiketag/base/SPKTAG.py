@@ -51,20 +51,24 @@ class SPKTAG(object):
     def build_hdbscan_tree(self):
         treeinfo = {}
         for i in range(self.ngrp):
-            treeinfo[i] = self.clu[i]._extra_info
+            try:
+                treeinfo[i] = self.clu[i]._extra_info
+            except:
+                treeinfo[i] = None
         return treeinfo
 
     def build_spktag(self):
         spktag = np.zeros(self.nspk, dtype=self.dtype)
         start_index = 0
         for g, times in self.gtimes.items():
-            end_index = start_index + len(times)
-            spktag['t'][start_index:end_index] = times
-            spktag['group'][start_index:end_index] = np.full((len(times)), g, dtype=np.int)
-            spktag['spk'][start_index:end_index] = self.spk[g]
-            spktag['fet'][start_index:end_index] = self.fet[g]        
-            spktag['clu'][start_index:end_index] = self.clu[g].membership
-            start_index = end_index
+            if times.shape[0] > 0:
+                end_index = start_index + len(times)
+                spktag['t'][start_index:end_index] = times
+                spktag['group'][start_index:end_index] = np.full((len(times)), g, dtype=np.int)
+                spktag['spk'][start_index:end_index] = self.spk[g]
+                spktag['fet'][start_index:end_index] = self.fet[g]        
+                spktag['clu'][start_index:end_index] = self.clu[g].membership
+                start_index = end_index
         return spktag
 
 
