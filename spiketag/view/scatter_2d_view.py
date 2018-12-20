@@ -45,7 +45,7 @@ class scatter_2d_view(scene.SceneCanvas):
         self._key_option = 0
 
 
-        self.clip = EventEmitter() 
+        self.event = EventEmitter() 
 
     ### ----------------------------------------------
     ###              public method 
@@ -127,7 +127,7 @@ class scatter_2d_view(scene.SceneCanvas):
     #         self._view.events.mouse_wheel.disconnect(self._view.camera
     #                 .viewbox_mouse_event)
     #         self._control_transparency = not self._control_transparency 
-            
+
     #     elif e.text == 'r':
     #         self._view.camera.reset()
     #         self._view.camera.set_range()
@@ -172,17 +172,6 @@ class scatter_2d_view(scene.SceneCanvas):
             self.amp_text.text = '{}'.format(self.amp)
 
 
-    def on_mouse_release(self, e):
-        """
-            Control + 1: Rectangle
-            Control + 2: Lasso
-        """
-        if keys.CONTROL in e.modifiers and e.is_dragging:
-            if self._key_option in ['1','2']:
-                mask = self._picker.pick(self._pos)
-                self._highlight(mask)
-                self.select(mask)
-
     def on_mouse_wheel(self, e):
         if keys.CONTROL in e.modifiers:
             self.transparency *= np.exp(e.delta[1]/4)
@@ -214,7 +203,8 @@ class scatter_2d_view(scene.SceneCanvas):
             self._cache_mask = np.array([])
 
         if len(mask) > 0:
-            self._colors[mask, :] = self._highlight_color
+            # self._colors[mask, :] = self._highlight_color
+            self._colors[mask, -1] = 1
             self._cache_mask = np.hstack((self._cache_mask, mask)).astype('int64')
         
         self._colour()

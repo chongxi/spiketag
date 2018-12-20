@@ -92,7 +92,15 @@ class amplitude_view(scatter_2d_view):
                 local_idx[clu] = index - left
             left = right
         global_idx = self._clu.local2global(local_idx)
-        self._clu.select(global_idx, caller=self.__module__)
+
+        if self._clu.selectlist.shape[0]==0:
+            self._clu.select(global_idx) # , caller=self.__module__
+        elif self._clu.selectlist.shape[0]>0:
+            global_idx = np.intersect1d(global_idx, self._clu.selectlist)
+            self._clu.select(global_idx) # , caller=self.__module__
+            
+
+        
 
 
     ### ----------------------------------------------
@@ -149,6 +157,7 @@ class amplitude_view(scatter_2d_view):
         
         if e.key.name == 'Escape':
             self._clu.select(np.array([])) 
+            self._bursting_time_threshold = 0.4
 
         elif e.text == 'r':
             self._view.camera.reset()
@@ -156,6 +165,22 @@ class amplitude_view(scatter_2d_view):
         elif e.text == 'c':
             self.x_axis_lock = not self.x_axis_lock 
         elif e.text == 'x':
-            self.clip.emit('clip', thres=self.amp)
+            self.event.emit('clip', thres=self.amp)
+        elif e.text == 'f':
+            if len(self._clu.selectlist) > 0:
+                self.event.emit('refine', method='time_threshold', args=self._bursting_time_threshold)
+                self._bursting_time_threshold /= 2.
 
         self._key_option = e.key.name
+
+
+    def on_mouse_release(self, e):
+        """
+            Control + 1: Rectangle
+            Control + 2: Lasso
+        """
+        if keys.CONTROL in e.modifiers and e.is_dragging:
+            if self._key_option in ['1','2']:
+                mask = self._picker.pick(self._pos)
+                self.select(mask)
+                

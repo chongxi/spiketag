@@ -45,13 +45,6 @@ class controller(object):
             self.current_group = group_id
             self.show(group_id)
 
-        @self.view.ampview.clip.connect
-        def on_clip(thres):
-            idx = np.where(self.model.spk[self.current_group].min(axis=1).min(axis=1)>thres)[0]
-            print('delete {} spikes'.format(idx.shape))
-            self.delete_spk(spk_idx=idx)
-            self.recluster()
-
         @self.view.spkview.event.connect
         def on_magnet(sink_id, k):
             print('sink_id {}, k {}'.format(sink_id, k))
@@ -66,6 +59,21 @@ class controller(object):
 
         @self.view.spkview.event.connect
         def on_recluster():
+            self.recluster()
+
+        @self.view.spkview.event.connect
+        def on_refine(method, args):
+            self.refine(method, args)
+
+        @self.view.ampview.event.connect
+        def on_refine(method, args):
+            self.refine(method, args)
+
+        @self.view.ampview.event.connect
+        def on_clip(thres):
+            idx = np.where(self.model.spk[self.current_group].min(axis=1).min(axis=1)>thres)[0]
+            print('delete {} spikes'.format(idx.shape))
+            self.delete_spk(spk_idx=idx)
             self.recluster()
 
         @self.view.traceview.event.connect
@@ -177,6 +185,17 @@ class controller(object):
         self.clu.select(idx)
 
 
+    def refine(self, method, args):
+        # method is time_threshold, used to find burst
+        # args here is the time_threshold for bursting or a sequential firing for single neuron
+        time_thr = args*self.prb.fs
+        print time_thr
+        sequence = np.where(np.diff(self.model.gtimes[self.current_group][np.unique(self.clu.selectlist)])<time_thr)[0]
+        idx_tosel = np.hstack((sequence, sequence-1)) + 1
+        spk_tosel = np.unique(self.clu.selectlist)[idx_tosel]
+        self.clu.select(spk_tosel)
+
+
     def transfer(self, source_clu_id, sink_clu_id, k=1):
         '''
         transfer source to sink the N*sink.shape[0] NN pts
@@ -186,7 +205,8 @@ class controller(object):
         KT = KDTree(source)
         nn_ids = KT.query(sink, k, dualtree=True)[1].ravel()
         global_nn_ids = self.clu.local2global({source_clu_id:nn_ids})
-        self.clu.select(global_nn_ids)
+        collective_ids = np.hstack((global_nn_ids, self.clu[sink_clu_id]))
+        self.clu.select(collective_ids)
         # sink = np.append(sink, source[nn_ids], axis=0)
         # source = np.delete(source, nn_ids, axis=0)
         # return source, sink
@@ -197,7 +217,7 @@ class controller(object):
     # 1. Get its knn in each other clusters (which require KDTree for each cluster)
     # 2. Get the mean distance of these knn points in each KDTree (Cluster)
     # 3. Assign the point to the closet cluster
-    def refine(self, cluNo=0, k=30):
+    def dismiss(self, cluNo=0, k=30):
         # get the features of targeted cluNo
         #  X = self.fet[self.clu[cluNo]]
         # classification on these features

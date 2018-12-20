@@ -523,6 +523,7 @@ class spike_view(View):
             self.clu.select(np.array([]))
             self._magnet_const = 1
             self._magnet_mode = False
+            self._bursting_time_threshold = 0.4
 
         if e.text == 'c':
             self.view_lock = not self.view_lock
@@ -534,20 +535,21 @@ class spike_view(View):
 
         if e.text == 'a':
             if self.is_single_mode:
-                all_spkNolist = np.arange(self.clu[self.selected_cluster].size)
-                self._selected[self.selected_cluster] = all_spkNolist
+                all_spkNolist = np.arange(self.clu[self.cluster_mouse_on].size)
+                self._selected[self.cluster_mouse_on] = all_spkNolist
                 self.highlight(selected=self._selected)   
                 self.clu.select(self.selected_spk, caller=self.__module__)
+
+        if e.text == 'm':
+            self.event.emit('magnet', sink_id=self.cluster_mouse_on, k=self._magnet_const)
+            self._magnet_const += 1
+            self._bursting_time_threshold = 0.4
 
         if e.text == 's':
             if not self.is_spk_empty:
                 target_clu_No = max(self.clu.index_id) + 1
                 self._move_spikes(target_clu_No)
 
-        if e.text == 'm':
-            self.event.emit('magnet', sink_id=self.cluster_mouse_on, k=self._magnet_const)
-            self._magnet_const += 1
-        
         if e.text == 'x':
             if len(self.selected_spk) > 0:
                 self.event.emit('clip', idx=list(self.selected_spk))
@@ -560,8 +562,8 @@ class spike_view(View):
 
         if e.text == 'f':
             if len(self.selected_spk) > 0:
-                self.events.model_modified(Event('refine'))
-                self._selected = {}
+                self.event.emit('refine', method='time_threshold', args=self._bursting_time_threshold)
+                self._bursting_time_threshold /= 2.
 
         if _representsInt(e.text):
             ### assign selected spikes to cluster number ###

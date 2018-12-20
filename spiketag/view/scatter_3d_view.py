@@ -210,7 +210,7 @@ class scatter_3d_view(scene.SceneCanvas):
             self._cache_mask_ = np.array([])
 
         if len(mask)>0:
-            self.color[mask, :] = self._highlight_color
+            # self.color[mask, :] = self._highlight_color
             self.color[mask,-1] = 1
             self._cache_mask_ = np.hstack((self._cache_mask_, mask)).astype('int64')
 
