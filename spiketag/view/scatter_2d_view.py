@@ -65,6 +65,8 @@ class scatter_2d_view(scene.SceneCanvas):
 
         self._colors[:,-1] = self._transparency
         self._colour()
+        if self._clu.selectlist.shape[0]>0:
+            self.highlight(self._clu.selectlist)
 
     def set_data(self, pos=None, colors=None, delimit=True):
         self._pos = pos
