@@ -59,6 +59,8 @@ class scatter_3d_view(scene.SceneCanvas):
             self._transparency = 0.001
         self.color[:,-1] = self._transparency
         self._update()
+        if self.clu.selectlist.shape[0]>0:
+            self.highlight(self.clu.selectlist)
 
     def _update(self):
         with Timer('update transperency: ', verbose=self.debug):
@@ -97,6 +99,8 @@ class scatter_3d_view(scene.SceneCanvas):
     def set_dimension(self, dimension):
         self.dimension = dimension
         self._render()
+        if self.clu.selectlist.shape[0]>0:
+            self.highlight(self.clu.selectlist)
         self.mode = ''
 
     def _render(self):
@@ -280,7 +284,7 @@ class scatter_3d_view(scene.SceneCanvas):
 
         if e.key.name == 'Escape':
             self.clu.select(np.array([]))
-            
+
         if e.text == 'd':
             self.mode = 'dimension'
             self.dimension = []
