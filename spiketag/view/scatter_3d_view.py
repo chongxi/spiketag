@@ -277,6 +277,10 @@ class scatter_3d_view(scene.SceneCanvas):
 
 
     def on_key_press(self, e):
+
+        if e.key.name == 'Escape':
+            self.clu.select(np.array([]))
+            
         if e.text == 'd':
             self.mode = 'dimension'
             self.dimension = []
@@ -288,12 +292,11 @@ class scatter_3d_view(scene.SceneCanvas):
                 if len(self.dimension)==3:
                     self.set_dimension(self.dimension)
 
-
         if self.mode != 'dimension':
-            if e.text == 'c':
-                self.clu.select(np.array([]))
             if e.text == 'e':
                 self.toggle_noise_clu()
+
+
 
 
         if keys.CONTROL in e.modifiers and not self._control_transparency:

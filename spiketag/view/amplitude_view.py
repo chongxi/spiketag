@@ -1,7 +1,7 @@
 import numpy as np
 from .color_scheme import palette
 from scatter_2d_view import scatter_2d_view
-
+from vispy.util import keys
 
 
 class amplitude_view(scatter_2d_view):
@@ -137,3 +137,25 @@ class amplitude_view(scatter_2d_view):
         super(amplitude_view, self).set_data(pos=self.poses, colors=colors, delimit=delimit) 
 
 
+    def on_key_press(self, e):
+        '''
+            Control: control + mouse wheel to adjust the transparency 
+            r:       reset the camera
+        '''
+        if keys.CONTROL in e.modifiers and not self._control_transparency:
+            self._view.events.mouse_wheel.disconnect(self._view.camera
+                    .viewbox_mouse_event)
+            self._control_transparency = not self._control_transparency 
+        
+        if e.key.name == 'Escape':
+            self._clu.select(np.array([])) 
+
+        elif e.text == 'r':
+            self._view.camera.reset()
+            self._view.camera.set_range()
+        elif e.text == 'c':
+            self.x_axis_lock = not self.x_axis_lock 
+        elif e.text == 'x':
+            self.clip.emit('clip', thres=self.amp)
+
+        self._key_option = e.key.name

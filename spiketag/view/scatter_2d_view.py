@@ -118,24 +118,25 @@ class scatter_2d_view(scene.SceneCanvas):
         return pos
        
 
-    def on_key_press(self, e):
-        '''
-            Control: control + mouse wheel to adjust the transparency 
-            r:       reset the camera
-        '''
-        if keys.CONTROL in e.modifiers and not self._control_transparency:
-            self._view.events.mouse_wheel.disconnect(self._view.camera
-                    .viewbox_mouse_event)
-            self._control_transparency = not self._control_transparency 
-        elif e.text == 'r':
-            self._view.camera.reset()
-            self._view.camera.set_range()
-        elif e.text == 'c':
-            self.x_axis_lock = not self.x_axis_lock 
-        elif e.text == 'x':
-            self.clip.emit('clip', thres=self.amp)
+    # def on_key_press(self, e):
+    #     '''
+    #         Control: control + mouse wheel to adjust the transparency 
+    #         r:       reset the camera
+    #     '''
+    #     if keys.CONTROL in e.modifiers and not self._control_transparency:
+    #         self._view.events.mouse_wheel.disconnect(self._view.camera
+    #                 .viewbox_mouse_event)
+    #         self._control_transparency = not self._control_transparency 
+            
+    #     elif e.text == 'r':
+    #         self._view.camera.reset()
+    #         self._view.camera.set_range()
+    #     elif e.text == 'c':
+    #         self.x_axis_lock = not self.x_axis_lock 
+    #     elif e.text == 'x':
+    #         self.clip.emit('clip', thres=self.amp)
 
-        self._key_option = e.key.name
+    #     self._key_option = e.key.name
 
 
 
