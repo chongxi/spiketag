@@ -23,6 +23,9 @@ class spike_view(View):
         self.interactive = interactive
         self._selected = {}
         self._view_lock = True
+        self._magnet_const = 1 # k in knn when emit magnet event to absorb spikes from cluster 0
+        self._magnet_mode = False # set magnet_mode to True will lock the magnet_sink_id until magnet_mode is set False
+
         self.event = EventEmitter() 
         # self.events.add(model_modified=Event)
         
@@ -107,6 +110,8 @@ class spike_view(View):
         def on_cluster(*args, **kwargs):
             with Timer('[VIEW] Spikeview -- rerender', verbose=conf.ENABLE_PROFILER):
                 self._selected = {}
+                self._magnet_const = 1
+                self._magnet_mode = False
                 self.rerender()
         
         @self.clu.connect
@@ -430,6 +435,7 @@ class spike_view(View):
             if self.interactive is True:
                 ndc = self.panzoom.get_mouse_pos(e.pos)
                 box = self.interact.get_closest_box(ndc)
+                self.cluster_mouse_on = box[1]
                 tpos = self.get_pos_from_mouse(e.pos, box)[0]
                 
                 modifiers = e.modifiers
@@ -513,6 +519,11 @@ class spike_view(View):
 
     def on_key_press(self, e):
 
+        if e.key.name == 'Escape':
+            self.clu.select(np.array([]))
+            self._magnet_const = 1
+            self._magnet_mode = False
+
         if e.text == 'c':
             self.view_lock = not self.view_lock
             if self.is_single_mode and not self.is_spk_empty:
@@ -532,6 +543,10 @@ class spike_view(View):
             if not self.is_spk_empty:
                 target_clu_No = max(self.clu.index_id) + 1
                 self._move_spikes(target_clu_No)
+
+        if e.text == 'm':
+            self.event.emit('magnet', sink_id=self.cluster_mouse_on, k=self._magnet_const)
+            self._magnet_const += 1
         
         if e.text == 'x':
             if len(self.selected_spk) > 0:

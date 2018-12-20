@@ -53,6 +53,11 @@ class controller(object):
             self.recluster()
 
         @self.view.spkview.event.connect
+        def on_magnet(sink_id, k):
+            print('sink_id {}, k {}'.format(sink_id, k))
+            self.transfer(0, sink_id, k)
+
+        @self.view.spkview.event.connect
         def on_clip(idx):
             idx = np.array(idx)
             print('delete {} spikes'.format(idx.shape))
