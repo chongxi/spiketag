@@ -152,7 +152,7 @@ class CLU(EventEmitter):
         '''
             select global_idx of spikes
         '''
-        self.selectlist = selectlist # update selectlist
+        self.selectlist = np.unique(selectlist) # update selectlist
         self.emit('select', action='select', caller=caller)
     
     def select_clu(self, selected_clu_list):
