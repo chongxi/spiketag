@@ -301,6 +301,16 @@ class wave_view(scene.SceneCanvas):
 
         return dist
 
+
+    def convert_2_highlight_ch(self, chs):
+        highlight_chs = np.array(self._chs_idx)[chs]
+        return highlight_chs
+
+    def highlight(self, chs, timelist, colorlist=None, mask_others=False):
+        highlight_chs = self.convert_2_highlight_ch(chs)
+        self.waves1.highlight_ch(highlight_chs, highlight_color=(1,1,1,1), mask_others=mask_others)
+        self.waves1.highlight(highlight_chs, timelist, colorlist) 
+
     def highlight_ch(self):
         
         if getattr(self, 'spikes', None) is None or self.spikes is None:

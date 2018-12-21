@@ -204,7 +204,7 @@ class MyWaveVisual(visuals.Visual):
                     n0, n1 = 0, npts   # from n0 to n1
                     start  = n0 + chNo*self.npts
                     end    = n1 + chNo*self.npts
-                    self.color[start:end,:] = (0,0,0,0)    
+                    self.color[start:end,:] = (1,1,1,0.5)    
 
         self.shared_program['a_color'] = self.color
         self.update()

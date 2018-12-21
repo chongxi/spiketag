@@ -530,6 +530,9 @@ class spike_view(View):
             if self.is_single_mode and not self.is_spk_empty:
                 self.highlight(selected=self._selected) 
 
+        if e.text == 'o':
+            self.event.emit('show', content='ephys_full')
+
         if e.text == 'z':
             self.clu.undo()
 
@@ -564,6 +567,7 @@ class spike_view(View):
             if len(self.selected_spk) > 0:
                 self.event.emit('refine', method='time_threshold', args=self._bursting_time_threshold)
                 self._bursting_time_threshold /= 2.
+
 
         if _representsInt(e.text):
             ### assign selected spikes to cluster number ###

@@ -46,8 +46,25 @@ class controller(object):
             self.show(group_id)
 
         @self.view.spkview.event.connect
+        def on_show(content):
+            if content == 'ephys_full':
+                if self.clu.selectlist.shape[0] == 1:
+                    _time = self.model.gtimes[self.current_group][self.clu.selectlist[0]]/self.prb.fs
+                    _span = 0.4
+                    self.model.mua.show(self.prb.chs, span=_span, time=_time)
+                    _highlight_point = int(_span*self.prb.fs)
+                    #  chs, timelist, colorlist=None, mask_others=False
+                    _cluNo = self.clu.membership[self.clu.selectlist][0]
+                    _highlight_color = np.array(self.view.spkview.palette[_cluNo])
+                    _highlight_color = np.append(_highlight_color, 1)
+                    self.model.mua.wview.highlight(chs=self.prb[self.current_group], 
+                                                   timelist=[[_highlight_point-10, _highlight_point+15]],
+                                                   colorlist=_highlight_color, mask_others=True)
+
+
+        @self.view.spkview.event.connect
         def on_magnet(sink_id, k):
-            print('sink_id {}, k {}'.format(sink_id, k))
+            # print('sink_id {}, k {}'.format(sink_id, k))
             self.transfer(0, sink_id, k)
 
         @self.view.spkview.event.connect
@@ -189,7 +206,7 @@ class controller(object):
         # method is time_threshold, used to find burst
         # args here is the time_threshold for bursting or a sequential firing for single neuron
         time_thr = args*self.prb.fs
-        print time_thr
+        # print time_thr
         sequence = np.where(np.diff(self.model.gtimes[self.current_group][np.unique(self.clu.selectlist)])<time_thr)[0]
         idx_tosel = np.hstack((sequence, sequence-1)) + 1
         spk_tosel = np.unique(self.clu.selectlist)[idx_tosel]

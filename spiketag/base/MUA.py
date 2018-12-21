@@ -105,6 +105,7 @@ class MUA(object):
         info('----------------success------------------')
         info(' ')
 
+
     def get_threshold(self, beta=4.0):
         return _calculate_threshold(self.data[::100], beta)
 
@@ -223,14 +224,15 @@ class MUA(object):
             if len(times) > 0: group_with_times[g] = times
         return group_with_times
 
+
     def show(self, chs, span=None, time=0):
         if span is None:
-            wview = wave_view(self.data, chs=chs, spks=self.pivotal_pos)
-            wview.slideto(time * self.fs)
+            self.wview = wave_view(self.data, chs=chs, spks=self.pivotal_pos)
+            self.wview.slideto(time * self.fs)
         else:
             start = int((time-span)*self.fs) if time>span else 0
             stop  = int((time+span)*self.fs) if (time+span)*self.fs<self.data.shape[0] else self.data.shape[0]
             # print start,stop
-            wview = wave_view(self.data[start:stop], chs=chs, spks=self.pivotal_pos)
-            wview.slideto(span * self.fs)
-        wview.show()
+            self.wview = wave_view(self.data[start:stop], chs=chs, spks=self.pivotal_pos)
+            self.wview.slideto(span * self.fs)
+        self.wview.show()
