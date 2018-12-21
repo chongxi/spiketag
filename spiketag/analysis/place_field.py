@@ -231,7 +231,7 @@ class place_field(object):
         self.sorted_fields_id = np.argsort(self.metric[metric])[::-1]
 
 
-    def plot_fields(self, N, size=1.8, cmap='gray', marker=True, order=True):
+    def plot_fields(self, N, size=1.8, cmap='gray', marker=True, markersize=1, alpha=0.5, order=True):
         '''
         order: if True will plot with ranked fields according to the metric 
         '''
@@ -243,10 +243,14 @@ class place_field(object):
 
         for i in range(self.n_fields):
             ax = fig.add_subplot(nrow, ncol, i+1);
-            field_id = self.sorted_fields_id[i]
+            if order:
+                field_id = self.sorted_fields_id[i]
+            else:
+                field_id = i
             pcm = ax.pcolormesh(self.X, self.Y, self.fields[field_id], cmap=cmap);
             if marker:
-                ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 'mo', markersize=1, alpha=0.5)
+                ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 
+                                                          'mo', markersize=markersize, alpha=alpha)
 
         plt.grid('off')
         plt.show();
