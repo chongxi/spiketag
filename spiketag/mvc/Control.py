@@ -170,6 +170,24 @@ class controller(object):
             self.model.cluster(group_id=i, method='hdbscan', fall_off_size=fall_off_size)
         self.update_view()
 
+    def gmm_cluster(self):
+        '''
+        before running this, make sure the first cluster is noise, and the rest clusters are correctly positioned
+        '''
+        from sklearn.mixture import GaussianMixture as GMM
+        N = self.clu.nclu - 1
+        means_init = []
+        for i in range(N):
+            means_init.append(self.fet[self.clu[i+1]].mean(axis=0))
+        means_init = np.vstack(means_init)
+        gmm = GMM(n_components=N, covariance_type='full', means_init=means_init)
+        gmm.fit(self.fet)
+        label = gmm.predict(self.fet)
+        self.clu.membership = label
+        self.clu.__construct__()
+        self.clu.emit('cluster')
+
+
     def update_view(self):
         i = self.current_group
         self.view.set_data(i, self.model.mua, self.model.spk[i], self.model.fet[i], self.model.clu[i])
