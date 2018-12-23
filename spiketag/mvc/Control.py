@@ -136,6 +136,14 @@ class controller(object):
         return len(self.model.clu[self.current_group].index_id)
 
 
+    def get_spk_times(self, group_id=-1, cluster_id=1):
+        if group_id==-1:
+            group_id = self.current_group
+        idx = self.model.clu[group_id][cluster_id]
+        spk_times = self.model.gtimes[group_id][idx]/float(self.model.mua.fs)
+        return spk_times
+
+
     @property
     def spk_time(self):
         self._spk_time = {}
@@ -143,17 +151,34 @@ class controller(object):
         for i in cluNo:
             self._spk_time[i] = self.get_spk_times(cluster_id=i)
         return self._spk_time
-        # for group_id in range(self.n_group):
-        #     self._spk_times[group_id] = {}
-        #     for clu_id in self.model.clu[group_id].index.keys():
-        #         self._spk_times[group_id][clu_id] = self.get_spk_times(group_id, i)
 
-    def get_spk_times(self, group_id=-1, cluster_id=1):
-        if group_id==-1:
-            group_id = self.current_group
-        idx = self.model.clu[group_id][cluster_id]
-        spk_times = self.model.gtimes[group_id][idx]/float(self.model.mua.fs)
-        return spk_times
+
+    @property
+    def spk_times_all(self):
+        self._spk_time_all = {}
+        self._nclu_all = {}
+        for grp_id in range(self.prb.n_group):
+            _spk_times = {}
+            cluNo = self.model.clu[grp_id].index.keys()
+            for i in cluNo:
+                if i != 0:  # first cluster always noise
+                    _spk_times[i-1] = self.get_spk_times(grp_id, cluster_id=i)  # start from 0
+            self._spk_time_all[grp_id] = _spk_times
+            self._nclu_all[grp_id] = len(cluNo) - 1
+        return self._spk_time_all, self._nclu_all
+
+
+    @property
+    def spk_times_all_in_one(self):
+        spk_times, _ = self.spk_times_all
+        i = 0
+        self._spk_times_all_in_one = {}
+        for grp_id, _spk_times in spk_times.items():
+            for cluNo, _spk_time in _spk_times.items():
+                self._spk_times_all_in_one[i] = _spk_time
+                i += 1
+        return self._spk_times_all_in_one
+
 
     def delete_spk(self, spk_idx):
         i = self.current_group
@@ -170,17 +195,20 @@ class controller(object):
             self.model.cluster(group_id=i, method='hdbscan', fall_off_size=fall_off_size)
         self.update_view()
 
-    def gmm_cluster(self):
+    def gmm_cluster(self, N=None):
         '''
         before running this, make sure the first cluster is noise, and the rest clusters are correctly positioned
         '''
         from sklearn.mixture import GaussianMixture as GMM
-        N = self.clu.nclu - 1
-        means_init = []
-        for i in range(N):
-            means_init.append(self.fet[self.clu[i+1]].mean(axis=0))
-        means_init = np.vstack(means_init)
-        gmm = GMM(n_components=N, covariance_type='full', means_init=means_init)
+        if N is None:
+            N = self.clu.nclu - 1
+            means_init = []
+            for i in range(N):
+                means_init.append(self.fet[self.clu[i+1]].mean(axis=0))
+            means_init = np.vstack(means_init)
+            gmm = GMM(n_components=N, covariance_type='full', means_init=means_init)
+        else:
+            gmm = GMM(n_components=N, covariance_type='full')
         gmm.fit(self.fet)
         label = gmm.predict(self.fet)
         self.clu.membership = label

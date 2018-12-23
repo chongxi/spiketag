@@ -131,6 +131,7 @@ class BaseProbe(EventEmitter):
         '''
           number of groups, group can be treated as basic unit to statistic data
         '''
+        self._n_group = len(self.grp_dict.keys())
         return self._n_group
     
     @property

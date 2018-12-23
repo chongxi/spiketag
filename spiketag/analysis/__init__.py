@@ -64,7 +64,7 @@ def bayesian_decoding(Fr, suv, pos, pos_offset, bin_size, delta_t=100e-3):
     post_2d = np.zeros((suv.shape[1], Fr.shape[1], Fr.shape[2]))
     possion_matrix = delta_t*Fr.sum(axis=0)
     log_fr = np.log(Fr) # make sure Fr[Fr==0] = 1e-12
-    for i in prange(suv.shape[1]): # i is time point
+    for i in range(suv.shape[1]): # i is time point
         suv_weighted_log_fr = licomb_Matrix(suv[:,i], log_fr)
         true_xy[i] = (pos[i]-pos_offset)//bin_size
         post_2d[i] = np.exp(suv_weighted_log_fr - possion_matrix)
