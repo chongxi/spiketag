@@ -238,7 +238,7 @@ class place_field(object):
         nrow = self.n_fields/N + 1
         ncol = N
         fig = plt.figure(figsize=(ncol*size, nrow*size));
-        plt.tight_layout();
+        # plt.tight_layout();
         plt.subplots_adjust(wspace=None, hspace=None);
 
         for i in range(self.n_fields):
