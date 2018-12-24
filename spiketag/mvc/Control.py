@@ -41,9 +41,18 @@ class controller(object):
             
         @self.view.prb.connect
         def on_select(group_id, chs):
-            print(group_id, chs)
+            # print(group_id, chs)
             self.current_group = group_id
             self.show(group_id)
+            nspks = self.model.gtimes[self.current_group].shape[0]
+            self.view.status_bar.showMessage('group {}:{} are selected. It contains {} spikes'.format(group_id, chs, nspks))
+
+        # @self.clu.connect
+        # def on_select(action, caller):
+        #     msg = '{} spikes are selected from'.format(str(len(self.clu.selectlist)), str(caller))
+        #     self.view.status_bar.showMessage(msg)
+
+
 
         @self.view.spkview.event.connect
         def on_show(content):

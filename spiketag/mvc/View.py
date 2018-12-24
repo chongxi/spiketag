@@ -66,10 +66,11 @@ class MainView(QMainWindow):
 
         self.setWindowTitle("Spiketag") 
 
-        status_bar = QStatusBar(self)
-        self.setStatusBar(status_bar)
-        self._statusbar_label = QLabel("status")
-        status_bar.addPermanentWidget(self._statusbar_label)
+        self.status_bar = QStatusBar(self)
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage('Ready')
+        # self._statusbar_label = QLabel("status")
+        # status_bar.addPermanentWidget(self._statusbar_label)
 
 
         self.centralWidget = QWidget(self)          
