@@ -50,11 +50,11 @@ import sys
 from ..view import probe_view, spike_view, scatter_3d_view, amplitude_view, ctree_view, trace_view, correlogram_view
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QThread, QEventLoop
-from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog, QWidget, QSplitter, QComboBox, QTextBrowser, QSlider, QPushButton, QTableWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
+from PyQt5.QtWidgets import QStatusBar, QMainWindow, QAction, QFileDialog, QWidget, QSplitter, QComboBox, QTextBrowser, QSlider, QPushButton, QTableWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
 from PyQt5.QtGui import QIcon
 
 
-class MainView(QWidget):
+class MainView(QMainWindow):
 
     def __init__(self, prb):
         super(MainView, self).__init__()
@@ -63,6 +63,17 @@ class MainView(QWidget):
 
 
     def initUI(self):
+
+        self.setWindowTitle("Spiketag") 
+
+        status_bar = QStatusBar(self)
+        self.setStatusBar(status_bar)
+        self._statusbar_label = QLabel("status")
+        status_bar.addPermanentWidget(self._statusbar_label)
+
+
+        self.centralWidget = QWidget(self)          
+        self.setCentralWidget(self.centralWidget)   
 
         hbox = QHBoxLayout(self)
         self.splitter0 = QSplitter(Qt.Horizontal)
@@ -80,20 +91,22 @@ class MainView(QWidget):
         # self.splitter3.addWidget(self.splitter0)
         self.splitter3.addWidget(self.splitter1)
         self.splitter3.addWidget(self.splitter2)
+        self.splitter3.setSizes([70,30])  # uppper and down (up, down)
 
         self.prb_view = probe_view()
         self.prb_view.set_data(self.prb, font_size=35)
         self.splitter0.addWidget(self.prb_view.native)
         self.splitter0.addWidget(self.splitter3)
+        self.splitter0.setSizes([20, 180]) # prb_view and all others (left, right)
 #         self.splitter2.addWidget(self.bottom)
 
         hbox.addWidget(self.splitter0)
 
-        self.setLayout(hbox)
+        self.centralWidget.setLayout(hbox)
         # QApplication.setStyle(QStyleFactory.create('Cleanlooks'))
 
-        self.setGeometry(300, 300, 1000, 500)
-        self.setWindowTitle('spiketag')
+        # self.setGeometry(300, 300, 1000, 500)
+        # self.setWindowTitle('spiketag')
 #         self.show()
 
         self.spkview = spike_view()
@@ -109,10 +122,12 @@ class MainView(QWidget):
         self.splitter_fet.addWidget(self.fetview0.native)
         self.splitter_fet.addWidget(self.fetview1.native)
         self.splitter1.addWidget(self.spkview.native)
+        self.splitter1.setSizes([30,50,80])  # trace_view, fet_view, spk_view
 
         self.splitter2.addWidget(self.corview.native) 
         self.splitter2.addWidget(self.treeview.native)
         self.splitter2.addWidget(self.ampview.native)
+        self.splitter2.setSizes([40,40,100])  # corview, treeview, ampview
 
 
     def set_data(self, group_id, mua, spk, fet, clu):
@@ -135,4 +150,5 @@ class MainView(QWidget):
         except Exception as e:
             pass
         
+
 #         self.traceview.locate_buffer = 2000
