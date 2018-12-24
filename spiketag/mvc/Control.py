@@ -214,6 +214,30 @@ class controller(object):
         self.clu.membership = label
         self.clu.__construct__()
         self.clu.emit('cluster')
+        return gmm
+
+    def dpgmm_cluster(self, min_spikes_per_cluster=40, max_n_clusters = 30, n_clusters=10):
+        from sklearn.mixture import BayesianGaussianMixture as DPGMM
+        dpgmm = DPGMM(
+            n_components=max_n_clusters, covariance_type='full', weight_concentration_prior=1e-3,
+            weight_concentration_prior_type='dirichlet_process', init_params="kmeans",
+            max_iter=300, random_state=0, verbose=1, verbose_interval=10) # init can be "kmeans" or "random"
+        dpgmm.fit(self.fet)
+        label = dpgmm.predict(self.fet)
+        self.clu.membership = label
+        self.clu.__construct__()
+        self.clu.emit('cluster')
+        return dpgmm                
+
+    def kmm_cluster(self, N=100):
+        from sklearn.cluster import MiniBatchKMeans
+        kmm = MiniBatchKMeans(N)
+        kmm.fit(self.fet)
+        label = kmm.predict(self.fet)
+        self.clu.membership = label
+        self.clu.__construct__()
+        self.clu.emit('cluster')
+        return kmm    
 
 
     def update_view(self):
