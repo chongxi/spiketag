@@ -39,13 +39,15 @@ class controller(object):
             # every channel has a `ch_hash` and a `ch_grpNo` 
             self.fpga = xike_config(probe=self.prb, offset_value=32)
             
+            
         @self.view.prb.connect
         def on_select(group_id, chs):
             # print(group_id, chs)
             self.current_group = group_id
-            self.show(group_id)
             nspks = self.model.gtimes[self.current_group].shape[0]
-            self.view.status_bar.showMessage('group {}:{} are selected. It contains {} spikes'.format(group_id, chs, nspks))
+            self.view.status_bar.showMessage('loading group {}:{}. It contains {} spikes'.format(group_id, chs, nspks))
+            self.show(group_id)
+            self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, chs, nspks))
 
         # @self.clu.connect
         # def on_select(action, caller):
