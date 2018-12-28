@@ -1,7 +1,7 @@
 from .utils import Timer, EventEmitter, Picker, key_buffer
 from .cameras import YSyncCamera
-from conf import logger, debug, info, warning, error, critical
-import conf 
+from .conf import logger, debug, info, warning, error, critical
+from . import conf
 import numpy as np
 from scipy.interpolate import interp1d
 

@@ -108,7 +108,7 @@ def _to_fet(_spk_array, _weight_vector, method='weighted-pca', ncomp=6, whiten=F
         fet = temp_fet/(temp_fet.max()-temp_fet.min()) 
 
     else:
-        print 'method has to be {peak, pca, weighted-pca, ica, weighted-ica}'
+        print('method has to be {peak, pca, weighted-pca, ica, weighted-ica}')
 
     return fet
 
@@ -118,7 +118,7 @@ class SPK():
         self.__spk = spkdict.copy() 
         self.spk = spkdict
         self.n_group = len(spkdict)
-        self.ch_span = self.spk.values()[0].shape[-1]
+        self.ch_span = list(self.spk.values())[0].shape[-1]
         self.spklen = 19
         weight_vector = np.array([0.2871761 , 0.2871761 , 0.3571761 , 0.45907732, 0.45485107, 
                                   0.664169  , 0.85485229, 0.91183021, 0.83639082, 0.83206653, 

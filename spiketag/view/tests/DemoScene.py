@@ -9,7 +9,7 @@ from vispy import app, scene
 from vispy.scene import visuals
 from vispy.geometry import generation as gen, create_sphere
 
-# app.use_app('pyside')
+
 
 class DemoScene(QtGui.QWidget):
     def __init__(self, keys='interactive'):

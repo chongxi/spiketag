@@ -157,7 +157,7 @@ class ctree_view(scene.SceneCanvas):
         #  vertices = np.column_stack((vertices[:,0] / vertices[:,0].max(), vertices[:,1] / vertices[:,1].max()))
 
         face_base = np.array([0, 1, 2, 0, 3, 2])    
-        faces = np.tile(face_base, vertices.shape[0]/4)
+        faces = np.tile(face_base, int(vertices.shape[0]/4))
         faces = faces + np.repeat(np.arange(vertices.shape[0]/4) * 4, 6)
         faces = faces.reshape(-1, 3)
 
@@ -169,7 +169,8 @@ class ctree_view(scene.SceneCanvas):
                 
                 if face_idx != []:
                     face_colors[face_idx] = color
-	return vertices, faces, face_colors 
+                    
+        return vertices, faces, face_colors
 
     def _select(self, cluster_id):
         with Timer("[View] Ctreeview -- get_leaves.", conf.ENABLE_PROFILER):

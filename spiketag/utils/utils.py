@@ -7,7 +7,7 @@ from vispy import scene, app
 import numpy as np
 from matplotlib import path
 import spiketag
-import conf
+from . import conf
 
 #------------------------------------------------------------------------------
 # Simple Timer for performance test

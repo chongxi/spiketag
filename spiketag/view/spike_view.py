@@ -289,7 +289,7 @@ class spike_view(View):
                     self.visuals[0].program['a_position'] = self.depth  # pos include depth
                     self.update()
 
-        except Exception, e:
+        except Exception as e:
             pass
 
     def _clear_highlight(self):
@@ -384,7 +384,7 @@ class spike_view(View):
                         target_local_idx = self.clu.move(self._selected,
                                                         target_clu_no)
                         self._selected = {target_clu_no:target_local_idx}
-                except IndexError, e:
+                except IndexError as e:
                     error("Move spikes failure: {}".format(e))
                     error("Move selected spikes {} to target clu no {}. ".format(self._selected, target_clu_no))
                     error("Current cluster index is {}.".format(self.clu.index))
@@ -396,7 +396,7 @@ class spike_view(View):
                     with Timer('[VIEW] Spikeview -- merge', verbose=conf.ENABLE_PROFILER):
                         self.clu.merge(np.append(self._selected.keys(),target_clu_no))
                     self._selected = self.clu.global2local(global_idx)
-                except IndexError, e:
+                except IndexError as e:
                     error("Merge spikes failure: {}".format(e))
                     error("Merge selected spikes {} to target clu no {}".format(self._selected, target_clu_no))
                     error("Current cluster index is {}.".format(self.clu.index))
@@ -495,7 +495,7 @@ class spike_view(View):
                         # self.on_select()
                         self.clu.select(self.selected_spk, caller=self.__module__)
 
-        except Exception, e:
+        except Exception as e:
             pass
 
 

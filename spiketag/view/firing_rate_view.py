@@ -1,6 +1,6 @@
 import numpy as np
 from .color_scheme import palette
-from line_view import line_view
+from .line_view import line_view
 from scipy import signal
 
 class firing_rate_view(line_view):

@@ -27,7 +27,7 @@ def run():
         # f.write(buf)
         os.write(fd, buf)
         toc = time.time() * 1000
-        print '{0} ms'.format(toc-tic)
+        print('{0} ms'.format(toc-tic))
 
 # if __name__ == "__main__":
     # run()

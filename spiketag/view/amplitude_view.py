@@ -1,6 +1,6 @@
 import numpy as np
 from .color_scheme import palette
-from scatter_2d_view import scatter_2d_view
+from .scatter_2d_view import scatter_2d_view
 from vispy.util import keys
 
 

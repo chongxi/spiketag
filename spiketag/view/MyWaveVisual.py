@@ -228,9 +228,9 @@ class MyWaveVisual(visuals.Visual):
             self.data = self.data.reshape(-1,1)
      
         ####### extract meta data from data #######
-        self.nCh = self.data.shape[1]
-        self.npts = self.data.shape[0]
-        self.nrows = self.nCh / self.ncols
+        self.nCh = int(self.data.shape[1])
+        self.npts = int(self.data.shape[0])
+        self.nrows = int(self.nCh / self.ncols)
     
         ####### scale data #######
         self._scale = self.data.max()-self.data.min()

@@ -1,4 +1,4 @@
-from memory_api import *
+from .memory_api import *
 import numpy as np
 import struct
 

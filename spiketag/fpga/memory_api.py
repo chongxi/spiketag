@@ -97,19 +97,19 @@ def to2scomp(v, dtype='i4'):
 
 def mem_test(addr, value, dt, bp):
     # write mem (32bits)
-    print 'write {0} to addres {1}'.format(value, addr)
+    print('write {0} to addres {1}'.format(value, addr))
     write_thr_32(addr, value, dtype=dt, binpoint=bp)
     # read mem (32bits)
 
-    print 'read v from addres {0}'.format(addr)
+    print('read v from addres {0}'.format(addr))
     v = read_thr_32(addr, dtype=dt, binpoint=bp)
-    print 'v =',v 
+    print('v =',v)
 
     # verification
     if abs(value - v) < 2**-bp:
-        print 'memory test pass\n'
+        print('memory test pass\n')
     else:
-        print 'memory test fail\n'
+        print('memory test fail\n')
 
 def test1():
     addr  = 516

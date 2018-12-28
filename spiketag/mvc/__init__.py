@@ -24,8 +24,6 @@ def gen_config():
 
 gen_config() # gen state.json file in user's home directory if doesn't exists
 
-from .Control import Sorter
+from .Control import controller
 from .Model import MainModel
 from .View import MainView
-
-

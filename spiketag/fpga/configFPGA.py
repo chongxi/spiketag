@@ -1,8 +1,7 @@
 import numpy as np
-import bram_thres as bram_thres
-from ..fpga.memory_api import read_mem_16, write_mem_16
-from ..fpga import bram_thres
-from ..fpga.bram_xike  import pca_hash, scale_hash, shift_hash, vq_hash
+from .memory_api import read_mem_16, write_mem_16
+from .bram_xike  import pca_hash, scale_hash, shift_hash, vq_hash
+from . import bram_thres
 
 
 def calculate_threshold(x, beta=4.0):

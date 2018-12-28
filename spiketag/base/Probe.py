@@ -337,7 +337,7 @@ if __name__ == '__main__':
     prb[2].y = 0
     # print prb[0]
     prb.auto_pos()
-    print prb.mapping
+    print(prb.mapping)
     # print prb[0][1]
     # print prb.shanks
 

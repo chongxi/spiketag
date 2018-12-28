@@ -1,7 +1,7 @@
 import numpy as np
 from vispy import scene, app
 from vispy.util import keys
-from trace_view import Cross
+from .trace_view import Cross
 from ..utils.utils import Picker
 from ..utils import EventEmitter
 

@@ -36,9 +36,9 @@ def _unpickle_method(func_name, obj, cls):
             break
     return func.__get__(obj, cls)
 
-import copy_reg
-import types
-copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
+# import copy_reg
+# import types
+# copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
 #######################################################################
 
 
@@ -48,16 +48,16 @@ copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
 # to calculate the avearge knn distance 
 # from uncertain points to core clusters
 
-def distance2clu(u, k=10):
-    dis = []
-    for key, value in app.model.clu[app.ch].index.items():
-        if key > 0:
-            X = app.model.fet[app.ch][value]
-            print key, X.shape
-            kd = KDTree(X, p=2)
-            d  = kd.query(u, k)[0]
-            dis.append(d.mean(axis=1))
-    return np.vstack(np.asarray(dis))
+# def distance2clu(u, k=10):
+#     dis = []
+#     for key, value in app.model.clu[app.ch].index.items():
+#         if key > 0:
+#             X = app.model.fet[app.ch][value]
+#             print(key, X.shape)
+#             kd = KDTree(X, p=2)
+#             d  = kd.query(u, k)[0]
+#             dis.append(d.mean(axis=1))
+#     return np.vstack(np.asarray(dis))
 
 #######################################################################
 # from numba import jit
