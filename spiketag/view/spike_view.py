@@ -395,7 +395,7 @@ class spike_view(View):
                 try:
                     global_idx = self.clu.local2global(self._selected)
                     with Timer('[VIEW] Spikeview -- merge', verbose=conf.ENABLE_PROFILER):
-                        self.clu.merge(np.append(self._selected.keys(),target_clu_no))
+                        self.clu.merge(np.append(list(self._selected.keys()), target_clu_no))
                     self._selected = self.clu.global2local(global_idx)
                 except IndexError as e:
                     error("Merge spikes failure: {}".format(e))
