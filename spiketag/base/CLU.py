@@ -9,23 +9,33 @@ def instack_membership(func):
         return func(self, *args, **kwargs)
     return wrapper
 
+
 class CLU(EventEmitter):
     """docstring for Clu"""
-    def __init__(self, clu, clusterer=None, treeinfo=None):
+    def __init__(self, clu, method=None, clusterer=None, treeinfo=None, probmatrix=None):
         super(CLU, self).__init__()
         self.membership = clu.copy()
+        if method:
+            self._method = method
         if clusterer:
             self._extra_info = self._extract_extra_info(clusterer)       
             self._select_clusters = self._extra_info['default_select_clusters']
         if treeinfo:
             self._extra_info = treeinfo
             self._select_clusters = treeinfo['default_select_clusters']
+        if probmatrix is not None:
+            self._probmatrix = probmatrix
+
         self.__membership = self.membership.copy()
         while min(self.membership) < 0:
             self.membership += 1
         self._membership_stack = []
         self.__construct__()
         self.selectlist = np.array([])
+
+    @property
+    def npts(self):
+        return self.membership.shape[0]
 
     def __construct__(self):
         '''
@@ -222,9 +232,19 @@ class CLU(EventEmitter):
         self.membership = np.delete(self.membership, idx)
         self.__construct__()
 
-    def fill(self, global_idx, clu_to):
+    def fill(self, *args, **kwargs):
+        '''
+        clu.fill(global_idx, clu_to) for changing some of the membership
+        or
+        clu.fill(clu_to) for changing all memberships
+        '''
+        if len(args) == 1:
+            global_idx = np.arange(self.npts)
+            clu_to     = args[0]
+        if len(args) == 2:
+            global_idx = args[0]
+            clu_to     = args[1]
         assert len(global_idx) == len(clu_to)
-
         #  print 'received fill event, global_idx:{}, clu_to:{}'.format(global_idx, clu_to)
         for idx, clu in zip(global_idx, clu_to):
             self.membership[idx] = clu

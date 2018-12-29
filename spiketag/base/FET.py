@@ -1,7 +1,8 @@
 from torch.multiprocessing import Pool, cpu_count
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
-from hdbscan import HDBSCAN
+# from hdbscan import HDBSCAN
+import hdbscan
 from time import time
 from ..utils.utils import Timer
 from ..utils.conf import info, warning
@@ -73,10 +74,12 @@ class FET(object):
             leaf_size = self.hdbscan_hyper_param['leaf_size']
             if fall_off_size is not None:
                 min_cluster_size = fall_off_size
-            hdbcluster = HDBSCAN(min_cluster_size=min_cluster_size, 
+            hdbcluster = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, 
                                  leaf_size=leaf_size,
                                  gen_min_span_tree=True, 
-                                 algorithm='boruvka_kdtree')
+                                 algorithm='boruvka_kdtree',
+                                 prediction_data=True)  
+            
 
             # automatic pool clustering
             if group_id is None:
@@ -96,8 +99,10 @@ class FET(object):
                     info('clustering start with {} cpus'.format(1))
                     tic = time()
                     for group_id in self.group:
-                        clusterer = hdbcluster.fit(self.fet[group_id])
-                        clu[group_id] = CLU(clusterer.labels_, clusterer)
+                        clusterer = hdbcluster.fit(self.fet[group_id].astype(np.float64))
+                        probmatrix = hdbscan.all_points_membership_vectors(clusterer)
+                        clu[group_id] = CLU(clu = clusterer.labels_, method='hdbscan',
+                                            clusterer=clusterer, probmatrix=probmatrix)
                     toc = time()
                     info('clustering finished, used {} sec'.format(toc-tic))
                 return clu
@@ -114,18 +119,22 @@ class FET(object):
     def _toclu(self, group_id, method='hdbscan'):
         if method == 'hdbscan':
             # tic = time()
-            from hdbscan import HDBSCAN
+            # from hdbscan import HDBSCAN
+            import hdbscan
             min_cluster_size = self.hdbscan_hyper_param['min_cluster_size']
             leaf_size = self.hdbscan_hyper_param['leaf_size']
-            hdbcluster = HDBSCAN(min_cluster_size=min_cluster_size, 
+            hdbcluster = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, 
                          leaf_size=leaf_size,
                          gen_min_span_tree=False, 
                          algorithm='boruvka_kdtree',
-                         core_dist_n_jobs=1)        
-            clusterer = hdbcluster.fit(self.fet[group_id])
+                         core_dist_n_jobs=1,
+                         prediction_data=True)        
+            clusterer = hdbcluster.fit(self.fet[group_id].astype(np.float64))
+            probmatrix = hdbscan.all_points_membership_vectors(clusterer)
             # toc = time()
             # info('fet._toclu(group_id={}, method={})  -- {} sec'.format(group_id, method, toc-tic))
-            return CLU(clusterer.labels_, clusterer)
+            return CLU(clu = clusterer.labels_, method='hdbscan',
+                       clusterer=clusterer, probmatrix=probmatrix)
         #  elif method == 'reset':
             #  clu = np.zeros((self.fet[group_id].shape[0], )).astype(np.int64)
         else:
