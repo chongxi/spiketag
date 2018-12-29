@@ -133,7 +133,7 @@ class ctree_view(scene.SceneCanvas):
                     
 
     def _get_cluster_by_pos(self, pos):
-        for cluster, vertices in self._cluster_bounds.iteritems():
+        for cluster, vertices in self._cluster_bounds.items():
             p = path.Path(self._transform.map(vertices)[:,:2], closed=True)
             selected = p.contains_point(pos)
             if selected:

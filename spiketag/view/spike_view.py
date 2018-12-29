@@ -254,7 +254,7 @@ class spike_view(View):
                 self._clear_highlight()
 
         with Timer('[VIEW] Spikeview -- do highlight', verbose=conf.ENABLE_PROFILER):
-            for k,v in selected.iteritems():
+            for k,v in selected.items():
                 self._highlight(v,k,refresh=False)
 
     def _highlight(self, spkNolist, cluNo, refresh=True):
@@ -351,14 +351,15 @@ class spike_view(View):
             if on single mode, return the only cluster no we have
         '''
         if self.is_single_mode:
-            return self._selected.keys()[0]
+            return list(self._selected.keys())[0]
+
 
     @property
     def selected_whole_cluster(self):
         '''
             if at least one cluster whole selected, return True, else return False 
         '''
-        for k,v in self._selected.iteritems():
+        for k,v in self._selected.items():
             if len(v) == self.clu.index_count[k]:
                 return True
         return False
@@ -366,13 +367,13 @@ class spike_view(View):
     @property
     def is_spk_empty(self):
         if len(self._selected) > 0:
-            for k,v in self._selected.iteritems():
+            for k,v in self._selected.items():
                 if len(v) > 0:
                     return False
         return True
 
     def _reset_cluster(self):
-        for k,v in self._selected.iteritems():
+        for k,v in self._selected.items():
             self._selected[k] = np.array([])
 
     def _move_spikes(self, target_clu_no):

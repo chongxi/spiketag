@@ -248,7 +248,8 @@ class trace_view(scene.SceneCanvas):
             highlight_start = p
             highlight_end = highlight_start + self.spklen
             highlight_segment = [[highlight_start,highlight_end]]
-            highlight_color = np.hstack((self.palette[self.clu.global2local(i).keys()[0]],1))
+            _cluNo = list(self.clu.global2local(i).keys())[0]
+            highlight_color = np.hstack((self.palette[_cluNo],1))
             self.waves1.highlight(np.arange(self.nCh),highlight_segment, highlight_color)
 
     @property

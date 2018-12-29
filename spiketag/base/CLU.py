@@ -75,6 +75,12 @@ class CLU(EventEmitter):
         if isinstance(global_idx,int):
             global_idx = np.array([global_idx])
 
+        if isinstance(global_idx, np.int64):
+            global_idx = np.array([global_idx])
+
+        if isinstance(global_idx, np.int32):
+            global_idx = np.array([global_idx])
+
         if len(global_idx):
             clus_nos = np.unique(self.membership[global_idx])
       
@@ -101,7 +107,7 @@ class CLU(EventEmitter):
         '''
         global_idx = np.array([],dtype='int')
 
-        for clu_no, local_idx in local_idx.iteritems():
+        for clu_no, local_idx in local_idx.items():
             global_idx = np.append(global_idx,self._glo_id(clu_no, local_idx, sorted=False))
         global_idx.sort()
 

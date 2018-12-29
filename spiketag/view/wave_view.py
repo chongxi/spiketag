@@ -250,7 +250,7 @@ class wave_view(scene.SceneCanvas):
             chs_labels = np.arange(self.data.shape[1])
         else:
             chs_labels = np.arange(32)
-        self._chs = zip(chs_labels, np.arange(len(chs_labels)))
+        self._chs = list(zip(chs_labels, np.arange(len(chs_labels))))
         self._chs_idx = sorted([j for _, j in self._chs], reverse=True)
         self.spikes = self._spkarray2dist(spks) 
         self._render(self.data[0:self.pagesize, self._chs_idx])
@@ -409,8 +409,8 @@ class wave_view(scene.SceneCanvas):
 
     def attach_texts(self):
         
-        y = -1 + 2 * (np.arange(len(self._chs)) * self.gap_value + 0.5) / len(self._chs) 
-        poses = np.column_stack((np.zeros(len(self._chs)),y))
+        y = -1 + 2 * (np.arange(len(list(self._chs))) * self.gap_value + 0.5) / len(list(self._chs))
+        poses = np.column_stack((np.zeros(len(list(self._chs))),y))
         texts = [ str(i) for i,_ in reversed(self._chs)] 
         
         self.ch_no_text.text = texts

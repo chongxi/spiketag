@@ -60,7 +60,7 @@ class amplitude_view(scatter_2d_view):
         # find the intersect cluster between other view and amplitude view
         local_idx = self._clu.global2local(global_idx)
         current_clus = self._clu.select_clus
-        common_clus = np.intersect1d(current_clus, np.array(local_idx.keys()))
+        common_clus = np.intersect1d(current_clus, np.array(list(local_idx.keys())))
         
         # the spike idx in parent-class is |cluster1|cluster2|cluster3|....|,
         # so the local idx in cluster2 is need to plus len(cluster1)

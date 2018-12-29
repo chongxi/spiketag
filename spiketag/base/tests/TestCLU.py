@@ -1,5 +1,5 @@
-import sys
-sys.path.append('../../../')
+# import sys
+# sys.path.append('../../../')
 import unittest
 import numpy as np
 from spiketag.base import CLU
@@ -103,7 +103,7 @@ class TestCLU(unittest.TestCase):
         '''
             because assert method can not assert a dict containing numpy array, so need a method converting list from numpy array
         '''
-        for k,v in dict.iteritems():
+        for k,v in dict.items():
             dict[k] = list(v)
         return dict
 

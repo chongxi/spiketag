@@ -13,10 +13,10 @@ def _spkNo2maskNo_numba(n_signals, n_samples, n_ch, clu_offset, cluNo, spkNolist
     i = 0
     offset = clu_offset[cluNo]
     for spkNo in spkNolist:
-        for ch in xrange(n_ch):
+        for ch in range(n_ch):
             start = n_samples*(spkNo + ch*n_signals + offset)
             end   = n_samples*(spkNo + ch*n_signals + offset + 1)
-            for j in xrange(start, end):
+            for j in range(start, end):
                 mask[i] = j
                 i += 1
 
@@ -24,9 +24,9 @@ def _spkNo2maskNo_numba(n_signals, n_samples, n_ch, clu_offset, cluNo, spkNolist
 def _cache_out(_cache_mask, _cache, target):
     N = len(_cache_mask)
     M = target.shape[1]
-    for i in xrange(N):
+    for i in range(N):
         k = _cache_mask[i]
-        for j in xrange(M):
+        for j in range(M):
             target[k,j] = _cache[k,j]
 
 
@@ -34,9 +34,9 @@ def _cache_out(_cache_mask, _cache, target):
 def _cache_in_matrix(mask, source, target):
     N = len(mask)
     M = target.shape[1]
-    for i in xrange(N):
+    for i in range(N):
         k = mask[i]
-        for j in xrange(M):
+        for j in range(M):
             target[k,j] = source[i,j]
 
 
@@ -44,9 +44,9 @@ def _cache_in_matrix(mask, source, target):
 def _cache_in_vector(mask, source, target):
     N = len(mask)
     M = target.shape[1]
-    for i in xrange(N):
+    for i in range(N):
         k = mask[i]
-        for j in xrange(M):
+        for j in range(M):
             target[k,j] = source[j]
 
 
@@ -54,9 +54,9 @@ def _cache_in_vector(mask, source, target):
 def _cache_in_scalar(mask, source, target):
     N = len(mask)
     M = target.shape[1]
-    for i in xrange(N):
+    for i in range(N):
         k = mask[i]
-        for j in xrange(M):
+        for j in range(M):
             target[k,j] = source
 
 
