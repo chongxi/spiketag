@@ -160,6 +160,7 @@ class ctree_view(scene.SceneCanvas):
         faces = np.tile(face_base, int(vertices.shape[0]/4))
         faces = faces + np.repeat(np.arange(vertices.shape[0]/4) * 4, 6)
         faces = faces.reshape(-1, 3)
+        faces = faces.astype(np.int64)
 
         face_colors = np.full([faces.shape[0], 4], self._default_clu_color, dtype=np.float64)
         for idx, val in enumerate(self._select_clusters):
