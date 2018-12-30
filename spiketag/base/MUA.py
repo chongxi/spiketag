@@ -6,6 +6,7 @@ from spiketag.view import wave_view
 from .SPK import SPK
 from .Binload import bload
 from ..utils.conf import info
+from ..utils import Timer
 
 def _calculate_threshold(x, beta):
     thr = -beta*np.median(abs(x)/0.6745,axis=0)
@@ -45,7 +46,8 @@ def idx_still_spike(time_spike, time_still, dt):
 
 
 class MUA(object):
-    def __init__(self, mua_filename, spk_filename, probe, numbytes=4, binary_radix=13, 
+    def __init__(self, mua_filename, probe, numbytes=4, binary_radix=13, 
+                 spk_filename=None,
                  cutoff=[-1500, 1000], time_segs=None, time_still=None, lfp=False):
         '''
         mua_filename:
@@ -66,7 +68,8 @@ class MUA(object):
         self.mua_file = mua_filename
         if probe.reorder_by_chip is True:
             self.bf.reorder_by_chip(probe._nchips)
-        self.data = self.bf.asarray(binpoint=binary_radix)
+        with Timer('convert data from memmap to numpy with radix', verbose=True):
+            self.data = self.bf.asarray(binpoint=binary_radix)
         # self.data = self.bf.data.numpy().reshape(-1, self.nCh)
         # self.scale = self.data.max() - self.data.min()
         self.t    = self.bf.t
@@ -86,24 +89,28 @@ class MUA(object):
         foldername = '/'.join(self.mua_file.split('/')[:-1])+'/'
         info('processing folder: {}'.format(foldername))
         # self.spk_file = self.mua_file[:-4] + '.spk.bin'
-        self.spk_file = spk_filename
-        spk_meta = np.fromfile(self.spk_file, dtype='<i4')
-        self.pivotal_pos = spk_meta.reshape(-1,2).T
+        if spk_filename is not None:
+            self.spk_file = spk_filename
+            spk_meta = np.fromfile(self.spk_file, dtype='<i4')
+            self.pivotal_pos = spk_meta.reshape(-1,2).T
 
-        # check spike is extracable
-        # delete begin AND end
-        self.pivotal_pos = np.delete(self.pivotal_pos, 
-                           np.where((self.pivotal_pos[0] + self.spklen) > self.data.shape[0])[0], axis=1)
+            # check spike is extracable
+            # delete begin AND end
+            self.pivotal_pos = np.delete(self.pivotal_pos, 
+                               np.where((self.pivotal_pos[0] + self.spklen) > self.data.shape[0])[0], axis=1)
 
-        self.pivotal_pos = np.delete(self.pivotal_pos, 
-                           np.where((self.pivotal_pos[0] - self.prelen) < 0)[0], axis=1)        
+            self.pivotal_pos = np.delete(self.pivotal_pos, 
+                               np.where((self.pivotal_pos[0] - self.prelen) < 0)[0], axis=1)        
 
-        if lfp:
-            self.pivotal_pos[0] -= 20
+            if lfp:
+                self.pivotal_pos[0] -= 20
 
-        info('raw data have {} spks'.format(self.pivotal_pos.shape[1]))
-        info('----------------success------------------')
-        info(' ')
+            info('raw data have {} spks'.format(self.pivotal_pos.shape[1]))
+            info('----------------success------------------')
+            info(' ')
+        else:
+            self.pivotal_pos = None
+            info('no spike file provided')
 
 
     def get_threshold(self, beta=4.0):
@@ -227,12 +234,17 @@ class MUA(object):
 
     def show(self, chs, span=None, time=0):
         if span is None:
-            self.wview = wave_view(self.data, chs=chs, spks=self.pivotal_pos)
+            if self.pivotal_pos is not None:
+                self.wview = wave_view(self.data, chs=chs, spks=self.pivotal_pos)
+            else:
+                self.wview = wave_view(self.data, chs=chs)
             self.wview.slideto(time * self.fs)
         else:
             start = int((time-span)*self.fs) if time>span else 0
             stop  = int((time+span)*self.fs) if (time+span)*self.fs<self.data.shape[0] else self.data.shape[0]
-            # print start,stop
-            self.wview = wave_view(self.data[start:stop], chs=chs, spks=self.pivotal_pos)
+            if self.pivotal_pos is not None:
+                self.wview = wave_view(self.data[start:stop], chs=chs, spks=self.pivotal_pos)
+            else:
+                self.wview = wave_view(self.data[start:stop], chs=chs)
             self.wview.slideto(span * self.fs)
         self.wview.show()
