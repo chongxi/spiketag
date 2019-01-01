@@ -1,10 +1,13 @@
 import numpy as np
 import sys
+from scipy import signal
 from vispy import app, visuals, scene
 from spiketag.view import volume_view
+from spiketag.analysis import gkern3d
+
 
 #%%
-V = np.zeros((3,200,200,200))
+V = np.zeros((4,200,200,200))
 
 #%%
 '''
@@ -34,8 +37,16 @@ randn
 '''
 V[2, ...] = np.random.randn(200,200)*10
 
+
+
 #%%
-N = 3
+'''
+3d gaussian kernel
+'''
+V[3, ...] = gkern3d(kernlen=200, std=40)
+
+#%%
+N = 4
 vol_view = volume_view(nvbs=N)
 for i in range(N):
     vol_view.set_data(V[i], vb_id=i)
