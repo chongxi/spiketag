@@ -18,7 +18,7 @@ class TransGrays(BaseColormap):
 
         self.glsl_map = """
         vec4 translucent_grays(float t) {
-            return vec4(t, t, t, $color_0[3]*t*t);
+            return vec4(t, t, t, $color_0[3]*t);
         }
         """
 
