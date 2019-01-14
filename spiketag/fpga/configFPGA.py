@@ -50,6 +50,7 @@ class xike_config(object):
         self.ch_hash = bram_thres.channel_hash(nCh=self._n_ch, base_address=256)
         # the channel groupNo for transformer to report in FPGA
         self.ch_grpNo = bram_thres.chgpNo(nCh=self._n_ch)
+        self.ch_ref = bram_thres.ch_ref(self._n_ch)
         for ch in range(self.probe.n_ch):
             self.ch_hash[ch] = self.probe.ch_hash(ch)
             try:
@@ -57,6 +58,11 @@ class xike_config(object):
             except:
                 self.ch_grpNo[ch] = 100            
 
+    def set_channel_ref(self, ch_ref):
+        self.ch_ref[:] = ch_ref
+
+    def set_threshold(self, threshold):
+        self.thres[:] = threshold
 
     def init_FPGA_detector(self):
         # dc offset

@@ -9,6 +9,40 @@ import struct
 
 # thres_arr = np.array([-100.14724392]*32)
 
+class ch_ref(object):
+    """
+    Must configure for FPGA tranformation to report the groupNo when spike is found
+    and transformed
+    """
+    def __init__(self, nCh=32, base_address=1024):
+        self.nCh  = nCh
+        self.base = base_address
+        self.ch_ref = np.zeros(nCh)
+
+    def enable(self, flag):
+        if flag is True:
+            write_mem_16(self.enable_reg_addres,0b0001)
+        elif flag is False:
+            write_mem_16(self.enable_reg_addres,0b0000)
+
+    def __setitem__(self, chNo, ch_ref):
+        self.ch_ref[chNo] = ch_ref
+        if type(chNo) is slice:
+            for i,v in enumerate(ch_ref):
+                write_thr_32(i+self.base, ch_ref[i], dtype='<I4', binpoint=0) 
+        else:
+            write_thr_32(chNo+self.base, ch_ref, dtype='<I4', binpoint=0) 
+
+    def __getitem__(self, chNo):
+        ch = chNo+self.base
+        return read_thr_32(ch, dtype='<I4', binpoint=0)
+
+    def __repr__(self):
+        for ch in np.arange(self.nCh):
+            print('ch_ref of ch{0} is {1}'.format(ch, self.ch_ref[ch]))
+        return 'ch_ref done'
+
+
 class chgpNo(object):
     """
     Must configure for FPGA tranformation to report the groupNo when spike is found
