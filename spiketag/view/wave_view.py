@@ -237,7 +237,7 @@ class wave_view(scene.SceneCanvas):
         self.view2.camera.link(y_sync_cam)
 
         self.ch_no_text = scene.Text('', pos=(0,0),italic=False, bold=True,
-                         color=self.cursor_color, font_size=15, parent=self.view1.scene) 
+                         color=self.cursor_color, font_size=12, parent=self.view1.scene) 
         
         self.data = data
         if chs is not None:
@@ -259,6 +259,9 @@ class wave_view(scene.SceneCanvas):
         self.set_range()
         self.cross.attach(self.grid2)
         self.cross.link_view(self.view2)
+
+        self._current_time = 0.0
+        self._sliding_time = 1.0
         
         # for picker
         self.key_option = 0
@@ -464,6 +467,10 @@ class wave_view(scene.SceneCanvas):
 
         # print event.key.name
         
+        if keys.CONTROL in event.modifiers:
+            self.view2.events.mouse_wheel.disconnect(self.view2.camera
+                    .viewbox_mouse_event)
+
         if event.text == 'r':
             self.view2.camera.reset()
         elif event.text == 'c':
@@ -474,11 +481,14 @@ class wave_view(scene.SceneCanvas):
             if self.location.isdigit():
                 second = int(self.location)
                 self.slideto(second * self.fs)
+                self._current_time = second
             self.location = ''
         elif event.text == 'h' or getattr(event.key, 'name', None) == 'Left':
-            self.slide(-30)        
+            self._current_time = self._current_time - self._sliding_time
+            self.slideto(self._current_time * self.fs)
         elif event.text == 'l' or getattr(event.key, 'name', None) == 'Right':
-            self.slide(30)
+            self._current_time = self._current_time + self._sliding_time
+            self.slideto(self._current_time * self.fs)
         elif event.text == '=':
             location = self._start_index + self.pagesize / 2
             self.pagesize += int(self.pagesize * 0.1)
