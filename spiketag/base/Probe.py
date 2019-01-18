@@ -308,7 +308,7 @@ class probe(BaseProbe):
 
 
     def load(self, filename):
-        with open('./new_prb_nxdusty.json') as ff:
+        with open(filename) as ff:
             prb_json = json.load(ff)
             for i in prb_json['pos'].keys():
                 self.mapping[int(i)] = prb_json['pos'][i] 
