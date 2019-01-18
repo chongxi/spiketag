@@ -14,19 +14,19 @@ info = mp.get_logger().info
 
 
 # Create two instances of MyRect, each using canvas.scene as their parent
-nCh = 32 #32 channel number
+nCh = 160 #32 channel number
 # Number of cols and rows in the table.
-nrows = 16
-ncols = 2
+# nrows = 16
+# ncols = 2
 # Number of channels.
-m = nrows*ncols
+# m = nrows*ncols
 # Number of samples per channel.
-npts = 256*2
+npts = int(20000)
 # Generate the signals as a (nCh, npts) array.
-init_data = np.random.randn(npts,nCh).astype(np.float32)
+init_data = np.random.randn(npts, nCh).astype(np.float32)
 init_data[:,4] = 1 
 
-wview = wave_view(init_data)
+wview = wave_view(data=init_data, fs=25e3, chs=np.arange(160), pagesize=npts)
 
 @wview.connect
 def on_key_press(event):
@@ -55,14 +55,20 @@ def update_show(ev):
         # d = tonumpyarray(shared_arr).astype(np.float32)
     with Timer('update'):
         d = shared_arr.numpy().astype(np.float32)
-        m = d.max()
-        if m != 0:
-            # d = d.reshape(-1, 32)/m
-            d /= m
-            wview.waves1.set_data(d)
+        # m = d.max()
+        # if m != 0:
+        #     # d = d.reshape(-1, 32)/m
+        #     d /= m
+        # wview.waves1.set_data(d)
+        # wview.waves1.data = d.T.ravel()/(d.max() - d.min())
+        # wview.waves1.highlight_reset() 
+        # wview.waves1._render()
+        wview.waves1.shared_program['y'] = d.T.ravel()/100.
+        # wview.waves1.shared_program['u_gap'] = (d.max() - d.min())/2
+        # wview.waves1.update()
 
 timer = app.Timer(connect=update_show, interval=0)
-timer.start()
+# timer.start()
 
 def pcie_recv_open():
     if 'r32' not in locals() or r32.closed == True:
@@ -132,7 +138,7 @@ def get_data(shared_arr, n, read_conn):
         # print toc-tic
 
 
-def gen_data(shared_arr, n, lock):
+def gen_data(shared_arr, n, nCh, lock):
     info("Guassian generator starts ------>")
     time.sleep(0.03)
     while True:
@@ -140,7 +146,7 @@ def gen_data(shared_arr, n, lock):
         # data = tonumpyarray(shared_arr)
         # data    = shared_arr.numpy()
         lock.acquire()
-        data = torch.from_numpy((np.random.randn(n*32) * 50))
+        data = torch.from_numpy((np.random.randn(n, nCh) * 50))
         shared_arr[:] = data
         lock.release()
         # time.sleep(0.0001)
@@ -154,7 +160,7 @@ def daemon_process_run(read_conn, write_conn, lock, testcase=0):
     '''
     # testcase 1: Generate data from background process
     if testcase == 0:
-        read_proc = Process(target=gen_data, args=(shared_arr, npts, lock))
+        read_proc = Process(target=gen_data, args=(shared_arr, npts, nCh, lock))
     # testcase 2: Read data from background process
     elif testcase == 1:
         read_proc = Process(target=get_data, args=(shared_arr, npts, read_conn))
