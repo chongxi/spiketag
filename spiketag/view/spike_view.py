@@ -412,8 +412,12 @@ class spike_view(View):
 
             if not self.is_spk_empty:
                 if self.view_lock is True:
-                    target_clu_No = box[1]
-                    self._move_spikes(target_clu_No)  
+                    # target_clu_No = box[1]
+                    target_clu_No = self.cluster_mouse_on
+                    self.clu.membership[self.clu.selectlist] = target_clu_No
+                    self.clu.__construct__()
+                    self.clu.emit('cluster')
+                    # self._move_spikes(target_clu_No)  
 
         if e.button == 2:
             if not self.is_spk_empty and self.is_single_mode: 
