@@ -102,6 +102,7 @@ class BaseProbe(EventEmitter):
         self.ch2g = {}
         self._bad_chs = np.array([], dtype=int)
         self.fpga_connected = False
+        self.reorder_by_chip = False
 
     @property
     def fs(self):
