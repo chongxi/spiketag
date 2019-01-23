@@ -25,6 +25,7 @@ class spike_view(View):
         self._view_lock = True
         self._magnet_const = 1 # k in knn when emit magnet event to absorb spikes from cluster 0
         self._magnet_mode = False # set magnet_mode to True will lock the magnet_sink_id until magnet_mode is set False
+        self._sink_id = 0
 
         self.event = EventEmitter() 
         # self.events.add(model_modified=Event)
@@ -407,17 +408,14 @@ class spike_view(View):
 
     def on_mouse_press(self, e):
         if e.button == 1:
-            ndc = self.panzoom.get_mouse_pos(e.pos)
-            box = self.interact.get_closest_box(ndc)
-
             if not self.is_spk_empty:
                 if self.view_lock is True:
-                    # target_clu_No = box[1]
                     target_clu_No = self.cluster_mouse_on
+                    select_list = self.clu.selectlist
                     self.clu.membership[self.clu.selectlist] = target_clu_No
                     self.clu.__construct__()
                     self.clu.emit('cluster')
-                    # self._move_spikes(target_clu_No)  
+                    self.clu.select(select_list)
 
         if e.button == 2:
             if not self.is_spk_empty and self.is_single_mode: 
@@ -492,13 +490,19 @@ class spike_view(View):
                         spikes trim mode
                         '''
                         self.clear_virtual()
-                        close_spkNolist = self._get_close_spks(box, tpos)
-                        intersect_spks_idx = np.where(np.in1d(self._selected[selected_cluster], close_spkNolist))[0]
-                        if len(intersect_spks_idx)>0:
-                            self._selected[selected_cluster] = np.delete(self._selected[selected_cluster], intersect_spks_idx)
-                        self.highlight(selected=self._selected) 
-                        # self.on_select()
-                        self.clu.select(self.selected_spk, caller=self.__module__)
+                        last_ndc = self.panzoom.get_mouse_pos(e.last_event.pos)
+                        last_box = self.interact.get_closest_box(last_ndc)
+                        last_tpos = self.get_pos_from_mouse(e.last_event.pos, last_box)[0]
+                        close_spkNolist = self._get_close_spks(box, tpos, last_tpos)
+                        try:
+                            intersect_spks_idx = np.where(np.in1d(self._selected[selected_cluster], close_spkNolist))[0]
+                            if len(intersect_spks_idx)>0:
+                                self._selected[selected_cluster] = np.delete(self._selected[selected_cluster], intersect_spks_idx)
+                            self.highlight(selected=self._selected) 
+                            # self.on_select()
+                            self.clu.select(self.selected_spk, caller=self.__module__)
+                        except Exception as e:
+                            pass
 
         except Exception as e:
             pass
@@ -542,21 +546,29 @@ class spike_view(View):
             self.clu.undo()
 
         if e.text == 'a':
-            if self.is_single_mode:
-                all_spkNolist = np.arange(self.clu[self.cluster_mouse_on].size)
-                self._selected[self.cluster_mouse_on] = all_spkNolist
-                self.highlight(selected=self._selected)   
-                self.clu.select(self.selected_spk, caller=self.__module__)
+            # if self.is_single_mode:
+            newly_selected = self.clu.local2global({self.cluster_mouse_on: np.arange(self.clu[self.cluster_mouse_on].size)})
+            selected_spks = np.append(self.clu.selectlist, newly_selected)
+            self.clu.select(selected_spks)
+            self._sink_id = self.cluster_mouse_on
+                # all_spkNolist = np.arange(self.clu[self.cluster_mouse_on].size)
+                # self._selected[self.cluster_mouse_on] = all_spkNolist
+                # self.highlight(selected=self._selected)   
+                # self.clu.select(self.selected_spk, caller=self.__module__)
 
         if e.text == 'm':
-            self.event.emit('magnet', sink_id=self.cluster_mouse_on, k=self._magnet_const)
+            self._source_id = self.cluster_mouse_on
+            self.event.emit('magnet', sink_id=self._sink_id, source_id=self._source_id, k=self._magnet_const)
             self._magnet_const += 1
             self._bursting_time_threshold = 0.4
 
         if e.text == 's':
             if not self.is_spk_empty:
                 target_clu_No = max(self.clu.index_id) + 1
-                self._move_spikes(target_clu_No)
+                self.clu.membership[self.clu.selectlist] = target_clu_No
+                self.clu.__construct__()
+                self.clu.emit('cluster')
+                # self._move_spikes(target_clu_No)
 
         if e.text == 'x':
             if len(self.selected_spk) > 0:

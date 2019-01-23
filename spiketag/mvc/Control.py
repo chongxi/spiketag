@@ -74,9 +74,9 @@ class controller(object):
 
 
         @self.view.spkview.event.connect
-        def on_magnet(sink_id, k):
+        def on_magnet(sink_id, source_id, k):
             # print('sink_id {}, k {}'.format(sink_id, k))
-            self.transfer(0, sink_id, k)
+            self.transfer(sink_id, source_id, k)
 
         @self.view.spkview.event.connect
         def on_clip(idx):
@@ -294,10 +294,12 @@ class controller(object):
         self.clu.select(spk_tosel)
 
 
-    def transfer(self, source_clu_id, sink_clu_id, k=1):
+    def transfer(self, sink_clu_id, source_clu_id, k=1):
         '''
         transfer source to sink the N*sink.shape[0] NN pts
         '''
+        # if source_clu_id == sink_clu_id:
+        #     source_clu_id = 0
         source = self.fet[self.clu[source_clu_id]]
         sink   = self.fet[self.clu[sink_clu_id]]
         KT = KDTree(source)

@@ -42,18 +42,20 @@ class ctree_view(scene.SceneCanvas):
             self.show()
 
     def set_data(self, clu):
-        assert clu._extra_info is not None	
-        
-        self._clu = clu
-        self._whole_tree = clu._extra_info['condensed_tree']
-        self._clu_tree = self._whole_tree[self._whole_tree['child_size'] > 1]
-        #  self._select_clusters = np.array(clu._extra_info['default_select_clusters'], dtype=np.int64)
-        self._clu_array = self._get_nodes_from_clu_tree()
-        self._select_clusters = clu.select_clusters
-        if len(self._select_clusters):
-            self._build_data(self._whole_tree)
-            self._render()
-            self._set_range()		
+        # assert clu._extra_info is not None	
+        try:
+            self._clu = clu
+            self._whole_tree = clu._extra_info['condensed_tree']
+            self._clu_tree = self._whole_tree[self._whole_tree['child_size'] > 1]
+            #  self._select_clusters = np.array(clu._extra_info['default_select_clusters'], dtype=np.int64)
+            self._clu_array = self._get_nodes_from_clu_tree()
+            self._select_clusters = clu.select_clusters
+            if len(self._select_clusters):
+                self._build_data(self._whole_tree)
+                self._render()
+                self._set_range()		
+        except Exception as e:
+            pass
 
 
     def on_key_press(self, e):
