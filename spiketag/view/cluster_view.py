@@ -17,6 +17,7 @@ class cluster_view(scene.SceneCanvas):
         self.nclu_text = scene.visuals.Text(parent=self.view.scene)
         self.event = EventEmitter() 
 
+
     def set_data(self, group_No, nclu_list, sorting_status=None, selected_group_id=None, nspks_list=None, size=18):
         '''
         group_No is a scala number #grp
@@ -56,9 +57,10 @@ class cluster_view(scene.SceneCanvas):
     def generate_color(self, sorting_status, nspks_list, selected_group_id):
         self.color = np.ones((self.group_No, 4)) * 0.5
         self.color[sorting_status==0] = np.array([1,1,1, .2]) # cpu busy at automatic sorting
-        self.color[sorting_status==1] = np.array([0,1,1, .8]) # cpu ready for manual sorting
-        self.color[sorting_status==2] = np.array([1,0,1, .8]) # manual sorting is done
-        self.color[selected_group_id] = np.array([1,1,1,  1]) # selected group id (current_group)
+        self.color[sorting_status==1] = np.array([0,1,1, .3]) # cpu ready for manual sorting
+        self.color[sorting_status==2] = np.array([1,0,1, .3]) # manual sorting is done
+        # self.color[selected_group_id] = np.array([1,1,1,  1]) # selected group id (current_group)
+        self.color[selected_group_id, -1] = 1
         if nspks_list is not None:
             self.transparency = np.array(nspks_list)/np.array(nspks_list).max()
             self.color[:, -1] = self.transparency
@@ -68,53 +70,63 @@ class cluster_view(scene.SceneCanvas):
     def on_key_press(self, e):
         if e.text == 'r':
             self.view.camera.set_range(x=[self.xmin, self.xmax])
-        if e.text == 'n':
-            self.select(self.next_group)
-        if e.text == 'b':
-            self.select(self.previous_group)
-
+        if e.text == 'k':
+            self.moveto(self.next_group)
+        if e.text == 'j':
+            self.moveto(self.previous_group)
+        if e.text == 'd':
+            self.set_cluster_done(self.current_group)
+            self.moveto(self.next_group)
+        if e.text == 'o':
+            self.select(self.current_group)
 
     @property
     def cpu_ready_list(self):
         return np.where(self.sorting_status==1)[0]
 
+    def set_cluster_ready(self, grp_id):
+        self.sorting_status[grp_id] = 1
+        self.refresh()
+
+    def set_cluster_done(self, grp_id):
+        self.sorting_status[grp_id] = 2
+        self.refresh()
+
+    def refresh(self):
+        self.set_data(self.group_No, self.nclu_list, self.sorting_status, self.current_group, self.nspks_list, self._size)
+
 
     @property
     def previous_group(self):
-        # print(np.abs(self.cpu_ready_list - self.current_group))
-        try:
-            self._previous_group = self.cpu_ready_list[np.argmin(np.abs(self.cpu_ready_list - self.current_group)) - 1]
-            self.current_group = self._previous_group
-        except:
-            pass
-        # print(self.cpu_ready_list)
-        # print(self.current_group)
-        return self.current_group
+        if self.current_group>0:
+            self._previous_group = self.current_group - 1
+            return self._previous_group
+        else:
+            return self._previous_group 
 
 
     @property
     def next_group(self):
-        # print(np.abs(self.cpu_ready_list - self.current_group))
-        try:
-            self._next_group = self.cpu_ready_list[np.argmin(np.abs(self.cpu_ready_list - self.current_group)) + 1]
-            self.current_group = self._next_group
-        except:
-            pass
-        # print(self.cpu_ready_list)
-        # print(self.current_group)
-        return self.current_group
+        if self.current_group<self.group_No-1:
+            self._next_group = self.current_group + 1
+            return self._next_group
+        else:
+            return self._next_group 
+
+
+    def moveto(self, group_id):
+        self.current_group = group_id
+        self.set_data(self.group_No, self.nclu_list, self.sorting_status, self.current_group, self.nspks_list, self._size) 
 
 
     def select(self, group_id):
-        self.current_group = group_id
-        self.set_data(self.group_No, self.nclu_list, self.sorting_status, self.current_group, self.nspks_list, self._size) 
-        self.event.emit('select', group_id=self.current_group)
+        if self.sorting_status[group_id] != 0:
+            self.event.emit('select', group_id=self.current_group)
+        else:
+            print('unable to select busy cpu {}'.format(self.current_group)) 
 
 
     def run(self):
         self.show()
         self.app.run()
-
-
-
 
