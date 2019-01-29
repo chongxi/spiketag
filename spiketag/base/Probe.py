@@ -222,7 +222,7 @@ class probe(BaseProbe):
         prb.shanks[0].ch_group
 
     '''
-    def __init__(self, fs=25000., nch=160, group_len=4, prb_type=None, shank_no=None):
+    def __init__(self, fs=25000., nch=160, group_len=4, prb_type=None, grp_No=None, shank_no=None):
         super(probe, self).__init__()
         if shank_no is not None:
             self.shanks = {}
@@ -236,8 +236,11 @@ class probe(BaseProbe):
         self._n_ch = nch
         self._fs = fs
         self._group_len = group_len
-        self._n_group = int(self._n_ch / self._group_len)
-        
+        if grp_No is None:
+            self._n_group = int(self._n_ch / self._group_len)
+        else:
+            self._n_group = grp_No
+        self.sorting_status = np.zeros((self._n_group,)).astype(np.int)
 
     def auto_pos(self):
         if self.type == 'bow_tie':

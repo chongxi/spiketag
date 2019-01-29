@@ -18,7 +18,7 @@ class cluster_view(scene.SceneCanvas):
         self.event = EventEmitter() 
 
 
-    def set_data(self, group_No, nclu_list, sorting_status=None, selected_group_id=None, nspks_list=None, size=18):
+    def set_data(self, group_No, nclu_list, sorting_status=None, selected_group_id=None, nspks_list=None, size=30):
         '''
         group_No is a scala number #grp
         nclu_list is a list with length = group_No
@@ -34,11 +34,15 @@ class cluster_view(scene.SceneCanvas):
         grp_x_pos = np.zeros((group_No,))
         grp_y_pos = np.arange(group_No)
         self.grp_pos = np.vstack((grp_x_pos, grp_y_pos)).T
-        self.nclu_text_pos = np.vstack((grp_x_pos+0.02, grp_y_pos-0.12)).T
+        self.nclu_text_pos = np.vstack((grp_x_pos+0.02, grp_y_pos)).T
 
-        if selected_group_id is None:
+        if selected_group_id is None and group_No>1:
             selected_group_id = np.min(np.where(self.sorting_status==1)[0])
             self.current_group = selected_group_id
+        elif group_No == 1:
+            self.current_group = 0
+            self._previous_group = 0
+            self._next_group = 0
         else:
             self.current_group = selected_group_id
 
@@ -48,7 +52,7 @@ class cluster_view(scene.SceneCanvas):
         self.nclu_text.text = [str(i) for i in nclu_list]
         self.nclu_text.pos  = self.nclu_text_pos
         self.nclu_text.color = 'g'
-        self.nclu_text.font_size = size*0.40
+        self.nclu_text.font_size = size*0.50
 
         self.view.camera.set_range(x=[self.xmin, self.xmax])
         # self.view.camera.interactive = False

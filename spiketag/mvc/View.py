@@ -47,7 +47,7 @@
 #                 self.cluster_view.show()
 
 import sys
-from ..view import probe_view, spike_view, scatter_3d_view, amplitude_view, ctree_view, trace_view, correlogram_view
+from ..view import probe_view, cluster_view, spike_view, scatter_3d_view, amplitude_view, ctree_view, trace_view, correlogram_view
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QThread, QEventLoop
 from PyQt5.QtWidgets import QStatusBar, QMainWindow, QAction, QFileDialog, QWidget, QSplitter, QComboBox, QTextBrowser, QSlider, QPushButton, QTableWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
@@ -72,43 +72,34 @@ class MainView(QMainWindow):
         # self._statusbar_label = QLabel("status")
         # status_bar.addPermanentWidget(self._statusbar_label)
 
-
         self.centralWidget = QWidget(self)          
         self.setCentralWidget(self.centralWidget)   
 
         hbox = QHBoxLayout(self)
         self.splitter0 = QSplitter(Qt.Horizontal)
         self.splitter1 = QSplitter(Qt.Horizontal)
-#         textedit = QTextEdit()
-#         self.splitter1.addWidget(self.topleft)
-#         self.splitter1.addWidget(textedit)
-#         self.splitter1.setSizes([100,200])
         self.splitter2 = QSplitter(Qt.Horizontal)
         self.splitter_fet = QSplitter(Qt.Vertical)
-        # self.splitter2.addWidget(self.splitter0)
-
         self.splitter3 = QSplitter(Qt.Vertical)
-
-        # self.splitter3.addWidget(self.splitter0)
         self.splitter3.addWidget(self.splitter1)
         self.splitter3.addWidget(self.splitter2)
         self.splitter3.setSizes([70,30])  # uppper and down (up, down)
 
+
+        self.splitter_prb_cpu = QSplitter(Qt.Vertical)
         self.prb_view = probe_view()
+        self.clu_view = cluster_view()
         self.prb_view.set_data(self.prb, font_size=35)
-        self.splitter0.addWidget(self.prb_view.native)
+        self.clu_view.set_data(group_No=self.prb.n_group, sorting_status=self.prb.sorting_status, nclu_list=self.prb.n_group*[0])
+        self.splitter_prb_cpu.addWidget(self.prb_view.native)
+        self.splitter_prb_cpu.addWidget(self.clu_view.native)
+        self.splitter0.addWidget(self.splitter_prb_cpu)
         self.splitter0.addWidget(self.splitter3)
         self.splitter0.setSizes([20, 180]) # prb_view and all others (left, right)
-#         self.splitter2.addWidget(self.bottom)
 
         hbox.addWidget(self.splitter0)
 
         self.centralWidget.setLayout(hbox)
-        # QApplication.setStyle(QStyleFactory.create('Cleanlooks'))
-
-        # self.setGeometry(300, 300, 1000, 500)
-        # self.setWindowTitle('spiketag')
-#         self.show()
 
         self.spkview = spike_view()
         self.fetview0 = scatter_3d_view()
@@ -150,6 +141,5 @@ class MainView(QMainWindow):
             self.corview.set_data(clu, mua.spk_times[group_id])
         except Exception as e:
             pass
-        
 
-#         self.traceview.locate_buffer = 2000
+        self.traceview.locate_buffer = 2000
