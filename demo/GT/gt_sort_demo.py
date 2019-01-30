@@ -7,14 +7,13 @@ from PyQt5.QtWidgets import QApplication
 import sys
 
 
-tritrode = probe(shank_no=1)
+tritrode = probe(shank_no=1, grp_No=1)
 tritrode[0] = np.array([0,1,2])
 tritrode.mapping[0] = np.array([-90,0])
 tritrode.mapping[1] = np.array([90,0])
 tritrode.mapping[2] = np.array([0,10])
 tritrode.fs = 20000.
 tritrode.n_ch = 3
-tritrode.reorder_by_chip=False
 
 
 # def model_view():
