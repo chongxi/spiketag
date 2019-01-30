@@ -33,7 +33,7 @@ def sort():
                       # time_segs=[[0,320]],
                       fall_off_size=15
                      )
-    ctrl.sort()
+    ctrl.sort(clu_method='no_clustering')
     ctrl.show()
 
 

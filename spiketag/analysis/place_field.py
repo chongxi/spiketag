@@ -143,6 +143,7 @@ class place_field(object):
         ax[0].pcolormesh(self.X, self.Y, self.O, cmap=cm.hot)
         # sns.heatmap(self.O[::-1]*self.dt, annot=False, cbar=False, ax=ax[1])
         ax[1].pcolormesh(self.X, self.Y, self.O, cmap=cm.hot)
+        plt.show()
 
 
     @staticmethod

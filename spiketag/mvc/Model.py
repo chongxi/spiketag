@@ -124,12 +124,15 @@ class MainModel(object):
         self.groups = self.probe.grp_dict.keys()
 
 
-    def sort(self):
+    def sort(self, fet_method='pca', clu_method='hdbscan'):
         # info('removing high corr noise from spikes pool')
         # self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
 
         # info('removing all spks on group which len(spks) less then fetlen')
         # self.mua.remove_groups_under_fetlen(self._fetlen)
+
+        self.fet_method = fet_method
+        self.clu_method = clu_method
         
         info('extract spikes from pivital meta data')
         self.spk = self.mua.tospk()
@@ -143,9 +146,21 @@ class MainModel(object):
                                   ncomp=self._fetlen)
 
         info('clustering with {}'.format(self.clu_method))
-        self.clu = self.fet.toclu(method=self.clu_method, 
-                                  fall_off_size=self._fall_off_size,
-                                  njobs=self._n_jobs)
+        if self.clu_method == 'hdbscan':
+            self.clu = self.fet.toclu(method=self.clu_method, 
+                                      fall_off_size=self._fall_off_size,
+                                      njobs=self._n_jobs)
+
+        elif self.clu_method == 'dpgmm':
+            self.clu = self.fet.toclu(method=self.clu_method,
+                                      max_n_clusters=10,
+                                      max_iter=300,
+                                      njobs=self._n_jobs)
+
+        elif self.clu_method == 'no_clustering':
+            self.clu = {}
+            for group_id in self.groups:
+                self.clu[group_id] = CLU(np.zeros(self.fet[group_id].shape[0],).astype(np.int64))
 
         self.spktag = SPKTAG(self.probe,
                              self.spk, 

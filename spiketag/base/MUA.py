@@ -2,7 +2,7 @@ import os
 import numpy as np
 from numba import jit
 from multiprocessing import Pool
-from spiketag.view import wave_view 
+from ..view import wave_view 
 from .SPK import SPK
 from .Binload import bload
 from ..utils.conf import info

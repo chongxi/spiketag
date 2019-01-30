@@ -255,8 +255,8 @@ class controller(object):
         i = self.current_group
         self.view.set_data(i, self.model.mua, self.model.spk[i], self.model.fet[i], self.model.clu[i])
 
-    def sort(self):
-        self.model.sort()
+    def sort(self, fet_method='pca', clu_method='hdbscan'):
+        self.model.sort(fet_method, clu_method)
 
     def show(self, group_id=None):
         if group_id is None:

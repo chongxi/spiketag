@@ -1,3 +1,11 @@
 {
-    "python.pythonPath": "/anaconda2/bin/python"
+    "python.pythonPath": "/anaconda2/bin/python",
+    "python.unitTest.unittestArgs": [
+        "-v",
+        "-s",
+        "./spiketag",
+        "-p",
+        "test*.py"
+    ],
+    "python.unitTest.unittestEnabled": true
 }
