@@ -95,8 +95,8 @@ class controller(object):
             self.update_view()
 
         @self.view.spkview.event.connect
-        def on_recluster():
-            self.recluster()
+        def on_recluster(method, params):
+            self.recluster(method, params)
 
         @self.view.spkview.event.connect
         def on_refine(method, args):
@@ -111,7 +111,7 @@ class controller(object):
             idx = np.where(self.model.spk[self.current_group].min(axis=1).min(axis=1)>thres)[0]
             print('delete {} spikes'.format(idx.shape))
             self.delete_spk(spk_idx=idx)
-            self.recluster()
+            self.recluster(group_id=self.current_group, method='hdbscan', params=None)
 
         @self.view.traceview.event.connect
         def on_view_trace():
@@ -207,12 +207,9 @@ class controller(object):
         self.model.fet[i] = self.model.spk._tofet(i, method='pca')
         self.model.clu[i].delete(spk_idx)
 
-    def recluster(self, fall_off_size=None):
-        i = self.current_group
-        if fall_off_size is None:
-            self.model.cluster(group_id=i, method='hdbscan', fall_off_size=self.model._fall_off_size)
-        else:
-            self.model.cluster(group_id=i, method='hdbscan', fall_off_size=fall_off_size)
+    def recluster(self, method, params):
+        group_id = self.current_group
+        self.model.cluster(group_id, method, params)
         self.update_view()
 
     def gmm_cluster(self, N=None):

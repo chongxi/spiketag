@@ -57,7 +57,7 @@ class FET(object):
                                     'min_cluster_size': 18,
                                     'leaf_size': 40}
 
-        self.dpgmm_hyper_param = {'max_n_clusters': 15,
+        self.dpgmm_hyper_param = {'max_n_clusters': 10,
                                   'max_iter':       300}
 
 
@@ -70,20 +70,16 @@ class FET(object):
     def remove(self, group, ids):
         self.fet[group] = np.delete(self.fet[group], ids, axis=0)
  
-    def toclu(self, method='hdbscan', njobs=1, *args, **kwargs):
+    def toclu(self, group_id, method, params, njobs=1):
         clu = {}
         
-        group_id = kwargs['group_id'] if 'group_id' in kwargs.keys() else None
-        fall_off_size = kwargs['fall_off_size'] if 'fall_off_size' in kwargs.keys() else None
+        # group_id = kwargs['group_id'] if 'group_id' in kwargs.keys() else None
+        # fall_off_size = kwargs['fall_off_size'] if 'fall_off_size' in kwargs.keys() else None
 
 
         print('clustering method: {0}, group_id: {1}'.format(method, group_id))
 
         if method == 'dpgmm':
-            if 'max_n_clusters' in kwargs.keys():
-                self.dpgmm_hyper_param['max_n_clusters'] = kwargs['max_n_clusters'] 
-            if 'max_iter' in kwargs.keys():
-                self.dpgmm_hyper_param['max_iter'] = kwargs['max_iter']
             if group_id is None:
                 if njobs!=1:
                     info('clustering start with {} cpus'.format(njobs))
@@ -97,17 +93,27 @@ class FET(object):
                     # info('get clustering from group_id {}:'.format(str(_group_id)))
                     for _group_id, __clu in zip(self.group, _clu):
                         clu[_group_id] = __clu
+            else:
+                from sklearn.mixture import BayesianGaussianMixture as DPGMM
+                max_n_clusters = self.dpgmm_hyper_param['max_n_clusters']
+                max_iter       = self.dpgmm_hyper_param['max_iter']
+                dpgmm = DPGMM(
+                            n_components=max_n_clusters, covariance_type='full', weight_concentration_prior=1e-3,
+                            weight_concentration_prior_type='dirichlet_process', init_params="kmeans",
+                            max_iter=max_iter, random_state=0) # init can be "kmeans" or "random"
+                dpgmm.fit(self.fet[group_id])
+                labels = dpgmm.predict(self.fet[group_id])
+                return CLU(clu = labels, method='dpgmm')
 
 
         elif method == 'hdbscan':
             min_cluster_size = self.hdbscan_hyper_param['min_cluster_size']
             leaf_size = self.hdbscan_hyper_param['leaf_size']
-            if fall_off_size is not None:
-                min_cluster_size = fall_off_size
             hdbcluster = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, 
                                  leaf_size=leaf_size,
                                  gen_min_span_tree=True, 
                                  algorithm='boruvka_kdtree',
+                                 core_dist_n_jobs=8,
                                  prediction_data=True)  
             
 
@@ -125,24 +131,24 @@ class FET(object):
                     # info('get clustering from group_id {}:'.format(str(_group_id)))
                     for _group_id, __clu in zip(self.group, _clu):
                         clu[_group_id] = __clu
-                else:
-                    info('clustering start with {} cpus'.format(1))
-                    tic = time()
-                    for group_id in self.group:
-                        clusterer = hdbcluster.fit(self.fet[group_id].astype(np.float64))
-                        probmatrix = hdbscan.all_points_membership_vectors(clusterer)
-                        clu[group_id] = CLU(clu = clusterer.labels_, method='hdbscan',
-                                            clusterer=clusterer, probmatrix=probmatrix)
-                    toc = time()
-                    info('clustering finished, used {} sec'.format(toc-tic))
+                # else:
+                #     info('clustering start with {} cpus'.format(1))
+                #     tic = time()
+                #     for group_id in self.group:
+                #         clusterer = hdbcluster.fit(self.fet[group_id].astype(np.float64))
+                #         probmatrix = hdbscan.all_points_membership_vectors(clusterer)
+                #         clu[group_id] = CLU(clu = clusterer.labels_, method='hdbscan',
+                #                             clusterer=clusterer, probmatrix=probmatrix)
+                #     toc = time()
+                #     info('clustering finished, used {} sec'.format(toc-tic))
                 return clu
 
-            # semi-automatic parameter selection for a specific channel
+            # semi-automatic parameter selection for a specific group
             elif self.nSamples[group_id] != 0:
-                # fall_off_size in kwargs
-                hdbcluster.min_cluster_size = fall_off_size
-                clusterer = hdbcluster.fit(self.fet[group_id])
-                return CLU(clusterer.labels_, clusterer)
+                clusterer = hdbcluster.fit(self.fet[group_id].astype(np.float64))
+                probmatrix = hdbscan.all_points_membership_vectors(clusterer)
+                return CLU(clu = clusterer.labels_, method='hdbscan', 
+                           clusterer=clusterer, probmatrix=probmatrix)
         else: # other methods 
             warning('Clustering not support {} yet!!'.format(method)) 
             

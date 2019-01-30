@@ -577,8 +577,11 @@ class spike_view(View):
                 #     self.events.model_modified(Event('delete'))
                 #     self._selected = {}
 
-        if e.text == 'w':
-            self.event.emit('recluster')
+        if e.text == 'h':
+            self.event.emit('recluster', method='hdbscan', params={})
+
+        if e.text == 'g':
+            self.event.emit('recluster', method='dpgmm', params={})
 
         if e.text == 'f':
             if len(self.selected_spk) > 0:
