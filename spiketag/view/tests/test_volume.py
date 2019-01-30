@@ -28,16 +28,14 @@ X = np.arange(-25, 25, 0.25*1)
 Y = np.arange(-25, 25, 0.25*1)
 Z = np.arange(-25, 25, 0.25*1)
 X, Y, Z = np.meshgrid(X, Y, Z)
-R = np.sqrt(X**2 + Y**2 + Z**2)
-V[1, ...] = np.sin(R)
+R = np.sqrt(X**2 + Y**2 + Z**2) #* np.sin(X**2+Y**2+Z**2)
+V[1, ...] = np.sin(R) # / ( X**2 + 0.0001)
 
 #%%
 '''
 randn
 '''
 V[2, ...] = np.random.randn(200,200)*10
-
-
 
 #%%
 '''

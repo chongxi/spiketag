@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QApplication
 import sys
 
 
-tritrode = probe(shank_no=1)
+tritrode = probe(shank_no=1, grp_No=1)
 tritrode[0] = np.array([0,1,2])
 tritrode.mapping[0] = np.array([-90,0])
 tritrode.mapping[1] = np.array([90,0])
@@ -34,7 +34,7 @@ def sort():
                       # time_segs=[[0,320]],
                       fall_off_size=15
                      )
-    ctrl.sort()
+    ctrl.sort(clu_method='no_clustering')
     ctrl.show()
 
 
