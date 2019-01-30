@@ -124,7 +124,7 @@ class MainModel(object):
         self.groups = self.probe.grp_dict.keys()
 
 
-    def sort(self, fet_method='pca', clu_method='hdbscan'):
+    def sort(self, amp_cutoff=True, speed_cutoff=False, fet_method='pca', clu_method='hdbscan'):
         # info('removing high corr noise from spikes pool')
         # self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
 
@@ -135,7 +135,8 @@ class MainModel(object):
         self.clu_method = clu_method
         
         info('extract spikes from pivital meta data')
-        self.spk = self.mua.tospk()
+        self.spk = self.mua.tospk(amp_cutoff=amp_cutoff,
+                                  speed_cutoff=speed_cutoff)
 
         info('grouping spike time')
         self.gtimes = self.mua.spk_times

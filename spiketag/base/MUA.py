@@ -120,7 +120,7 @@ class MUA(object):
         data = self.data[:, nchs].astype(dtype)
         data.tofile(file_name)
 
-    def tospk(self):
+    def tospk(self, amp_cutoff=True, speed_cutoff=False):
         info('mua.tospk()')
         spkdict = {}
         self.spk_times = {}
@@ -139,14 +139,16 @@ class MUA(object):
                                           cutoff_neg = self.cutoff_neg,
                                           cutoff_pos = self.cutoff_pos)
                 ### remove noise from spike
-                n_noise = float(noise_idx.shape[0])
-                n_spk   = float(spks.shape[0])
-                info('group {} delete {}%({}/{}) spks via cutoff'.format(g, n_noise/n_spk*100, n_noise, n_spk))
-                spkdict[g] = np.delete(spks, noise_idx, axis=0)
-                self.spk_times[g] = np.delete(self.spk_times[g], noise_idx, axis=0)
-
+                if amp_cutoff:
+                    n_noise = float(noise_idx.shape[0])
+                    n_spk   = float(spks.shape[0])
+                    info('group {} delete {}%({}/{}) spks via cutoff'.format(g, n_noise/n_spk*100, n_noise, n_spk))
+                    spkdict[g] = np.delete(spks, noise_idx, axis=0)
+                    self.spk_times[g] = np.delete(self.spk_times[g], noise_idx, axis=0)
+                else:
+                    spkdict[g] = spks
                 ### remove spike during v_smoothed < 5cm/sec
-                if self.time_still is not None:
+                if speed_cutoff and self.time_still is not None:
                     _, idx_still = idx_still_spike(self.spk_times[g]/self.fs, self.time_still, 1/60.)
                     n_idx_still = float(idx_still.shape[0])
                     n_spk       = float(self.spk_times[g].shape[0])

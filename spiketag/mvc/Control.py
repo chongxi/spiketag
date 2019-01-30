@@ -17,7 +17,7 @@ class controller(object):
 
         self.model = MainModel(*args, **kwargs)
         self.prb   = self.model.probe
-        self.view  = MainView(self.prb)
+        self.view  = MainView(prb=self.prb, model=self.model)
         self.current_group = 0
 
         # place fields
@@ -49,6 +49,13 @@ class controller(object):
             self.show(group_id)
             self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, chs, nspks))
 
+        @self.view.clu_view.event.connect
+        def on_select(group_id):
+            self.current_group = group_id
+            nspks = self.model.gtimes[self.current_group].shape[0]
+            self.view.status_bar.showMessage('loading group {}:{}. It contains {} spikes'.format(group_id, self.prb[group_id], nspks))
+            self.view.set_data(group_id, self.model.mua, self.model.spk[group_id], self.model.fet[group_id], self.model.clu[group_id]) 
+            self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, self.prb[group_id], nspks))
         # @self.clu.connect
         # def on_select(action, caller):
         #     msg = '{} spikes are selected from'.format(str(len(self.clu.selectlist)), str(caller))

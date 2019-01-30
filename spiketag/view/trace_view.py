@@ -144,10 +144,11 @@ class Cross(object):
 
 class trace_view(scene.SceneCanvas):
 
-    def __init__(self, color=None, fs=25e3, spklen=19, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
+    def __init__(self, data, color=None, fs=25e3, spklen=19, ncols=1, gap_value=0.8*0.95, ls='-', time_slice=0):
         scene.SceneCanvas.__init__(self, keys=None)
         self.unfreeze()
         
+        self.data = data
         self.fs = fs
         self.spklen = spklen
         self.grid1 = self.central_widget.add_grid(spacing=0, bgcolor='gray',
@@ -204,8 +205,9 @@ class trace_view(scene.SceneCanvas):
         ####### trigger timer ######
         self.timer_cursor.start()
 
-    def set_data(self, data, clu, spk_times, time_slice=0):
-        self.data = np.fliplr(data) # trace_view displace reserved order, so flip back.
+    def set_data(self, chs, clu, spk_times, time_slice=0):
+        # self.data = np.fliplr(data) # trace_view displace reserved order, so flip back.
+        self.chs = chs
         self.clu = clu
         self.nCh = self.data.shape[1] 
         self.times = spk_times 
@@ -213,7 +215,7 @@ class trace_view(scene.SceneCanvas):
         #TODO: the cross object have something wrong dependency, only can initiate after have data.
         if not self._is_inited():
             # just simple initialization rendering
-            self._render(self.data[0:200])
+            self._render(self.data[0:200, self.chs[::-1]]) # reverse order display is correct
 
             # initiate the cross 
             self.cross.attach(self.grid2)
@@ -224,12 +226,12 @@ class trace_view(scene.SceneCanvas):
         @self.clu.connect
         def on_select(*args, **kwargs):
             if len(self.clu.selectlist) == 1:
-                self.locate_and_highlight(self.clu.selectlist)
+                self.locate_and_highlight(self.clu.selectlist, self.chs[::-1]) # reverse order display
 
     def _is_inited(self):
         return hasattr(self.cross, 'parentview')
 
-    def locate_and_highlight(self, global_idx):
+    def locate_and_highlight(self, global_idx, chs=None):
         '''
            locate the segment of wave in wave_view, and highlight all spikes within this segment 
         '''
@@ -239,7 +241,10 @@ class trace_view(scene.SceneCanvas):
         # locate the segment and show
         locate_start = pos - self.locate_buffer if (pos - self.locate_buffer) > 0 else 0
         locate_end = pos + self.locate_buffer if (pos + self.locate_buffer) < self.data.shape[0] else self.data.shape[0]
-        locate_segment = self.data[locate_start:locate_end,:]
+        if chs is not None:
+            locate_segment = self.data[locate_start:locate_end, chs]
+        else:
+            locate_segment = self.data[locate_start:locate_end, :]
         self._render(locate_segment)
 
         # highlight all spikes within this segment

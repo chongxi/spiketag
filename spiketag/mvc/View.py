@@ -56,9 +56,11 @@ from PyQt5.QtGui import QIcon
 
 class MainView(QMainWindow):
 
-    def __init__(self, prb):
+    def __init__(self, prb, model=None):
         super(MainView, self).__init__()
         self.prb = prb
+        if model is not None:
+            self._model = model
         self.initUI()
 
 
@@ -90,7 +92,7 @@ class MainView(QMainWindow):
         self.prb_view = probe_view()
         self.clu_view = cluster_view()
         self.prb_view.set_data(self.prb, font_size=35)
-        self.clu_view.set_data(group_No=self.prb.n_group, sorting_status=self.prb.sorting_status, nclu_list=self.prb.n_group*[0])
+        self.clu_view.set_data(group_No=self.prb.n_group, sorting_status=self.prb.sorting_status, nclu_list=self.prb.n_group*[0], selected_group_id=0)
         self.splitter_prb_cpu.addWidget(self.prb_view.native)
         self.splitter_prb_cpu.addWidget(self.clu_view.native)
         self.splitter0.addWidget(self.splitter_prb_cpu)
@@ -107,7 +109,7 @@ class MainView(QMainWindow):
         self.ampview = amplitude_view(fs=self.prb.fs, scale=1)
         self.corview = correlogram_view(fs=self.prb.fs)
         self.treeview = ctree_view()
-        self.traceview = trace_view(fs=self.prb.fs)
+        self.traceview = trace_view(data=self._model.mua.data, fs=self.prb.fs)
         
         self.splitter1.addWidget(self.traceview.native)
         self.splitter1.addWidget(self.splitter_fet)
@@ -136,10 +138,31 @@ class MainView(QMainWindow):
         # else:
         self.ampview.set_data(spk, clu, mua.spk_times[group_id])
         self.treeview.set_data(clu) 
-        self.traceview.set_data(mua.data[:,chs], clu, mua.spk_times[group_id])
+        self.traceview.set_data(chs, clu, mua.spk_times[group_id])
         try:
             self.corview.set_data(clu, mua.spk_times[group_id])
         except Exception as e:
             pass
+
+        self.traceview.locate_buffer = 1500
+
+
+    def set_data_from_model(self, group_id):
+        ### init view and set_data
+        model = self._model
+        chs = self.prb[group_id]
+        self.spkview.set_data(model.spk[group_id], model.clu[group_id])
+        self.fetview0.dimension = [0,1,2]
+        self.fetview0.set_data(model.fet[group_id], model.clu[group_id])   #[:,[0,1,2]].copy()
+        self.fetview1.dimension = [0,1,3]
+        self.fetview1.set_data(model.fet[group_id], model.clu[group_id])   #[:,[0,1,3]].copy()
+        # else:
+        self.ampview.set_data(model.spk[group_id], model.clu[group_id], model.mua.spk_times[group_id])
+        self.treeview.set_data(model.clu[group_id]) 
+        self.traceview.set_data(self.prb[group_id], model.clu[group_id], model.mua.spk_times[group_id])
+        # try:
+        #     self.corview.set_data(model.clu[group_id], model.mua.spk_times[group_id])
+        # except Exception as e:
+        #     pass
 
         self.traceview.locate_buffer = 2000
