@@ -51,11 +51,13 @@ class controller(object):
 
         @self.view.clu_view.event.connect
         def on_select(group_id):
-            self.current_group = group_id
-            nspks = self.model.gtimes[self.current_group].shape[0]
-            self.view.status_bar.showMessage('loading group {}:{}. It contains {} spikes'.format(group_id, self.prb[group_id], nspks))
-            self.view.set_data(group_id, self.model.mua, self.model.spk[group_id], self.model.fet[group_id], self.model.clu[group_id]) 
-            self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, self.prb[group_id], nspks))
+            self.view.prb_view.select(group_id)
+            # self.prb.emit('select', group_id=group_id, chs=self.prb[group_id])
+            # self.current_group = group_id
+            # nspks = self.model.gtimes[self.current_group].shape[0]
+            # self.view.status_bar.showMessage('loading group {}:{}. It contains {} spikes'.format(group_id, self.prb[group_id], nspks))
+            # self.view.set_data(group_id, self.model.mua, self.model.spk[group_id], self.model.fet[group_id], self.model.clu[group_id]) 
+            # self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, self.prb[group_id], nspks))
         # @self.clu.connect
         # def on_select(action, caller):
         #     msg = '{} spikes are selected from'.format(str(len(self.clu.selectlist)), str(caller))
@@ -93,8 +95,8 @@ class controller(object):
             self.update_view()
 
         @self.view.spkview.event.connect
-        def on_recluster():
-            self.recluster()
+        def on_recluster(method, params):
+            self.recluster(method, params)
 
         @self.view.spkview.event.connect
         def on_refine(method, args):
@@ -109,7 +111,7 @@ class controller(object):
             idx = np.where(self.model.spk[self.current_group].min(axis=1).min(axis=1)>thres)[0]
             print('delete {} spikes'.format(idx.shape))
             self.delete_spk(spk_idx=idx)
-            self.recluster()
+            self.recluster(group_id=self.current_group, method='hdbscan', params=None)
 
         @self.view.traceview.event.connect
         def on_view_trace():
@@ -205,12 +207,9 @@ class controller(object):
         self.model.fet[i] = self.model.spk._tofet(i, method='pca')
         self.model.clu[i].delete(spk_idx)
 
-    def recluster(self, fall_off_size=None):
-        i = self.current_group
-        if fall_off_size is None:
-            self.model.cluster(group_id=i, method='hdbscan', fall_off_size=self.model._fall_off_size)
-        else:
-            self.model.cluster(group_id=i, method='hdbscan', fall_off_size=fall_off_size)
+    def recluster(self, method, params):
+        group_id = self.current_group
+        self.model.cluster(group_id, method, params)
         self.update_view()
 
     def gmm_cluster(self, N=None):

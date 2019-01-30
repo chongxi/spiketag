@@ -171,12 +171,8 @@ class MainModel(object):
         info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 
 
-    def cluster(self, method='hdbscan', *args, **kwargs):
-        group_id = kwargs['group_id'] if 'group_id' in kwargs.keys() else None
-        if group_id is not None:
-            self.clu[group_id] = self.fet.toclu(method=method, *args, **kwargs)
-        else:
-            pass
+    def cluster(self, group_id, method, params):
+        self.clu[group_id] = self.fet.toclu(group_id, method, params, njobs=1)
 
 
     def construct_transformer(self, group_id, ndim=4):

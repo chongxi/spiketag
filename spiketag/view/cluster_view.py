@@ -18,7 +18,7 @@ class cluster_view(scene.SceneCanvas):
         self.event = EventEmitter() 
 
 
-    def set_data(self, group_No, nclu_list, sorting_status=None, selected_group_id=None, nspks_list=None, size=30):
+    def set_data(self, group_No, nclu_list, sorting_status=None, selected_group_id=None, nspks_list=None, size=25):
         '''
         group_No is a scala number #grp
         nclu_list is a list with length = group_No
