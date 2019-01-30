@@ -51,11 +51,13 @@ class controller(object):
 
         @self.view.clu_view.event.connect
         def on_select(group_id):
-            self.current_group = group_id
-            nspks = self.model.gtimes[self.current_group].shape[0]
-            self.view.status_bar.showMessage('loading group {}:{}. It contains {} spikes'.format(group_id, self.prb[group_id], nspks))
-            self.view.set_data(group_id, self.model.mua, self.model.spk[group_id], self.model.fet[group_id], self.model.clu[group_id]) 
-            self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, self.prb[group_id], nspks))
+            self.view.prb_view.select(group_id)
+            # self.prb.emit('select', group_id=group_id, chs=self.prb[group_id])
+            # self.current_group = group_id
+            # nspks = self.model.gtimes[self.current_group].shape[0]
+            # self.view.status_bar.showMessage('loading group {}:{}. It contains {} spikes'.format(group_id, self.prb[group_id], nspks))
+            # self.view.set_data(group_id, self.model.mua, self.model.spk[group_id], self.model.fet[group_id], self.model.clu[group_id]) 
+            # self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, self.prb[group_id], nspks))
         # @self.clu.connect
         # def on_select(action, caller):
         #     msg = '{} spikes are selected from'.format(str(len(self.clu.selectlist)), str(caller))
