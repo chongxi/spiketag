@@ -124,10 +124,10 @@ class cluster_view(scene.SceneCanvas):
 
 
     def select(self, group_id):
-        if self.sorting_status[group_id] != 0:
-            self.event.emit('select', group_id=self.current_group)
-        else:
-            print('unable to select busy cpu {}'.format(self.current_group)) 
+        # if self.sorting_status[group_id] != 0:
+        self.event.emit('select', group_id=self.current_group)
+        # else:
+            # print('unable to select busy cpu {}'.format(self.current_group)) 
 
 
     def run(self):

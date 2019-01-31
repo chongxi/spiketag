@@ -5,7 +5,6 @@ from ..base import *
 from ..utils.conf import info 
 from ..utils import conf
 from ..utils.utils import Timer
-from ..cpu import DPGMM_IPY
 from ..analysis.place_field import place_field
 
 

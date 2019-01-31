@@ -55,7 +55,8 @@ class FET(object):
 
         self.hdbscan_hyper_param = {'method': 'hdbscan', 
                                     'min_cluster_size': 18,
-                                    'leaf_size': 40}
+                                    'leaf_size': 40,
+                                    'eom_or_leaf': 'eom'}
 
         self.dpgmm_hyper_param = {'max_n_clusters': 10,
                                   'max_iter':       300}
@@ -109,12 +110,14 @@ class FET(object):
         elif method == 'hdbscan':
             min_cluster_size = self.hdbscan_hyper_param['min_cluster_size']
             leaf_size = self.hdbscan_hyper_param['leaf_size']
+            eom_or_leaf = self.hdbscan_hyper_param['eom_or_leaf']
             hdbcluster = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, 
                                  leaf_size=leaf_size,
                                  gen_min_span_tree=True, 
                                  algorithm='boruvka_kdtree',
                                  core_dist_n_jobs=8,
-                                 prediction_data=True)  
+                                 prediction_data=True,
+                                 cluster_selection_method=eom_or_leaf)  # or leaf
             
 
             # automatic pool clustering
@@ -160,15 +163,16 @@ class FET(object):
             import hdbscan
             min_cluster_size = self.hdbscan_hyper_param['min_cluster_size']
             leaf_size = self.hdbscan_hyper_param['leaf_size']
+            eom_or_leaf = self.hdbscan_hyper_param['eom_or_leaf']
             hdbcluster = hdbscan.HDBSCAN(min_samples=2,
-                         min_cluster_size=50, 
+                         min_cluster_size=min_cluster_size, 
                          leaf_size=leaf_size,
                         #  alpha=0.1,
                          gen_min_span_tree=True, 
                          algorithm='boruvka_kdtree',
                          core_dist_n_jobs=1,
                          prediction_data=True,
-                         cluster_selection_method='eom') # eom or leaf 
+                         cluster_selection_method=eom_or_leaf) # eom or leaf 
             clusterer = hdbcluster.fit(self.fet[group_id].astype(np.float64))
             probmatrix = hdbscan.all_points_membership_vectors(clusterer)
             # toc = time()

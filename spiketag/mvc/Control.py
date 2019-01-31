@@ -45,8 +45,10 @@ class controller(object):
             # print(group_id, chs)
             self.current_group = group_id
             nspks = self.model.gtimes[self.current_group].shape[0]
+            self.view.status_bar.setStyleSheet("color:red")
             self.view.status_bar.showMessage('loading group {}:{}. It contains {} spikes'.format(group_id, chs, nspks))
             self.show(group_id)
+            self.view.status_bar.setStyleSheet("color:black")
             self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, chs, nspks))
 
         @self.view.clu_view.event.connect
@@ -233,12 +235,13 @@ class controller(object):
         self.clu.emit('cluster')
         return gmm
 
-    def dpgmm_cluster(self, min_spikes_per_cluster=40, max_n_clusters = 30, n_clusters=10):
+
+    def dpgmm_cluster(self, max_n_clusters = 30, max_iter=300):
         from sklearn.mixture import BayesianGaussianMixture as DPGMM
         dpgmm = DPGMM(
             n_components=max_n_clusters, covariance_type='full', weight_concentration_prior=1e-3,
             weight_concentration_prior_type='dirichlet_process', init_params="kmeans",
-            max_iter=300, random_state=0, verbose=1, verbose_interval=10) # init can be "kmeans" or "random"
+            max_iter=max_iter, random_state=0, verbose=1, verbose_interval=10) # init can be "kmeans" or "random"
         dpgmm.fit(self.fet)
         label = dpgmm.predict(self.fet)
         self.clu.membership = label
@@ -272,11 +275,15 @@ class controller(object):
                             fet_method=fet_method, clu_method=clu_method)            
 
 
-    def run_bg_clustering(self):
-        self.bg_cluster = DPGMM_IPY(cpu_No=self.prb.n_group) 
-        for group_id in range(self.prb.n_group):
-            self.bg_cluster.set_data(group_id, {'data':self.model.fet[group_id]}) 
-        self.bg_cluster.run_all(nclu_max=7)
+    def run_bg_clustering(self, method='parallel'):
+        if method == 'parallel':
+            self.bg_cluster = DPGMM_IPY(cpu_No=self.prb.n_group) 
+            for group_id in range(self.prb.n_group):
+                self.bg_cluster.set_data(group_id, {'data':self.model.fet[group_id]}) 
+            self.bg_cluster.run_all(nclu_max=7)
+        if method == 'sequential':
+            pass
+            #TODO
 
 
     def show(self, group_id=None):
