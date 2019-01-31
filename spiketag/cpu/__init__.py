@@ -65,15 +65,15 @@ class DPGMM_IPY(multicore):
         for i in range(self.cpu_No):
             self.set_data(i, {'data': fet[i]})
         
-    def run(self, group_id):
-        self._exec(group_id, dpgmm_exec, 4)
+    def run(self, group_id, nclu_max=8):
+        self._exec(group_id, dpgmm_exec, nclu_max)
 
-    def run_all(self):
+    def run_all(self, nclu_max=8):
         for i in range(self.cpu_No):
-            self._exec(i, dpgmm_exec, 4)
+            self._exec(i, dpgmm_exec, nclu_max)
 
         
-def report_cpu_status(ev):
+def sequential_clustering(ev):
     group_id = dpgmm[0]['group_id']
     print('cpu ready list:', dpgmm.cpu_ready_list)
     if dpgmm.cpu_ready_list[0]:
@@ -86,6 +86,11 @@ def report_cpu_status(ev):
         timer.stop()
         app.quit()
 
+
+def report_cpu_status(ev):
+    print('cpu ready list:', dpgmm.cpu_ready_list)
+    if np.all(dpgmm.cpu_ready_list):
+        app.quit()
 
 if __name__ == '__main__':
     # 1. Test base class multicore
@@ -121,7 +126,11 @@ if __name__ == '__main__':
     dpgmm = DPGMM_IPY(cpu_No=cpu_No)
     dpgmm(fet)
     dpgmm.run_all()
-    print('cpu ready list:', dpgmm.cpu_ready_list)
-    for i in range(dpgmm.cpu_No):
-        print(dpgmm[i]['label'])
-    print('cpu ready list:', dpgmm.cpu_ready_list)
+    timer = app.Timer(connect=report_cpu_status, interval=0.3)
+    timer.start()
+    app.run()    
+
+    # print('cpu ready list:', dpgmm.cpu_ready_list)
+    # for i in range(dpgmm.cpu_No):
+    #     print(dpgmm[i]['label'])
+    # print('cpu ready list:', dpgmm.cpu_ready_list)
