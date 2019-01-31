@@ -570,6 +570,11 @@ class spike_view(View):
                 self.clu.emit('cluster')
                 # self._move_spikes(target_clu_No)
 
+        if e.text == 'q':
+            self.clu.membership[:] = 0
+            self.clu.__construct__()
+            self.clu.emit('cluster')            
+
         if e.text == 'x':
             if len(self.selected_spk) > 0:
                 self.event.emit('clip', idx=list(self.selected_spk))
