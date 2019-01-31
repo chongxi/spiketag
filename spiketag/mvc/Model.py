@@ -5,6 +5,7 @@ from ..base import *
 from ..utils.conf import info 
 from ..utils import conf
 from ..utils.utils import Timer
+from ..cpu import DPGMM_IPY
 from ..analysis.place_field import place_field
 
 
@@ -158,7 +159,7 @@ class MainModel(object):
                                       max_iter=300,
                                       njobs=self._n_jobs)
 
-        elif self.clu_method == 'no_clustering':
+        elif self.clu_method == 'no_cluster':
             self.clu = {}
             for group_id in self.groups:
                 self.clu[group_id] = CLU(np.zeros(self.fet[group_id].shape[0],).astype(np.int64))

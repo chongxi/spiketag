@@ -9,8 +9,8 @@ from ..base.SPK import _transform
 from ..fpga import xike_config
 from ..analysis.place_field import place_field
 from ..view import scatter_3d_view
+from ..cpu import DPGMM_IPY
 from playground.view import maze_view
-
 
 class controller(object):
     def __init__(self, fpga=False, *args, **kwargs):
@@ -261,8 +261,23 @@ class controller(object):
         i = self.current_group
         self.view.set_data(i, self.model.mua, self.model.spk[i], self.model.fet[i], self.model.clu[i])
 
-    def sort(self, fet_method='pca', clu_method='hdbscan'):
-        self.model.sort(fet_method, clu_method)
+
+    def sort(self, amp_cutoff=True, speed_cutoff=False, fet_method='pca', clu_method='hdbscan'):
+        if clu_method == 'bg_cluster':
+            self.model.sort(amp_cutoff=amp_cutoff, speed_cutoff=speed_cutoff, 
+                            fet_method=fet_method, clu_method='no_cluster')
+            self.run_bg_clustering()
+        else:
+            self.model.sort(amp_cutoff=amp_cutoff, speed_cutoff=speed_cutoff, 
+                            fet_method=fet_method, clu_method=clu_method)            
+
+
+    def run_bg_clustering(self):
+        self.bg_cluster = DPGMM_IPY(cpu_No=self.prb.n_group) 
+        for group_id in range(self.prb.n_group):
+            self.bg_cluster.set_data(group_id, {'data':self.model.fet[group_id]}) 
+        self.bg_cluster.run_all(nclu_max=7)
+
 
     def show(self, group_id=None):
         if group_id is None:
