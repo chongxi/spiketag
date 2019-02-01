@@ -116,8 +116,19 @@ class spike_view(View):
         # self._depth[:, 1] = tc.from_numpy(self.y)
         # self.depth = self._depth.numpy()
         
-        self.box_index = np.repeat(self.box_index, self.n_samples, axis=0)
-        self.color = np.repeat(self.color_index, self.n_samples, axis=0)
+        
+        # self.color = np.repeat(self.color_index, self.n_samples, axis=0)
+        n = self.color_index.shape[0]
+        color_index = tc.from_numpy(self.color_index)
+        color_index.unsqueeze_(-1); # create the third dim, so you can expand on that dim
+        self.color = color_index.expand(n, 4, self.n_samples).transpose_(1,2).reshape(-1, 4).numpy()
+
+        # self.box_index = np.repeat(self.box_index, self.n_samples, axis=0)
+        n = self.box_index.shape[0]
+        box_index = tc.from_numpy(self.box_index)
+        box_index.unsqueeze_(-1);
+        self.box_index = box_index.expand(n, 2, self.n_samples).transpose_(1,2).reshape(-1, 2).numpy()
+
         # self.color = np.repeat(np.vstack(self._color_), self.n_samples, axis=0)
         # self.color = self.color_index
         self._cache_depth = self.depth.copy()
