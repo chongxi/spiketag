@@ -30,9 +30,55 @@ class spike_view(View):
 
         self.event = EventEmitter() 
         # self.events.add(model_modified=Event)
+
         
     def attach(self, gui):
         gui.add_view(self)
+
+
+    def set_data(self, spk, clu=None):
+        #################################
+        # this init block take about 1ms
+        self.spk = self._affine_transform(spk)
+        if clu is None:
+            self.clu = CLU(np.zeros(spk.shape[0]).astype('int'))
+        else:
+            self.clu = clu
+        self.n_signals = spk.shape[0]
+        self.n_samples = spk.shape[1]
+        self.n_ch      = spk.shape[2]
+        self._xsig = np.linspace(-0.5, 0.5, self.n_samples)
+        self.x = np.tile(self._xsig, self.n_ch*self.n_signals)
+        self._depth = tc.zeros((self.x.shape[0], 3)).float()
+        self._depth[:, 0] = tc.from_numpy(self.x)        
+        self.signal_index = np.repeat(np.arange(len(self.x)/len(self._xsig)), 
+                                  len(self._xsig)).astype(np.float32)
+        # self._depth = tc.zeros((self.x.shape[0], 3)).float()
+        # self._depth[:, 0] = tc.from_numpy(self.x)
+        # self.depth = np.zeros((self.x.shape[0], 3)).astype(np.float32)
+
+        #################################
+        self.clear()
+
+        ###################################
+        # render take 400ms for 5 million points
+        self.render()
+        
+        @self.clu.connect
+        def on_cluster(*args, **kwargs):
+            with Timer('[VIEW] Spikeview -- rerender', verbose=conf.ENABLE_PROFILER):
+                self._selected = {}
+                self._magnet_const = 1
+                self._magnet_mode = False
+                self.rerender()
+        
+        @self.clu.connect
+        def on_select(*args, **kwargs):
+            self._selected = self.clu.global2local(self.clu.selectlist)
+            self.highlight(self._selected, external=True)
+            if self.clu.selectlist.shape[0]>0:
+                self.view_lock = True
+
 
     def _affine_transform(self, x):
         # important!, this map the spk to view space through a affine transformation: y = ax + b
@@ -108,14 +154,11 @@ class spike_view(View):
         # _get_box_index(self.box_index, self.n_ch, self.clu.nclu, self.n_samples, list(self.clu.index.values()))
 
         # self.depth = np.c_[self.x, self.y, np.zeros(*self.x.shape)].astype(np.float32)
-
-        _depth = tc.zeros((self.x.shape[0], 3)).float()
-        _depth[:, 0] = tc.from_numpy(self.x)
-        _depth[:, 1] = tc.from_numpy(self.y)
-        self.depth = _depth.numpy()
+        self._depth[:, 1] = tc.from_numpy(self.y)
+        self._depth[:, 2] = 0
+        self.depth = self._depth.numpy()
         # self._depth[:, 1] = tc.from_numpy(self.y)
         # self.depth = self._depth.numpy()
-        
         
         # self.color = np.repeat(self.color_index, self.n_samples, axis=0)
         n = self.color_index.shape[0]
@@ -135,47 +178,8 @@ class spike_view(View):
         self._cache_color = self.color.copy()
         self._cache_mask_ = np.array([])
 
-    def set_data(self, spk, clu=None):
-        #################################
-        # this init block take about 1ms
-        self.spk = self._affine_transform(spk)
-        if clu is None:
-            self.clu = CLU(np.zeros(spk.shape[0]).astype('int'))
-        else:
-            self.clu = clu
-        self.n_signals = spk.shape[0]
-        self.n_samples = spk.shape[1]
-        self.n_ch      = spk.shape[2]
-        self._xsig = np.linspace(-0.5, 0.5, self.n_samples)
-        self.x = np.tile(self._xsig, self.n_ch*self.n_signals)
-        # self._depth = tc.zeros((self.x.shape[0], 3)).float()
-        # self._depth[:, 0] = tc.from_numpy(self.x)
-        # self.depth = np.zeros((self.x.shape[0], 3)).astype(np.float32)
-
-        #################################
-        self.clear()
-
-        ###################################
-        # render take 400ms for 5 million points
-        self.render()
-        
-        @self.clu.connect
-        def on_cluster(*args, **kwargs):
-            with Timer('[VIEW] Spikeview -- rerender', verbose=conf.ENABLE_PROFILER):
-                self._selected = {}
-                self._magnet_const = 1
-                self._magnet_mode = False
-                self.rerender()
-        
-        @self.clu.connect
-        def on_select(*args, **kwargs):
-            self._selected = self.clu.global2local(self.clu.selectlist)
-            self.highlight(self._selected, external=True)
-            if self.clu.selectlist.shape[0]>0:
-                self.view_lock = True
 
     def render(self, update=False):
-
         visual = visuals.PlotVisual()
         self.add_visual(visual)
         
@@ -184,9 +188,6 @@ class spike_view(View):
 
         with Timer('[VIEW] Spikeview -- render - step 1: set data', verbose=conf.ENABLE_PROFILER):
             self._build()
-            self.signal_index = np.repeat(np.arange(len(self.y)/len(self._xsig)), 
-                                              len(self._xsig)).astype(np.float32)
-
 
         with Timer('[VIEW] Spikeview -- render - step 2: gsgl update', verbose=conf.ENABLE_PROFILER):
             visual.program['a_position'] = self.depth
