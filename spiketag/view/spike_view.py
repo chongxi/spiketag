@@ -54,27 +54,28 @@ class spike_view(View):
 
     def _get_data(self, data_bound):
         # new_data_list=[]
-        self._y=[]
+        # self._y=[]
         # self._box_=[]
-        self._color_=[]
-        i,j = 0,0
+        # self._color_=[]
+        i = 0
         # self.box_index   = np.zeros((np.prod(self.spk.shape), 2)).astype(np.float32)
         # self.color_index   = np.zeros((np.prod(self.spk.shape), 4)).astype(np.float32)
-        self.box_index   = np.zeros((self.spk.shape[0]*self.spk.shape[2], 2)).astype(np.float32)
-        self.color_index = np.zeros((self.spk.shape[0]*self.spk.shape[2], 4)).astype(np.float32)
+        self.box_index   = np.zeros((self.spk.shape[0]*self.spk.shape[2], 2)).astype(np.float32)   # the box index for every pts
+        self.color_index = np.zeros((self.spk.shape[0]*self.spk.shape[2], 4)).astype(np.float32)   # the color for every pts
+        self._y          = np.zeros((self.spk.shape[0]*self.spk.shape[2], self.spk.shape[1])).astype(np.float32)  # the value for every pts
         for chNo in range(self.n_ch):
             for cluNo in self.clu.index_id:
                 s = self.spk[self.clu.index[cluNo],:,chNo]
                 if s.ndim == 1:
-                    s = s[np.newaxis,:]
+                    s = s.reshape(1, -1)
                 nspk = s.shape[0]
-                self._y.append(np.asarray(s))
-
-                step = nspk # *self.n_samples
-                self.box_index[i:i+step, :] = np.array([chNo, cluNo])
-                self.color_index[i:i+step, :3] = np.array(palette[cluNo])
-                self.color_index[i:i+step,  3] = self._transparency
-                i+=step
+                # self._y.append(np.asarray(s))
+                self._y[i:i+nspk, :] = s
+                # self._depth[i:i+nspk*s.shape[1], 1] = tc.from_numpy(s.ravel())
+                self.box_index[i:i+nspk, :] = np.array([chNo, cluNo])
+                self.color_index[i:i+nspk, :3] = np.array(palette[cluNo])
+                self.color_index[i:i+nspk,  3] = self._transparency
+                i+=nspk
                 
                 # color_len = nspk*self.n_samples
                 # self.color_index[j:j+color_len, :3] = np.array(palette[cluNo])
@@ -96,10 +97,8 @@ class spike_view(View):
         # self.data = {}
         # self.data['box_index'] = np.vstack(self._box_)
         # self.data['color']     = np.vstack(self._color_)
-        self._xsig = np.linspace(-0.5, 0.5, self.n_samples)
-        self.x = np.tile(self._xsig, self.n_ch*self.n_signals)
-        self.y = np.vstack(self._y).ravel()
-
+        
+        self.y = self._y.ravel()
 
     def _build(self):
         self.grid.shape = (self.n_ch, self.clu.nclu)
@@ -109,10 +108,13 @@ class spike_view(View):
         # _get_box_index(self.box_index, self.n_ch, self.clu.nclu, self.n_samples, list(self.clu.index.values()))
 
         # self.depth = np.c_[self.x, self.y, np.zeros(*self.x.shape)].astype(np.float32)
+
         _depth = tc.zeros((self.x.shape[0], 3)).float()
         _depth[:, 0] = tc.from_numpy(self.x)
         _depth[:, 1] = tc.from_numpy(self.y)
         self.depth = _depth.numpy()
+        # self._depth[:, 1] = tc.from_numpy(self.y)
+        # self.depth = self._depth.numpy()
         
         self.box_index = np.repeat(self.box_index, self.n_samples, axis=0)
         self.color = np.repeat(self.color_index, self.n_samples, axis=0)
@@ -133,6 +135,12 @@ class spike_view(View):
         self.n_signals = spk.shape[0]
         self.n_samples = spk.shape[1]
         self.n_ch      = spk.shape[2]
+        self._xsig = np.linspace(-0.5, 0.5, self.n_samples)
+        self.x = np.tile(self._xsig, self.n_ch*self.n_signals)
+        # self._depth = tc.zeros((self.x.shape[0], 3)).float()
+        # self._depth[:, 0] = tc.from_numpy(self.x)
+        # self.depth = np.zeros((self.x.shape[0], 3)).astype(np.float32)
+
         #################################
         self.clear()
 
