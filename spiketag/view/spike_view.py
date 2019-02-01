@@ -10,7 +10,7 @@ from ..utils import conf
 from ..utils.conf import error, warning
 from ..base.CLU import CLU
 from ._core import _get_array, _accumulate
-from ._core import _spkNo2maskNo_numba, _cache_out, _cache_in_vector, _cache_in_scalar, _representsInt 
+from ._core import _spkNo2maskNo_numba, _cache_out, _cache_in_vector, _cache_in_scalar, _representsInt, _get_box_index
 
 
 class spike_view(View):
@@ -53,41 +53,71 @@ class spike_view(View):
         return r[0], r[1]
 
     def _get_data(self, data_bound):
-        new_data_list=[]
+        # new_data_list=[]
         self._y=[]
+        # self._box_=[]
+        self._color_=[]
+        i,j = 0,0
+        # self.box_index   = np.zeros((np.prod(self.spk.shape), 2)).astype(np.float32)
+        # self.color_index   = np.zeros((np.prod(self.spk.shape), 4)).astype(np.float32)
+        self.box_index   = np.zeros((self.spk.shape[0]*self.spk.shape[2], 2)).astype(np.float32)
+        self.color_index = np.zeros((self.spk.shape[0]*self.spk.shape[2], 4)).astype(np.float32)
         for chNo in range(self.n_ch):
             for cluNo in self.clu.index_id:
-                s           = self.spk[self.clu.index[cluNo],:,chNo].squeeze()
+                s = self.spk[self.clu.index[cluNo],:,chNo]
                 if s.ndim == 1:
                     s = s[np.newaxis,:]
-                n = s.shape[0]
+                nspk = s.shape[0]
                 self._y.append(np.asarray(s))
-                transparency= np.tile(self._transparency, (n,1))
-                color       = np.hstack((np.asarray([self.palette[cluNo] for i in s]), transparency)).astype(np.float32)
-                # depth       = np.zeros((n,1))
-                # data_bounds = np.tile((data_bound), (n,1))
-                box_index   = np.tile((chNo, cluNo), ((n*self.n_samples,1))).astype(np.float32)
-                new_data_list.append({# 'y': y,
-                                      # 'x': x,
-                                      'color': color,
-                                      # 'depth': depth,
-                                      # 'data_bounds': data_bounds,
-                                      'box_index': box_index})
-        self.data = _accumulate(new_data_list)
+
+                step = nspk # *self.n_samples
+                self.box_index[i:i+step, :] = np.array([chNo, cluNo])
+                self.color_index[i:i+step, :3] = np.array(palette[cluNo])
+                self.color_index[i:i+step,  3] = self._transparency
+                i+=step
+                
+                # color_len = nspk*self.n_samples
+                # self.color_index[j:j+color_len, :3] = np.array(palette[cluNo])
+                # self.color_index[j:j+color_len,  3] = self._transparency
+                # j+=color_len
+
+                # transparency= np.tile(self._transparency, (n,1))
+                # color       = np.hstack((np.asarray([self.palette[cluNo] for i in s]), transparency)).astype(np.float32)
+                # box_index   = np.tile((chNo, cluNo), ((n*self.n_samples,1))).astype(np.float32)
+                # self._box_.append(box_index)
+                # self._color_.append(color)
+                # new_data_list.append({# 'y': y,
+                #                       # 'x': x,
+                #                       'color': color,
+                #                       # 'depth': depth,
+                #                       # 'data_bounds': data_bounds,
+                #                       'box_index': box_index})
+        # self.data = _accumulate(new_data_list)
+        # self.data = {}
+        # self.data['box_index'] = np.vstack(self._box_)
+        # self.data['color']     = np.vstack(self._color_)
         self._xsig = np.linspace(-0.5, 0.5, self.n_samples)
         self.x = np.tile(self._xsig, self.n_ch*self.n_signals)
         self.y = np.vstack(self._y).ravel()
 
+
     def _build(self):
         self.grid.shape = (self.n_ch, self.clu.nclu)
-        data = self.data
-        self.box_index = data.pop('box_index')
+        # data = self.data
+        # self.box_index = np.vstack(self._box_)
+        # self.box_index = np.zeros((np.prod(self.spk.shape), 2)).astype(np.float32)
+        # _get_box_index(self.box_index, self.n_ch, self.clu.nclu, self.n_samples, list(self.clu.index.values()))
+
         # self.depth = np.c_[self.x, self.y, np.zeros(*self.x.shape)].astype(np.float32)
         _depth = tc.zeros((self.x.shape[0], 3)).float()
         _depth[:, 0] = tc.from_numpy(self.x)
         _depth[:, 1] = tc.from_numpy(self.y)
         self.depth = _depth.numpy()
-        self.color = np.repeat(data['color'], self.n_samples, axis=0)
+        
+        self.box_index = np.repeat(self.box_index, self.n_samples, axis=0)
+        self.color = np.repeat(self.color_index, self.n_samples, axis=0)
+        # self.color = np.repeat(np.vstack(self._color_), self.n_samples, axis=0)
+        # self.color = self.color_index
         self._cache_depth = self.depth.copy()
         self._cache_color = self.color.copy()
         self._cache_mask_ = np.array([])
