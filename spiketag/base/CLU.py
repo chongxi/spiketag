@@ -232,25 +232,43 @@ class CLU(EventEmitter):
         self.membership = np.delete(self.membership, idx)
         self.__construct__()
 
+    @property
+    def changed(self):
+        if np.array_equal(self._membership_stack[-1], self.membership):
+            return False
+        else:
+            return True
+    
+
     def fill(self, *args, **kwargs):
         '''
+        clu_to is the new membership
         clu.fill(global_idx, clu_to) for changing some of the membership
         or
         clu.fill(clu_to) for changing all memberships
         '''
+        self._membership_stack.append(self.membership.copy())
+
         if len(args) == 1:
             global_idx = np.arange(self.npts)
             clu_to     = args[0]
         if len(args) == 2:
             global_idx = args[0]
             clu_to     = args[1]
-        assert len(global_idx) == len(clu_to)
+
+        if type(clu_to) is int or type(clu_to) is np.int32 or type(clu_to) is np.int64:
+            clu_to = [clu_to]*len(global_idx)
+        else:
+            assert len(global_idx) == len(clu_to)
         #  print 'received fill event, global_idx:{}, clu_to:{}'.format(global_idx, clu_to)
         for idx, clu in zip(global_idx, clu_to):
             self.membership[idx] = clu
 
         self.__construct__()
-        self.emit('cluster', action = 'fill')
+
+        if self.changed:   # prevent those redundant downstream cost (especially connect to many callbacks)
+            self.emit('cluster') # , action = 'fill'
+
 
     def refill(self, global_idx, labels):
         assert len(global_idx) == len(labels)
