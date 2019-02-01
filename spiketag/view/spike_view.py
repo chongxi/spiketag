@@ -1,5 +1,6 @@
 import numpy as np
 import numexpr as ne
+import torch as tc
 from collections import OrderedDict
 from phy.plot import View, base, visuals
 from vispy.util.event import Event
@@ -53,16 +54,14 @@ class spike_view(View):
 
     def _get_data(self, data_bound):
         new_data_list=[]
-        y=[]
+        self._y=[]
         for chNo in range(self.n_ch):
             for cluNo in self.clu.index_id:
-                # x           = [self._xsig for i in y]
-                # y           = list(self.spk[self.clu[cluNo],:,chNo].squeeze())
                 s           = self.spk[self.clu.index[cluNo],:,chNo].squeeze()
                 if s.ndim == 1:
                     s = s[np.newaxis,:]
                 n = s.shape[0]
-                y.append(np.asarray(s))
+                self._y.append(np.asarray(s))
                 transparency= np.tile(self._transparency, (n,1))
                 color       = np.hstack((np.asarray([self.palette[cluNo] for i in s]), transparency)).astype(np.float32)
                 # depth       = np.zeros((n,1))
@@ -77,13 +76,17 @@ class spike_view(View):
         self.data = _accumulate(new_data_list)
         self._xsig = np.linspace(-0.5, 0.5, self.n_samples)
         self.x = np.tile(self._xsig, self.n_ch*self.n_signals)
-        self.y = np.vstack(y).ravel()
+        self.y = np.vstack(self._y).ravel()
 
     def _build(self):
         self.grid.shape = (self.n_ch, self.clu.nclu)
         data = self.data
         self.box_index = data.pop('box_index')
-        self.depth = np.c_[self.x, self.y, np.zeros(*self.x.shape)].astype(np.float32)
+        # self.depth = np.c_[self.x, self.y, np.zeros(*self.x.shape)].astype(np.float32)
+        _depth = tc.zeros((self.x.shape[0], 3)).float()
+        _depth[:, 0] = tc.from_numpy(self.x)
+        _depth[:, 1] = tc.from_numpy(self.y)
+        self.depth = _depth.numpy()
         self.color = np.repeat(data['color'], self.n_samples, axis=0)
         self._cache_depth = self.depth.copy()
         self._cache_color = self.color.copy()
@@ -412,9 +415,10 @@ class spike_view(View):
                 if self.view_lock is True:
                     target_clu_No = self.cluster_mouse_on
                     select_list = self.clu.selectlist
-                    self.clu.membership[self.clu.selectlist] = target_clu_No
-                    self.clu.__construct__()
-                    self.clu.emit('cluster')
+                    self.clu.fill(self.clu.selectlist, target_clu_No)
+                    # self.clu.membership[self.clu.selectlist] = target_clu_No
+                    # self.clu.__construct__()
+                    # self.clu.emit('cluster')
                     self.clu.select(select_list)
 
         if e.button == 2:
