@@ -2,6 +2,23 @@ import numpy as np
 from .color_scheme import palette
 from .scatter_2d_view import scatter_2d_view
 from vispy.util import keys
+from numba import njit
+
+
+@njit(cache=True)
+def _locate_amplitude(spk, spk_times, fs, clu_idx):
+    '''
+        locate the peak of amplitude, return index and peak value
+    '''
+    times = spk_times[clu_idx]
+    nspks = clu_idx.shape[0]
+    spk_group = spk[clu_idx, :].reshape(nspks, -1)
+    time_amplitudes = np.zeros((nspks, 2))
+    
+    for i in range(nspks):
+        time_amplitudes[i, 0] = times[i]
+        time_amplitudes[i, 1] = np.min(spk_group[i])
+    return  time_amplitudes
 
 
 class amplitude_view(scatter_2d_view):
@@ -45,7 +62,8 @@ class amplitude_view(scatter_2d_view):
         
         @self._clu.connect
         def on_cluster(*args, **kwargs):
-            self._clu.select_clu(self._clu.index_id)
+            self._draw(self._clu.index_id)
+            # self._clu.select_clu(self._clu.index_id)
 
         self._draw(self._clu.index_id)
 
@@ -107,19 +125,19 @@ class amplitude_view(scatter_2d_view):
     ###              private method 
     ### ----------------------------------------------
 
-    def _locate_amplitude(self, clu):
-        '''
-            locate the peak of amplitude, return index and peak value
-        '''
-        self.times = self._spike_time[self._clu.index[clu]]
-        # peak always heppenned one offset before
-        self.amplitudes = self._spk[self._clu.index[clu], :].min(axis=1).min(axis=1) / self._scale
-        # print amplitudes.shape
-        # amplitudes = self._spk[self._clu.index[clu], 7].min(axis=1) / self._scale
-        # print amplitudes.shape
-        # print self._spk.shape
+    # def _locate_amplitude(self, clu):
+    #     '''
+    #         locate the peak of amplitude, return index and peak value
+    #     '''
+    #     self.times = self._spike_time[self._clu.index[clu]]
+    #     # peak always heppenned one offset before
+    #     self.amplitudes = self._spk[self._clu.index[clu], :].min(axis=1).min(axis=1) / self._scale
+    #     # print amplitudes.shape
+    #     # amplitudes = self._spk[self._clu.index[clu], 7].min(axis=1) / self._scale
+    #     # print amplitudes.shape
+    #     # print self._spk.shape
         
-        return  self.times / self.binsize, self.amplitudes
+    #     return  self.times / self.binsize, self.amplitudes
  
 
     def _draw(self, clus, delimit=True):
@@ -128,21 +146,21 @@ class amplitude_view(scatter_2d_view):
             Draw clu by clu because have to match the color
         '''
         self.poses = None
-        colors = None
+        self.colors = None
         
-        for clu in clus:
-            x, y = self._locate_amplitude(clu) 
-            pos = np.column_stack((x, y))
-            color = np.tile(np.hstack((palette[clu],1)),(pos.shape[0],1))
+        for clu_id in clus:
+            clu_idx = self._clu.index[clu_id]
+            pos = _locate_amplitude(self._spk, self._spike_time, self.binsize, clu_idx) 
+            color = np.tile(np.hstack((palette[clu_id],1)),(pos.shape[0],1))
         
-            if self.poses is None and colors is None:
+            if self.poses is None and self.colors is None:
                 self.poses = pos
-                colors = color
+                self.colors = color
             else:
                 self.poses = np.concatenate((self.poses, pos))
-                colors = np.concatenate((colors, color))
+                self.colors = np.concatenate((self.colors, color))
 
-        super(amplitude_view, self).set_data(pos=self.poses, colors=colors, delimit=delimit) 
+        super(amplitude_view, self).set_data(pos=self.poses, colors=self.colors, delimit=delimit) 
 
 
     def on_key_press(self, e):
