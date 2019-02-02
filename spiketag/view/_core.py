@@ -60,6 +60,19 @@ def _cache_in_scalar(mask, source, target):
             target[k,j] = source
 
 
+# TODO: Using Numba to replace spkview._get_data() and spkview._build() might make the `cluster` event response much faster
+@jit(cache=True, nopython=True)
+def _get_box_index(box_index, n_ch, n_clu, spk_len, clu_list):
+    i = 0
+    for chNo in range(n_ch):
+        for cluNo in range(n_clu):
+            box_len = clu_list[cluNo].shape[0]*spk_len
+#             print(box_len)
+            box_index[i:i+box_len, 0] = chNo
+            box_index[i:i+box_len, 1] = cluNo
+            i+=box_len
+
+
 def _representsInt(s):
     try: 
         int(s)
