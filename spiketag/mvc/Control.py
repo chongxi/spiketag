@@ -265,14 +265,12 @@ class controller(object):
         self.view.set_data(i, self.model.mua, self.model.spk[i], self.model.fet[i], self.model.clu[i])
 
 
-    def sort(self, amp_cutoff=True, speed_cutoff=False, fet_method='pca', clu_method='hdbscan'):
+    def sort(self, clu_method='hdbscan'):
         if clu_method == 'bg_cluster':
-            self.model.sort(amp_cutoff=amp_cutoff, speed_cutoff=speed_cutoff, 
-                            fet_method=fet_method, clu_method='no_cluster')
+            self.model.sort(clu_method='reset')
             self.run_bg_clustering()
         else:
-            self.model.sort(amp_cutoff=amp_cutoff, speed_cutoff=speed_cutoff, 
-                            fet_method=fet_method, clu_method=clu_method)            
+            self.model.sort(clu_method=clu_method)            
 
 
     def run_bg_clustering(self, method='parallel'):

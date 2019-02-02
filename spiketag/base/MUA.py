@@ -120,7 +120,7 @@ class MUA(object):
         data = self.data[:, nchs].astype(dtype)
         data.tofile(file_name)
 
-    def tospk(self, amp_cutoff=True, speed_cutoff=False):
+    def tospk(self, amp_cutoff=True, speed_cutoff=False, time_cutoff=True):
         info('mua.tospk()')
         spkdict = {}
         self.spk_times = {}
@@ -128,8 +128,10 @@ class MUA(object):
             # pivotal_chs = self.probe.fetch_pivotal_chs(g)
             pivotal_chs = self.probe.grp_dict[g]
             spk_times = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
-            spk_times_for_sorting = find_spk_in_time_seg(spk_times, self.time_segs*self.fs)
-            self.spk_times[g] = spk_times_for_sorting
+            if time_cutoff is True:
+                self.spk_times[g] = find_spk_in_time_seg(spk_times, self.time_segs*self.fs)
+            else:
+                self.spk_times[g] = spk_times
             if len(self.spk_times[g]) > 0:
                 spks, noise_idx = _to_spk(data   = self.data, 
                                           pos    = self.spk_times[g], 
@@ -139,7 +141,7 @@ class MUA(object):
                                           cutoff_neg = self.cutoff_neg,
                                           cutoff_pos = self.cutoff_pos)
                 ### remove noise from spike
-                if amp_cutoff:
+                if amp_cutoff is True:
                     n_noise = float(noise_idx.shape[0])
                     n_spk   = float(spks.shape[0])
                     info('group {} delete {}%({}/{}) spks via cutoff'.format(g, n_noise/n_spk*100, n_noise, n_spk))
@@ -148,7 +150,7 @@ class MUA(object):
                 else:
                     spkdict[g] = spks
                 ### remove spike during v_smoothed < 5cm/sec
-                if speed_cutoff and self.time_still is not None:
+                if speed_cutoff is True and self.time_still is not None:
                     _, idx_still = idx_still_spike(self.spk_times[g]/self.fs, self.time_still, 1/60.)
                     n_idx_still = float(idx_still.shape[0])
                     n_spk       = float(self.spk_times[g].shape[0])

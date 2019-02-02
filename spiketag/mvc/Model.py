@@ -23,7 +23,7 @@ class MainModel(object):
 
     def __init__(self, mua_filename, spk_filename, probe=None, spktag_filename=None, 
                  numbytes=4, binary_radix=13, spklen=19, corr_cutoff=0.9, cutoff=[-15000, 1000],
-                 fet_method='weighted-pca', fetlen=6, fet_whiten=False,
+                 fet_method='pca', fetlen=6, fet_whiten=False,
                  clu_method='hdbscan', fall_off_size=18, n_jobs=24,
                  time_segs=None,
                  playground_log=None, session_id=0, 
@@ -93,10 +93,13 @@ class MainModel(object):
                            spk_filename = self.spk_filename, 
                            numbytes     = self.numbytes, 
                            binary_radix = self.binpoint,
-                           cutoff       = self._cutoff, 
-                           time_segs    = self._time_segs, 
-                           time_still   = self.time_still,
+                           cutoff       = self._cutoff,         # for amp   cut_off
+                           time_segs    = self._time_segs,      # for time  cut_off
+                           time_still   = self.time_still,      # for speed cut_off
                            lfp          = False)
+
+            # self.get_spk()
+            # self.get_fet()
 
         # After first time
         else:
@@ -119,49 +122,40 @@ class MainModel(object):
                            time_still   = self.time_still,
                            lfp          = False)
             self.mua.spk_times = self.gtimes
+            self.spk_times = self.mua.spk_times
             info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 
         self.groups = self.probe.grp_dict.keys()
+        self.ngrp   = len(self.groups)
 
 
-    def sort(self, amp_cutoff=True, speed_cutoff=False, fet_method='pca', clu_method='hdbscan'):
+    def get_spk(self, amp_cutoff=True, speed_cutoff=True, time_cutoff=True):
+        info('extract spikes from pivital meta data')
+        self.spk = self.mua.tospk(amp_cutoff=amp_cutoff,
+                                  speed_cutoff=speed_cutoff,
+                                  time_cutoff=time_cutoff)
+
+        info('grouping spike time')
+        self.gtimes = self.mua.spk_times
+
+
+    def get_fet(self):
+        info('extrat features with {}'.format(self.fet_method))
+        self.fet = self.spk.tofet(method=self.fet_method, 
+                                  whiten=self._fet_whiten,
+                                  ncomp=self._fetlen)
+
+
+    def sort(self, clu_method='hdbscan', njobs=24):
         # info('removing high corr noise from spikes pool')
         # self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
 
         # info('removing all spks on group which len(spks) less then fetlen')
         # self.mua.remove_groups_under_fetlen(self._fetlen)
 
-        self.fet_method = fet_method
         self.clu_method = clu_method
-        
-        info('extract spikes from pivital meta data')
-        self.spk = self.mua.tospk(amp_cutoff=amp_cutoff,
-                                  speed_cutoff=speed_cutoff)
-
-        info('grouping spike time')
-        self.gtimes = self.mua.spk_times
-
-        info('extrat features with {}'.format(self.fet_method))
-        self.fet = self.spk.tofet(method=self.fet_method, 
-                                  whiten=self._fet_whiten,
-                                  ncomp=self._fetlen)
-
         info('clustering with {}'.format(self.clu_method))
-        if self.clu_method == 'hdbscan':
-            self.clu = self.fet.toclu(method=self.clu_method, 
-                                      fall_off_size=self._fall_off_size,
-                                      njobs=self._n_jobs)
-
-        elif self.clu_method == 'dpgmm':
-            self.clu = self.fet.toclu(method=self.clu_method,
-                                      max_n_clusters=10,
-                                      max_iter=300,
-                                      njobs=self._n_jobs)
-
-        elif self.clu_method == 'no_cluster':
-            self.clu = {}
-            for group_id in self.groups:
-                self.clu[group_id] = CLU(np.zeros(self.fet[group_id].shape[0],).astype(np.int64))
+        self.clu = self.fet.toclu(method=self.clu_method, njobs=njobs)
 
         self.spktag = SPKTAG(self.probe,
                              self.spk, 
