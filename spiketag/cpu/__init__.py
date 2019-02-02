@@ -1,6 +1,7 @@
 import ipyparallel as ipp
 import numpy as np
 from vispy import app
+from bg_cluster import bg_cluster
 
 dpgmm_def = '''
 def dpgmm(max_cluster_n=10):
