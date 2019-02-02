@@ -126,7 +126,8 @@ class MainView(QMainWindow):
 
     def set_data(self, group_id, mua, spk, fet, clu):
         ### init view and set_data
-        
+
+        self.clu = clu
         chs = self.prb[group_id]
         self.spkview.set_data(spk, clu)
         # self.fetview0.set_data(fet, clu)
@@ -145,6 +146,19 @@ class MainView(QMainWindow):
             pass
 
         self.traceview.locate_buffer = 1500
+
+        if self.clu._event_reg_enable is True:
+            self.register_event()
+
+
+    def register_event(self):
+        self.spkview.register_event()
+        self.fetview0.register_event()
+        self.fetview1.register_event()
+        self.ampview.register_event()
+        self.traceview.register_event()
+        self.corview.register_event()
+        self.clu._event_reg_enable = False
 
 
     def set_data_from_model(self, group_id):

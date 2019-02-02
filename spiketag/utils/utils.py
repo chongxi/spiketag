@@ -85,7 +85,7 @@ class EventEmitter(object):
     def _registered_func_name(self, event):
         funcNamelist = []
         for func in self._callbacks[event]:
-            funcName = func.__module__ + '.' + func.__name__ + '_id' + str(id(func))
+            funcName = func.__module__ + '.' + func.__name__  + '_id' + str(id(func))
             funcNamelist.append(funcName)
         return funcNamelist
 
@@ -123,7 +123,7 @@ class EventEmitter(object):
 
         # We register the callback function.
         # if func is not in self._callbacks[event]:
-        funcName = func.__module__ + '.' + func.__name__ + '_id' + str(id(func))
+        funcName = func.__module__ + '.' + func.__name__  + '_id' + str(id(func))
         if funcName not in self._registered_func_name(event):
             self._callbacks[event].append(func)
 
@@ -156,7 +156,7 @@ class EventEmitter(object):
             if caller and caller == callback.__module__:
                continue 
 
-            with Timer('[Event] emit -- {}'.format(callback.__module__), verbose=conf.ENABLE_PROFILER):
+            with Timer('[Event] emit -- {}.{}'.format(callback.__module__, callback.__name__), verbose=conf.ENABLE_PROFILER):
                 res.append(callback(*args, **kwargs))
         return res
 

@@ -87,6 +87,8 @@ class scatter_3d_view(scene.SceneCanvas):
         self._n = fet.shape[0]
         self._render()
 
+
+    def register_event(self):
         @self.clu.connect
         def on_cluster(*args, **kwargs):
             self._render()

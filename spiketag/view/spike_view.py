@@ -63,6 +63,9 @@ class spike_view(View):
         ###################################
         # render take 400ms for 5 million points
         self.render()
+
+
+    def register_event(self):
         
         @self.clu.connect
         def on_cluster(*args, **kwargs):

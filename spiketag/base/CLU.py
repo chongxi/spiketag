@@ -33,6 +33,10 @@ class CLU(EventEmitter):
         self.__construct__()
         self.selectlist = np.array([])
 
+        # every new born clu has _event_reg_enable as True. 
+        # When the registration process finished, this reg will be set to False to prevent double registration
+        self._event_reg_enable = True  
+
     @property
     def npts(self):
         return self.membership.shape[0]
@@ -268,7 +272,8 @@ class CLU(EventEmitter):
 
         if self.changed:   # prevent those redundant downstream cost (especially connect to many callbacks)
             self.emit('cluster') # , action = 'fill'
-
+        # else:
+        #     self._membership_stack.pop() 
 
     def refill(self, global_idx, labels):
         assert len(global_idx) == len(labels)

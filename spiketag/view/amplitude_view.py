@@ -51,7 +51,10 @@ class amplitude_view(scatter_2d_view):
         self._spike_time = spk_times 
         self._spk = spk
         self._clu = clu
-        
+        self._draw(self._clu.index_id)
+
+
+    def register_event(self):
         @self._clu.connect
         def on_select_clu(*args, **kwargs):
             self._draw(self._clu.select_clus, delimit=False)
@@ -65,7 +68,6 @@ class amplitude_view(scatter_2d_view):
             self._draw(self._clu.index_id)
             # self._clu.select_clu(self._clu.index_id)
 
-        self._draw(self._clu.index_id)
 
     @property
     def binsize(self):

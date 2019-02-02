@@ -223,10 +223,13 @@ class trace_view(scene.SceneCanvas):
             
         self.set_range()
 
+
+    def register_event(self):
         @self.clu.connect
         def on_select(*args, **kwargs):
             if len(self.clu.selectlist) == 1:
                 self.locate_and_highlight(self.clu.selectlist, self.chs[::-1]) # reverse order display
+
 
     def _is_inited(self):
         return hasattr(self.cross, 'parentview')

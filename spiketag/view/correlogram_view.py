@@ -54,6 +54,8 @@ class correlogram_view(View):
         # Not rendering immedially now, waiting for shortcut
         self._render()
 
+
+    def register_event(self):
         @self._clu.connect
         def on_cluster(*args, **kwargs):
             self._render()
