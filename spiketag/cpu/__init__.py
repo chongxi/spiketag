@@ -8,7 +8,7 @@ def dpgmm(max_cluster_n=10):
     dpgmm = DPGMM(
         n_components=max_cluster_n, covariance_type='full', weight_concentration_prior=1e-3,
         weight_concentration_prior_type='dirichlet_process', init_params="kmeans",
-        max_iter=300, random_state=0, verbose=0, verbose_interval=10) # init can be "kmeans" or "random"
+        max_iter=400, random_state=0, verbose=0, verbose_interval=10) # init can be "kmeans" or "random"
     dpgmm.fit(data)
     label = dpgmm.predict(data)
     return label
@@ -45,7 +45,12 @@ class multicore(object):
         try:
             return [self.test_cpu_ready(cpu_id) for cpu_id in range(self.cpu_No)]
         except:
-            return [True]*self.cpu_No
+            return [True]*self.cpu_No # before any task, should be ready
+
+    @property
+    def cpu_available(self):
+        return np.where(self.cpu_ready_list)[0]
+    
 
     def get(self, cpu_id, var):
         return self.cpu[cpu_id].pull(var).get()
@@ -89,6 +94,7 @@ def sequential_clustering(ev):
 
 def report_cpu_status(ev):
     print('cpu ready list:', dpgmm.cpu_ready_list)
+    print('cpu available:', dpgmm.cpu_available)
     if np.all(dpgmm.cpu_ready_list):
         app.quit()
 
