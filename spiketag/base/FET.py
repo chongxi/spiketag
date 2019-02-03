@@ -12,11 +12,12 @@ from .CLU import CLU
 
 
 class cluster():
-    def __init__(self):
+    def __init__(self, clu_status):
         self.client = ipp.Client()
         self.cpu = self.client.load_balanced_view()
         self.clu_func = {'hdbscan': self._hdbscan,
                          'dpgmm':   self._dpgmm }
+        self.clu_status = clu_status
     
     def fit(self, clu_method, fet, clu, **kwargs):
         self.fet = fet
@@ -25,10 +26,12 @@ class cluster():
         print(func)
         ar = self.cpu.apply_async(func, fet=fet, **kwargs)
         def get_result(ar):
-            self.clu.fill(ar.get())
+            labels = ar.get()
+            group_id = self.clu.fill(labels)
+            print(group_id, 'cluster finished')
+            self.clu_status[group_id] = True
         ar.add_done_callback(get_result)
         
-    
     @staticmethod
     def _dpgmm(fet, n_comp, max_iter):
         from sklearn.mixture import BayesianGaussianMixture as DPGMM
@@ -49,7 +52,7 @@ class cluster():
                      leaf_size=leaf_size,
                      gen_min_span_tree=True, 
                      algorithm='boruvka_kdtree',
-                     core_dist_n_jobs=8,
+                     core_dist_n_jobs=4,
                      prediction_data=False,
                      cluster_selection_method=eom_or_leaf) # eom or leaf 
         clusterer = hdbcluster.fit(fet.astype(np.float64))
@@ -68,6 +71,7 @@ class FET(object):
         self.group  = []
         self.clu    = {}
         self.clu_status = {}
+        self.backend = []
         self.npts = {}
         for _grp_id, _fet in self.fet.items():
             self.npts[_grp_id] = len(_fet)
@@ -89,8 +93,8 @@ class FET(object):
         self.dpgmm_hyper_param = {'max_n_clusters': 10,
                                   'max_iter':       300}
 
-    def set_backend(self, method='ipyparallel'):
-        self.backend = cluster()
+    # def set_backend(self, method='ipyparallel'):
+    #     self.backend = cluster()
 
     def __getitem__(self, i):
         return self.fet[i]
@@ -103,6 +107,7 @@ class FET(object):
  
 
     def toclu(self, method, group_id='all', **kwargs):
+        
         # clu_dict = {}
 
         '''
@@ -119,20 +124,13 @@ class FET(object):
             toc = time()
             info('clustering finished, used {} sec'.format(toc-tic))
 
-            # for _group_id, __clu in zip(self.group, _clu):
-            #     clu_dict[_group_id] = __clu
-            # return clu_dict
+        ## 2. When group_id is provided, and background sorting (async and non-blocking) is required
+        else:
+            self.backend.append(cluster(self.clu_status))
+            self.backend[-1].fit(method, self.fet[group_id], self.clu[group_id], **kwargs)
 
 
-        '''#-----------------------------------------#
-        2. When group_id is provided, and background sorting (async and non-blocking) is required
-        '''#-----------------------------------------#
-        self.backend.fit(method, self.fet[group_id], self.clu[group_id], **kwargs)
 
-
-        '''
-        3. When group_id is provided, and sort in blocking mannter
-        '''
 
     def _reset(self, group_id):
         '''

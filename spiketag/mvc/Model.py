@@ -144,6 +144,8 @@ class MainModel(object):
         self.fet = self.spk.tofet(method=self.fet_method, 
                                   whiten=self._fet_whiten,
                                   ncomp=self._fetlen)
+        # all clu are zeroes when fets are initialized
+        self.clu = self.fet.clu
 
 
     def sort(self, clu_method, group_id='all', **kwargs):
@@ -155,7 +157,6 @@ class MainModel(object):
 
         info('clustering with {}'.format(clu_method))
         self.fet.toclu(method=clu_method, group_id=group_id, **kwargs)
-        self.clu = self.fet.clu
 
         self.spktag = SPKTAG(self.probe,
                              self.spk, 

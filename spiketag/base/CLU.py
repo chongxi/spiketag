@@ -2,6 +2,7 @@ import numpy as np
 from ..utils.utils import EventEmitter
 from ..utils.utils import Timer
 from ..utils.conf import error, info, debug
+import time
 
 def instack_membership(func):
     def wrapper(self, *args, **kwargs):
@@ -14,11 +15,13 @@ class CLU(EventEmitter):
     """docstring for Clu"""
     def __init__(self, clu, method=None, clusterer=None, treeinfo=None, probmatrix=None):
         super(CLU, self).__init__()
+        self._id = None
         self.membership = clu.copy()
         if method:
             self._method = method
         if clusterer:
-            self._extra_info = self._extract_extra_info(clusterer)       
+            self._clusterer = clusterer
+            self._extra_info = self._extract_extra_info(self._clusterer)       
             self._select_clusters = self._extra_info['default_select_clusters']
         if treeinfo:
             self._extra_info = treeinfo
@@ -271,9 +274,11 @@ class CLU(EventEmitter):
         self.__construct__()
 
         if self.changed:   # prevent those redundant downstream cost (especially connect to many callbacks)
+            # time.sleep(0.1) 
             self.emit('cluster') # , action = 'fill'
         # else:
         #     self._membership_stack.pop() 
+        return self._id
 
     def refill(self, global_idx, labels):
         assert len(global_idx) == len(labels)
