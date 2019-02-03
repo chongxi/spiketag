@@ -33,7 +33,9 @@ def sort():
                       # time_segs=[[0,320]],
                       fall_off_size=15
                      )
-    ctrl.sort(clu_method='no_clustering')
+    ctrl.model.get_spk()
+    ctrl.model.get_fet()
+    ctrl.model.sort(clu_method='dpgmm', group_id=0, n_comp=8, max_iter=400)
     ctrl.show()
 
 
