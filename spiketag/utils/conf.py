@@ -4,6 +4,10 @@
 """
 ENABLE_PROFILER = False # the trigger of Timer 
 
+def toggle_profiler():
+    global ENABLE_PROFILER
+    ENABLE_PROFILER = not ENABLE_PROFILER
+
 """
     Logger configuration
 """
