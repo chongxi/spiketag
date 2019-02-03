@@ -121,7 +121,8 @@ class MUA(object):
         data.tofile(file_name)
 
     def tospk(self, amp_cutoff=True, speed_cutoff=False, time_cutoff=True):
-        info('mua.tospk()')
+        info('mua.tospk() with time_cutoff={}, amp_cutoff={}, speed_cutoff={}'.format(
+                               time_cutoff,    amp_cutoff,    speed_cutoff))
         spkdict = {}
         self.spk_times = {}
         for g in self.probe.grp_dict.keys():

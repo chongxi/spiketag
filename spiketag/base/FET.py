@@ -4,11 +4,57 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 # from hdbscan import HDBSCAN
 import hdbscan
+import ipyparallel as ipp
 from time import time
 from ..utils.utils import Timer
 from ..utils.conf import info, warning
 from .CLU import CLU
 
+
+class cluster():
+    def __init__(self):
+        self.client = ipp.Client()
+        self.cpu = self.client.load_balanced_view()
+        self.clu_func = {'hdbscan': self._hdbscan,
+                         'dpgmm':   self._dpgmm }
+    
+    def fit(self, clu_method, fet, clu, **kwargs):
+        self.fet = fet
+        self.clu = clu
+        func = self.clu_func[clu_method]
+        print(func)
+        ar = self.cpu.apply_async(func, fet=fet, **kwargs)
+        def get_result(ar):
+            self.clu.fill(ar.get())
+        ar.add_done_callback(get_result)
+        
+    
+    @staticmethod
+    def _dpgmm(fet, n_comp, max_iter):
+        from sklearn.mixture import BayesianGaussianMixture as DPGMM
+        dpgmm = DPGMM(
+            n_components=n_comp, covariance_type='full', weight_concentration_prior=1e-3,
+            weight_concentration_prior_type='dirichlet_process', init_params="kmeans",
+            max_iter=100, random_state=0, verbose=0, verbose_interval=10) # init can be "kmeans" or "random"
+        dpgmm.fit(fet)
+        label = dpgmm.predict(fet)
+        return label
+    
+    @staticmethod
+    def _hdbscan(fet, min_cluster_size, leaf_size, eom_or_leaf):
+        import hdbscan
+        import numpy as np
+        hdbcluster = hdbscan.HDBSCAN(min_samples=5,
+                     min_cluster_size=min_cluster_size, 
+                     leaf_size=leaf_size,
+                     gen_min_span_tree=True, 
+                     algorithm='boruvka_kdtree',
+                     core_dist_n_jobs=8,
+                     prediction_data=False,
+                     cluster_selection_method=eom_or_leaf) # eom or leaf 
+        clusterer = hdbcluster.fit(fet.astype(np.float64))
+#         probmatrix = hdbscan.all_points_membership_vectors(clusterer)
+        return clusterer.labels_+1
 
 
 class FET(object):
@@ -20,26 +66,31 @@ class FET(object):
     def __init__(self, fet):
         self.fet = fet
         self.group  = []
-        self.nSamples = {}
-        for g, f in self.fet.items():
-            self.nSamples[g] = len(f)
-            if len(f) > 0:
-                self.group.append(g)
+        self.clu    = {}
+        self.clu_status = {}
+        self.npts = {}
+        for _grp_id, _fet in self.fet.items():
+            self.npts[_grp_id] = len(_fet)
+            if len(_fet) > 0:
+                self.group.append(_grp_id)
+                self._reset(_grp_id)
+                self.clu_status[_grp_id] = False
+            else:
+                self.group.append(_grp_id)
+                self.clu_status[_grp_id] = None
+
         # exclude channels which no spikes 
         self.fetlen = fet[self.group[0]].shape[1]
 
-        self.clustering_func = {"reset":   self._reset,
-                                "hdbscan": self._hdbscan,
-                                "dpgmm":   self._dpgmm}
-
-        self.hdbscan_hyper_param = {'method': 'hdbscan', 
-                                    'min_cluster_size': 18,
+        self.hdbscan_hyper_param = {'min_cluster_size': 18,
                                     'leaf_size': 40,
                                     'eom_or_leaf': 'eom'}
 
         self.dpgmm_hyper_param = {'max_n_clusters': 10,
                                   'max_iter':       300}
 
+    def set_backend(self, method='ipyparallel'):
+        self.backend = cluster()
 
     def __getitem__(self, i):
         return self.fet[i]
@@ -51,9 +102,8 @@ class FET(object):
         self.fet[group] = np.delete(self.fet[group], ids, axis=0)
  
 
-    def toclu(self, method, params=None, group_id='all', njobs=24):
-        clu_dict = {}
-        print('clustering method: {0}, group_id: {1}'.format(method, group_id))
+    def toclu(self, method, group_id='all', **kwargs):
+        # clu_dict = {}
 
         '''
         1. When group_id is not provided, means parallel sorting on all groups
@@ -61,66 +111,71 @@ class FET(object):
         if group_id is 'all':
             info('clustering for all groups with {} cpus'.format(njobs))
             tic = time()
-            pool = Pool(njobs)
-            _clu = pool.map(self.clustering_func[method], self.group)
-            pool.close()
-            pool.join()
+            # pool = Pool(njobs)
+            # func = self.clustering_func[method]
+            # clu = pool.map_async(func, self.group)
+            # pool.close()
+            # pool.join()
             toc = time()
             info('clustering finished, used {} sec'.format(toc-tic))
 
-            for _group_id, __clu in zip(self.group, _clu):
-                clu_dict[_group_id] = __clu
-            return clu_dict
+            # for _group_id, __clu in zip(self.group, _clu):
+            #     clu_dict[_group_id] = __clu
+            # return clu_dict
 
 
-        '''
+        '''#-----------------------------------------#
         2. When group_id is provided, and background sorting (async and non-blocking) is required
-        '''
-
+        '''#-----------------------------------------#
+        self.backend.fit(method, self.fet[group_id], self.clu[group_id], **kwargs)
 
 
         '''
         3. When group_id is provided, and sort in blocking mannter
         '''
 
-
     def _reset(self, group_id):
+        '''
+        A new CLU is generated for targeted group, with all membership set to 0
+        '''
         clu = CLU(np.zeros((self.fet[group_id].shape[0], )).astype(np.int64))
-        clu._id = group_id
-        return clu 
-            
-
-    def _hdbscan(self, group_id):
+        self.clu[group_id]     = clu
+        self.clu[group_id]._id = group_id
         '''
-        a pool method to hdbscan for each group_id
-        '''
-        import hdbscan
-        min_cluster_size = self.hdbscan_hyper_param['min_cluster_size']
-        leaf_size = self.hdbscan_hyper_param['leaf_size']
-        eom_or_leaf = self.hdbscan_hyper_param['eom_or_leaf']
-        hdbcluster = hdbscan.HDBSCAN(min_samples=2,
-                     min_cluster_size=min_cluster_size, 
-                     leaf_size=leaf_size,
-                    #  alpha=0.1,
-                     gen_min_span_tree=True, 
-                     algorithm='boruvka_kdtree',
-                     core_dist_n_jobs=1,
-                     prediction_data=True,
-                     cluster_selection_method=eom_or_leaf) # eom or leaf 
-        clusterer = hdbcluster.fit(self.fet[group_id].astype(np.float64))
-        probmatrix = hdbscan.all_points_membership_vectors(clusterer)
-        # toc = time()
-        # info('fet._toclu(group_id={}, method={})  -- {} sec'.format(group_id, method, toc-tic))
-        clu = CLU(clu = clusterer.labels_, method='hdbscan',
-                  clusterer=clusterer, probmatrix=probmatrix)
-        clu._id = group_id
-        return clu
+        The first registraion after born for every clu
+        ''' 
+        @clu.connect
+        def on_cluster(*args, **kwargs):
+            print(clu._id, clu.membership)
 
 
+    # @staticmethod
+    # def _hdbscan(fet, min_cluster_size, leaf_size, eom_or_leaf):
+    #     '''
+    #     a single cpu run hdbscan for one group_id
+    #     '''
+    #     import hdbscan
+    #     hdbcluster = hdbscan.HDBSCAN(min_samples=2,
+    #                  min_cluster_size=min_cluster_size, 
+    #                  leaf_size=leaf_size,
+    #                  gen_min_span_tree=True, 
+    #                  algorithm='boruvka_kdtree',
+    #                  core_dist_n_jobs=1,
+    #                  prediction_data=True,
+    #                  cluster_selection_method=eom_or_leaf) # eom or leaf 
+    #     clusterer = hdbcluster.fit(fet.astype(np.float64))
+    #     probmatrix = hdbscan.all_points_membership_vectors(clusterer)
+    #     # toc = time()
+    #     # info('fet._toclu(group_id={}, method={})  -- {} sec'.format(group_id, method, toc-tic))
+    #     # self.clu[group_id] = CLU(clu = clusterer.labels_, method='hdbscan',
+    #     #           clusterer=clusterer, probmatrix=probmatrix)
+    #     self.clu[group_id].fill(clusterer.labels_)
+    #     self.clu[group_id]._id = group_id
+    #     self.clu_status[group_id] = True
 
-    def _dpgmm(self, group_id):
-        # TODO 
-        pass
+    # def _dpgmm(self, group_id):
+    #     # TODO 
+    #     pass
 
 
 

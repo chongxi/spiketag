@@ -146,16 +146,16 @@ class MainModel(object):
                                   ncomp=self._fetlen)
 
 
-    def sort(self, clu_method='hdbscan', njobs=24):
+    def sort(self, clu_method, group_id='all', **kwargs):
         # info('removing high corr noise from spikes pool')
         # self.mua.remove_high_corr_noise(corr_cutoff=self._corr_cutoff)
 
         # info('removing all spks on group which len(spks) less then fetlen')
         # self.mua.remove_groups_under_fetlen(self._fetlen)
 
-        self.clu_method = clu_method
-        info('clustering with {}'.format(self.clu_method))
-        self.clu = self.fet.toclu(method=self.clu_method, njobs=njobs)
+        info('clustering with {}'.format(clu_method))
+        self.fet.toclu(method=clu_method, group_id=group_id, **kwargs)
+        self.clu = self.fet.clu
 
         self.spktag = SPKTAG(self.probe,
                              self.spk, 
