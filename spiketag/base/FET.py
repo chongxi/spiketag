@@ -19,21 +19,26 @@ class cluster():
                          'dpgmm':   self._dpgmm }
         self.clu_status = clu_status
     
+
+    ############### Backend Engine Func ####################
     def fit(self, clu_method, fet, clu, **kwargs):
         self.fet = fet
         self.clu = clu
         func = self.clu_func[clu_method]
         print(func)
+        self.clu.emit('report', state='BUSY')                   # state report --- before async non-blocking clustering 
         ar = self.cpu.apply_async(func, fet=fet, **kwargs)
         def get_result(ar):
             labels = ar.get()
             group_id = self.clu.fill(labels)
+            self.clu.emit('report', state='READY')              # state report --- before async non-blocking clustering 
             print(group_id, 'cluster finished')
             self.clu_status[group_id] = True
         ar.add_done_callback(get_result)
+    ########################################################    
         
     @staticmethod
-    def _dpgmm(fet, n_comp, max_iter):
+    def _dpgmm(fet, n_comp=8, max_iter=400):
         from sklearn.mixture import BayesianGaussianMixture as DPGMM
         dpgmm = DPGMM(
             n_components=n_comp, covariance_type='full', weight_concentration_prior=1e-3,
@@ -44,7 +49,7 @@ class cluster():
         return label
     
     @staticmethod
-    def _hdbscan(fet, min_cluster_size, leaf_size, eom_or_leaf):
+    def _hdbscan(fet, min_cluster_size=18, leaf_size=40, eom_or_leaf='eom'):
         import hdbscan
         import numpy as np
         hdbcluster = hdbscan.HDBSCAN(min_samples=5,
