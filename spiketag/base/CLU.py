@@ -40,9 +40,31 @@ class CLU(EventEmitter):
         # When the registration process finished, this reg will be set to False to prevent double registration
         self._event_reg_enable = True  
 
+        # as an reporter, it needs to report its own state
+        self.s = ['IDLE', 'BUSY', 'READY', 'DONE']
+        self._state = self.s[0]
+
     @property
     def npts(self):
         return self.membership.shape[0]
+
+    @property
+    def nclu(self):
+        return self._nclu
+    
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state):
+        if state in self.s:
+            self._state = state
+            self.emit('report', state=self._state)
+        else:
+            print('state has to be one of', self.s)
+
 
     def __construct__(self):
         '''
@@ -59,13 +81,17 @@ class CLU(EventEmitter):
         self.make_id_continuous()
         # all clus are selected default
         self.select_clus = self.index_id
-        self.nclu        = len(self.index_id)
+        self._nclu       = len(self.index_id)
         _counts_per_clu = [0,]
         for cluNo in self.index_id:
                 self.index[cluNo] = np.where(self.membership==cluNo)[0]
                 self.index_count[cluNo] = len(self.index[cluNo])
                 _counts_per_clu.append(self.index_count[cluNo])
         self._clu_cumsum = np.cumsum(np.asarray(_counts_per_clu))
+
+
+
+
 
     def _extract_extra_info(self, clusterer):
         '''store extra infomation for other purpose.
@@ -340,68 +366,3 @@ class CLU(EventEmitter):
     def redo(self):
         # TODO: add redo stack
         pass
-
-
-
-
-
-
-# class CLU(Clustering):
-#     def __init__(self, clu):
-#         super(CLU, self).__init__(clu)
-#         self.__init()
-        
-#     def __init(self):
-#         self.spike_id     = {}
-#         self.spike_counts = {}
-#         self.update()
-#         @self.connect
-#         def on_cluster(up):
-#             self.update()
-    
-
-#     def update(self):
-#         self.spike_counts = {}
-#         self.spike_id     = {}
-#         for cluNo in self.cluster_ids:
-#             self.spike_id[cluNo]     = self.spikes_in_clusters((cluNo,))
-#             self.spike_counts[cluNo] = self.spikes_in_clusters((cluNo,)).shape[0]
-
-
-#     def __getitem__(self, cluNo):
-#         if cluNo in self.cluster_ids:
-#             return self.spikes_in_clusters((cluNo,))
-#         else:
-#             print "out of possible index\ncluster_ids: {}".format(self.cluster_ids)
-
-#     def raster(self, method='vispy', toi=None, color='k'):
-#         """
-#         Creates a raster plot
-#         Parameters
-#         ----------
-#         toi:    [t0, t1]
-#                 time of interest 
-#         color : string
-#                 color of vlines 
-#         Returns
-#         -------
-#         ax : an axis containing the raster plot
-#         """
-#         if method == 'matplotlib':
-#             fig = plt.figure()
-#             ax = plt.gca()
-#             for ith, trial in self.spike_id.item():
-#                 ax.vlines(trial, ith + .5, ith + 1.5, color=color)
-#             ax.set_ylim(.5, len(self.spktime) + .5)
-#             ax.set_xlim(toi)
-#             ax.set_xlabel('time')
-#             ax.set_ylabel('cell')
-#             fig.show()
-#             return fig, ax
-    
-#         elif method == 'vispy':
-#             rview = raster_view()
-#             rview.set_data(timelist=self.spktime, color=(1,1,1,1))
-# #             rview.show()
-#             return rview
-
