@@ -134,6 +134,7 @@ class cluster_view(scene.SceneCanvas):
             self._next_group = self.current_group + 1
             return self._next_group
         else:
+            self._next_group = self.group_No-1
             return self._next_group 
 
 
