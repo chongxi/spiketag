@@ -4,11 +4,89 @@ from ..utils.utils import Timer
 from ..utils.conf import error, info, debug
 import time
 
+
 def instack_membership(func):
     def wrapper(self, *args, **kwargs):
         self._membership_stack.append(self.membership.copy())
         return func(self, *args, **kwargs)
     return wrapper
+
+
+
+
+class status_manager(EventEmitter):
+    '''
+    a cluster manager for spiketag. 
+
+    clu_manager.append(clu) to recruit a clu as the state reporter
+
+    Every clu has four states: ['IDLE', 'BUSY', 'READY', 'DONE']
+    Every clu is indexed by their own id: clu._id
+    clu_manager[8] will return the `clu` which has the `_id` as 8
+
+    Two way of updating status:
+    
+    For single cluster state change, `report` to the manager
+    clu_manager[8].emit('report', state='BUSY')
+
+    For the manager to update to the clu_view
+    clu_manager.emit('update', state=clu_manager.state_list, nclu=clu_manager.nclu_list)
+
+
+    type `clu_manager` to see all the states
+
+    '''
+    def __init__(self):
+        super(status_manager, self).__init__()
+        self.reporters = {}
+        self._event_reg_enable = True
+    
+
+    def append(self, state_reporter):
+        '''
+        every clu is a state_reporter themselves
+        They are indexed based on their own id
+        '''
+        self.reporters[state_reporter._id] = state_reporter
+        
+        @state_reporter.connect
+        def on_report(state):
+#             print(state+' from group '+ str(state_reporter._id))
+              state_reporter.state = state
+              self.emit('update', state=self.state_list, nclu=self.nclu_list)
+
+            
+    def __getitem__(self, i):
+        return self.reporters[i]
+    
+    def __setitem__(self, i, state_str):
+        self.reporters[i].state = state_str
+    
+    def __repr__(self):
+        _str = ''
+        for _, _reporter in self.reporters.items():
+            _str = _str + str(_reporter._id) + ":" + str(_reporter.state) + '\n'
+        return _str
+    
+    def reset(self):
+        for reports in self.reporters.values():
+            reports._state = 'IDLE'
+        self.emit('update', state=self.state_list, nclu=self.nclu_list)
+    
+    @property
+    def ngroup(self):
+        return len(self.reporters.keys())
+
+    @property
+    def state_list(self):
+        return [troy.s.index(troy.state) for troy in self.reporters.values()]
+    
+    @property
+    def nclu_list(self):
+        return [troy.nclu for troy in self.reporters.values()]
+
+
+
 
 
 class CLU(EventEmitter):
@@ -61,7 +139,7 @@ class CLU(EventEmitter):
     def state(self, state):
         if state in self.s:
             self._state = state
-            self.emit('report', state=self._state)
+            # self.emit('report', state=self._state)
         else:
             print('state has to be one of', self.s)
 
