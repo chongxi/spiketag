@@ -33,9 +33,10 @@ def sort():
                       # time_segs=[[0,320]],
                       fall_off_size=15
                      )
-    ctrl.model.get_spk()
-    ctrl.model.get_fet()
+    # ctrl.model.get_spk()
+    # ctrl.model.get_fet()
     ctrl.model.sort(clu_method='dpgmm', group_id=0, n_comp=8, max_iter=400)
+    # ctrl.model.sort(clu_method='hdbscan', group_id=0, min_cluster_size=18, leaf_size=40, eom_or_leaf='eom')
     ctrl.show()
 
 
