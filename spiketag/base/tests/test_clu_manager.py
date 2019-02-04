@@ -21,7 +21,7 @@ print(clu_manager)
 
 # Setup the view that the manager controls
 cluview = cluster_view()
-cluview.set_data(clu_manager, 0)
+cluview.set_data(clu_manager)
 
 
 if __name__ == '__main__':

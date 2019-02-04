@@ -27,10 +27,17 @@ class status_manager(EventEmitter):
     Two way of updating status:
     
     For single cluster state change, `report` to the manager
-    clu_manager[8].emit('report', state='BUSY')
+    Every report will cause `update` and `update` will cause clu_view.refresh()
+    `clu:report` --> `clu_manager:update` --> `clu_view:refresh`
 
-    For the manager to update to the clu_view
-    clu_manager.emit('update', state=clu_manager.state_list, nclu=clu_manager.nclu_list)
+    Every clu is responsible for themsevles to report its state change (handled by clustering algo, and manual interaction)
+    1.  clu_manager[8].emit('report', state='BUSY')
+
+    For the manager to update to the clu_view (already connected and will be triggered when `report` happens)
+    2.  clu_manager.emit('update', state=clu_manager.state_list, nclu=clu_manager.nclu_list)
+
+    For it shows up at the clu_view: (already connected inside clu_view)
+    3.  clu_view.refresh()
 
 
     type `clu_manager` to see all the states

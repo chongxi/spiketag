@@ -19,7 +19,7 @@ class cluster_view(scene.SceneCanvas):
         self.event = EventEmitter() 
 
 
-    def set_data(self, clu_manager, selected_group_id, size=25):
+    def set_data(self, clu_manager, selected_group_id=0, size=25):
         '''
         group_No is a scala number #grp
         nclu_list is a list with length = group_No
@@ -64,9 +64,9 @@ class cluster_view(scene.SceneCanvas):
     def event_register(self):
         @self.clu_manager.connect
         def on_update(state, nclu):
+            self.refresh()
         #     print(state)
         #     print(nclu)
-            self.refresh()
         self.clu_manager._event_reg_enable = not self.clu_manager._event_reg_enable
 
 
@@ -92,6 +92,8 @@ class cluster_view(scene.SceneCanvas):
             self.moveto(self.previous_group)
         if e.text == 'd':
             self.set_cluster_done(self.current_group)
+        if e.text == 'u':
+            self.set_cluster_undone(self.current_group)
 #             self.moveto(self.next_group)
         if e.text == 'o':
             self.select(self.current_group)
@@ -107,7 +109,10 @@ class cluster_view(scene.SceneCanvas):
     def set_cluster_done(self, grp_id):
         self.clu_manager[grp_id] = 'DONE'
         self.refresh()
-        
+
+    def set_cluster_undone(self, grp_id):
+        self.clu_manager[grp_id] = 'READY'
+        self.refresh()
 
     def refresh(self):
         self.set_data(clu_manager=self.clu_manager, selected_group_id=self.current_group, size=self._size)
