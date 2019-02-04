@@ -1,7 +1,7 @@
 from .MUA import MUA
 from .SPK import SPK
 from .FET import FET
-from .CLU import CLU
+from .CLU import CLU, status_manager
 from .SPKTAG import SPKTAG
 from .Binload import fs2t, bload
 from .Probe import probe
