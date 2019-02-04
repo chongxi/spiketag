@@ -98,8 +98,8 @@ class MainModel(object):
                            time_still   = self.time_still,      # for speed cut_off
                            lfp          = False)
 
-            # self.get_spk()
-            # self.get_fet()
+            self.get_spk()
+            self.get_fet()
 
         # After first time
         else:
@@ -140,12 +140,16 @@ class MainModel(object):
 
 
     def get_fet(self):
-        info('extrat features with {}'.format(self.fet_method))
+        info('extract features with {}'.format(self.fet_method))
         self.fet = self.spk.tofet(method=self.fet_method, 
                                   whiten=self._fet_whiten,
                                   ncomp=self._fetlen)
         # all clu are zeroes when fets are initialized
         self.clu = self.fet.clu
+
+        self.clu_manager = status_manager()
+        for _clu in self.clu.values():
+            self.clu_manager.append(_clu)
 
 
     def sort(self, clu_method, group_id='all', **kwargs):
@@ -167,7 +171,7 @@ class MainModel(object):
 
 
     def cluster(self, group_id, method, params):
-        self.clu[group_id] = self.fet.toclu(group_id, method, params, njobs=1)
+        self.sort(clu_method=method, group_id=group_id)
 
 
     def construct_transformer(self, group_id, ndim=4):

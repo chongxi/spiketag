@@ -71,8 +71,6 @@ class MainView(QMainWindow):
         self.status_bar = QStatusBar(self)
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage('Ready')
-        # self._statusbar_label = QLabel("status")
-        # status_bar.addPermanentWidget(self._statusbar_label)
 
         self.centralWidget = QWidget(self)          
         self.setCentralWidget(self.centralWidget)   
@@ -92,7 +90,7 @@ class MainView(QMainWindow):
         self.prb_view = probe_view()
         self.clu_view = cluster_view()
         self.prb_view.set_data(self.prb, font_size=35)
-        self.clu_view.set_data(group_No=self.prb.n_group, sorting_status=self.prb.sorting_status, nclu_list=self.prb.n_group*[0], selected_group_id=0)
+        self.clu_view.set_data(self._model.clu_manager)
         self.splitter_prb_cpu.addWidget(self.prb_view.native)
         self.splitter_prb_cpu.addWidget(self.clu_view.native)
         self.splitter0.addWidget(self.splitter_prb_cpu)
