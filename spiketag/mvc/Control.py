@@ -11,6 +11,7 @@ from ..analysis.place_field import place_field
 from ..view import scatter_3d_view
 from playground.view import maze_view
 
+
 class controller(object):
     def __init__(self, fpga=False, *args, **kwargs):
 
@@ -50,7 +51,7 @@ class controller(object):
             self.view.status_bar.setStyleSheet("color:black")
             self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, chs, nspks))
 
-        @self.view.clu_view.event.connect
+        @self.view.clu_view.clu_manager.connect
         def on_select(group_id):
             self.view.prb_view.select(group_id)
 
@@ -591,11 +592,7 @@ class controller(object):
 #             wview.show()
 
 #         def show_mua(self, chs, spks=None):
-#             '''
-#             spks: (t,ch) encodes pivital
-#             array([[  37074,   37155,   37192, ..., 1602920, 1602943, 1602947],
-#                    [     58,      49,      58, ...,      58,      75,      77]], dtype=int32)
-#             '''
+
 #             wview = wave_view(self.model.mua.data, fs=self.model.probe.fs, ncols=1, chs=chs, spks=spks)
 #             wview.show()
 

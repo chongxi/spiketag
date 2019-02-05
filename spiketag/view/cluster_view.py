@@ -1,7 +1,7 @@
 from vispy import app, scene, visuals
 from vispy.util import keys
 import numpy as np
-from ..utils import EventEmitter
+from ..utils import EventEmitter, key_buffer
 
 
 
@@ -17,6 +17,11 @@ class cluster_view(scene.SceneCanvas):
         self.grp_marker  = scene.visuals.Markers(parent=self.view.scene)
         self.nclu_text = scene.visuals.Text(parent=self.view.scene)
         self.event = EventEmitter() 
+
+
+        # keybuf
+        self.mode = ''
+        self.key_buf = key_buffer()
 
 
     def set_data(self, clu_manager, selected_group_id=0, size=25):
@@ -75,8 +80,7 @@ class cluster_view(scene.SceneCanvas):
         self.color[sorting_status==0] = np.array([1,1,1, .3]) # IDLE
         self.color[sorting_status==1] = np.array([1,0,0, 1.]) # BUSY
         self.color[sorting_status==2] = np.array([0,1,0, .7]) # READY
-        self.color[sorting_status==3] = np.array([1,1,0, .8]) # READY
-#         self.color[selected_group_id] = (np.array([1,1,1, 1]) + self.color[selected_group_id])/2  # current selected
+        self.color[sorting_status==3] = np.array([1,1,0, .8]) # DONE
         if nspks_list is not None:
             self.transparency = np.array(nspks_list)/np.array(nspks_list).max()
             self.color[:, -1] = self.transparency
@@ -94,9 +98,42 @@ class cluster_view(scene.SceneCanvas):
             self.set_cluster_done(self.current_group)
         if e.text == 'u':
             self.set_cluster_undone(self.current_group)
-#             self.moveto(self.next_group)
         if e.text == 'o':
             self.select(self.current_group)
+
+        ## key for backend clustering ##
+        if e.text == 'b':
+            self.mode = 'backend'
+
+        if e.text.isdigit():
+            self.key_buf.push(e.text)
+
+        if e.text == 'g':
+            if self.mode == '':
+                selected_group = int(self.key_buf.pop()) 
+                print('moveto {}'.format(selected_group))
+                if selected_group in range(self.clu_manager.ngroup):
+                    self.moveto(selected_group)
+                    self.select(selected_group)
+            if self.mode == 'backend':
+                n_comp=int(self.key_buf.pop())
+                if 1<n_comp<40:
+                    self.clu_manager.emit(self.mode, group_id=self.current_group, 
+                                                     method='dpgmm', param=n_comp)
+                else:
+                    print('the number you type has to be between (1, 20)')
+                self.mode = ''
+
+        if e.text == 'h':
+            if self.mode == 'backend':
+                fall_off_size=int(self.key_buf.pop())
+                if 1<fall_off_size<100:
+                    self.clu_manager.emit(self.mode, group_id=self.current_group, 
+                                                     method='hdbscan', param=fall_off_size)
+                else:
+                    print('the number you type has to be between (1, 100)')
+                self.mode = ''
+
 
     @property
     def cpu_ready_list(self):
@@ -144,10 +181,7 @@ class cluster_view(scene.SceneCanvas):
 
 
     def select(self, group_id):
-        # if self.sorting_status[group_id] != 0:
-        self.event.emit('select', group_id=self.current_group)
-        # else:
-            # print('unable to select busy cpu {}'.format(self.current_group)) 
+        self.clu_manager.emit('select', group_id=self.current_group)
 
 
     def run(self):
