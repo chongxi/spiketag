@@ -238,6 +238,12 @@ class MUA(object):
 
 
     def show(self, chs, span=None, time=0):
+        '''
+        if self.pivotal_pos exsists, it is the spks
+        spks: (t,ch) encodes pivital
+        array([[  37074,   37155,   37192, ..., 1602920, 1602943, 1602947],
+               [     58,      49,      58, ...,      58,      75,      77]], dtype=int32)
+        '''
         if span is None:
             if self.pivotal_pos is not None:
                 self.wview = wave_view(self.data, chs=chs, spks=self.pivotal_pos)
