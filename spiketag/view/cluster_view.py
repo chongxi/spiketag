@@ -108,6 +108,9 @@ class cluster_view(scene.SceneCanvas):
         if e.text.isdigit():
             self.key_buf.push(e.text)
 
+        if e.key.name == 'Escape':
+            self.key_buf.pop()
+
         if e.text == 'g':
             if self.mode == '':
                 selected_group = int(self.key_buf.pop()) 
