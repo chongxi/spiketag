@@ -345,10 +345,12 @@ class CLU(EventEmitter):
         self.emit('cluster', action = 'exchange')
 
 
-    @instack_membership
     def delete(self, idx):
+        # self._membership_stack.append(self.membership.copy())
         self.membership = np.delete(self.membership, idx)
         self.__construct__()
+        # self.emit('cluster', action='delete')
+
 
     @property
     def changed(self):
@@ -386,7 +388,7 @@ class CLU(EventEmitter):
 
         if self.changed:   # prevent those redundant downstream cost (especially connect to many callbacks)
             # time.sleep(0.1) 
-            self.emit('cluster') # , action = 'fill'
+            self.emit('cluster', action = 'fill')
         # else:
         #     self._membership_stack.pop() 
         return self._id

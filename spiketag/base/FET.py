@@ -122,11 +122,7 @@ class FET(object):
         if group_id is 'all':
             info('clustering for all groups with {} cpus'.format(njobs))
             tic = time()
-            # pool = Pool(njobs)
-            # func = self.clustering_func[method]
-            # clu = pool.map_async(func, self.group)
-            # pool.close()
-            # pool.join()
+            ### TODO ###
             toc = time()
             info('clustering finished, used {} sec'.format(toc-tic))
 
@@ -134,8 +130,6 @@ class FET(object):
         else:
             self.backend.append(cluster(self.clu_status))
             self.backend[-1].fit(method, self.fet[group_id], self.clu[group_id], **kwargs)
-
-
 
 
     def _reset(self, group_id):
@@ -151,113 +145,3 @@ class FET(object):
         @clu.connect
         def on_cluster(*args, **kwargs):
             print(clu._id, clu.membership)
-
-
-    # @staticmethod
-    # def _hdbscan(fet, min_cluster_size, leaf_size, eom_or_leaf):
-    #     '''
-    #     a single cpu run hdbscan for one group_id
-    #     '''
-    #     import hdbscan
-    #     hdbcluster = hdbscan.HDBSCAN(min_samples=2,
-    #                  min_cluster_size=min_cluster_size, 
-    #                  leaf_size=leaf_size,
-    #                  gen_min_span_tree=True, 
-    #                  algorithm='boruvka_kdtree',
-    #                  core_dist_n_jobs=1,
-    #                  prediction_data=True,
-    #                  cluster_selection_method=eom_or_leaf) # eom or leaf 
-    #     clusterer = hdbcluster.fit(fet.astype(np.float64))
-    #     probmatrix = hdbscan.all_points_membership_vectors(clusterer)
-    #     # toc = time()
-    #     # info('fet._toclu(group_id={}, method={})  -- {} sec'.format(group_id, method, toc-tic))
-    #     # self.clu[group_id] = CLU(clu = clusterer.labels_, method='hdbscan',
-    #     #           clusterer=clusterer, probmatrix=probmatrix)
-    #     self.clu[group_id].fill(clusterer.labels_)
-    #     self.clu[group_id]._id = group_id
-    #     self.clu_status[group_id] = True
-
-    # def _dpgmm(self, group_id):
-    #     # TODO 
-    #     pass
-
-
-
-
-
-
-        # if method == 'dpgmm':
-        #     if group_id is None:
-        #         if njobs!=1:
-        #             info('clustering start with {} cpus'.format(njobs))
-        #             tic = time()
-        #             pool = Pool(njobs)
-        #             _clu = pool.map(self._toclu, self.group)
-        #             pool.close()
-        #             pool.join()
-        #             toc = time()
-        #             info('clustering finished, used {} sec'.format(toc-tic))
-        #             # info('get clustering from group_id {}:'.format(str(_group_id)))
-        #             for _group_id, __clu in zip(self.group, _clu):
-        #                 clu[_group_id] = __clu
-        #     else:
-        #         from sklearn.mixture import BayesianGaussianMixture as DPGMM
-        #         max_n_clusters = self.dpgmm_hyper_param['max_n_clusters']
-        #         max_iter       = self.dpgmm_hyper_param['max_iter']
-        #         dpgmm = DPGMM(
-        #                     n_components=max_n_clusters, covariance_type='full', weight_concentration_prior=1e-3,
-        #                     weight_concentration_prior_type='dirichlet_process', init_params="kmeans",
-        #                     max_iter=max_iter, random_state=0) # init can be "kmeans" or "random"
-        #         dpgmm.fit(self.fet[group_id])
-        #         labels = dpgmm.predict(self.fet[group_id])
-        #         return CLU(clu = labels, method='dpgmm')
-
-
-        # elif method == 'hdbscan':
-        #     min_cluster_size = self.hdbscan_hyper_param['min_cluster_size']
-        #     leaf_size = self.hdbscan_hyper_param['leaf_size']
-        #     eom_or_leaf = self.hdbscan_hyper_param['eom_or_leaf']
-        #     hdbcluster = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, 
-        #                          leaf_size=leaf_size,
-        #                          gen_min_span_tree=True, 
-        #                          algorithm='boruvka_kdtree',
-        #                          core_dist_n_jobs=8,
-        #                          prediction_data=True,
-        #                          cluster_selection_method=eom_or_leaf)  # or leaf
-            
-
-        #     # automatic pool clustering
-        #     if group_id is None:
-        #         if njobs!=1:
-        #             info('clustering start with {} cpus'.format(njobs))
-        #             tic = time()
-        #             pool = Pool(njobs)
-        #             _clu = pool.map(self._toclu, self.group)
-        #             pool.close()
-        #             pool.join()
-        #             toc = time()
-        #             info('clustering finished, used {} sec'.format(toc-tic))
-        #             # info('get clustering from group_id {}:'.format(str(_group_id)))
-        #             for _group_id, __clu in zip(self.group, _clu):
-        #                 clu[_group_id] = __clu
-        #         # else:
-        #         #     info('clustering start with {} cpus'.format(1))
-        #         #     tic = time()
-        #         #     for group_id in self.group:
-        #         #         clusterer = hdbcluster.fit(self.fet[group_id].astype(np.float64))
-        #         #         probmatrix = hdbscan.all_points_membership_vectors(clusterer)
-        #         #         clu[group_id] = CLU(clu = clusterer.labels_, method='hdbscan',
-        #         #                             clusterer=clusterer, probmatrix=probmatrix)
-        #         #     toc = time()
-        #         #     info('clustering finished, used {} sec'.format(toc-tic))
-        #         return clu
-
-        #     # semi-automatic parameter selection for a specific group
-        #     elif self.nSamples[group_id] != 0:
-        #         clusterer = hdbcluster.fit(self.fet[group_id].astype(np.float64))
-        #         probmatrix = hdbscan.all_points_membership_vectors(clusterer)
-        #         return CLU(clu = clusterer.labels_, method='hdbscan', 
-        #                    clusterer=clusterer, probmatrix=probmatrix)
-        # else: # other methods 
-        #     warning('Clustering not support {} yet!!'.format(method)) 
-

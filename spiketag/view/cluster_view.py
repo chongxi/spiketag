@@ -114,7 +114,7 @@ class cluster_view(scene.SceneCanvas):
         if e.text == 'g':
             if self.mode == '':
                 selected_group = int(self.key_buf.pop()) 
-                print('moveto {}'.format(selected_group))
+                # print('moveto {}'.format(selected_group))
                 if selected_group in range(self.clu_manager.ngroup):
                     self.moveto(selected_group)
                     self.select(selected_group)
