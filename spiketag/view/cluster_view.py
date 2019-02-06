@@ -118,18 +118,18 @@ class cluster_view(scene.SceneCanvas):
             if self.mode == 'backend':
                 n_comp=int(self.key_buf.pop())
                 if 1<n_comp<40:
-                    self.clu_manager.emit(self.mode, group_id=self.current_group, 
-                                                     method='dpgmm', param=n_comp)
+                    self.clu_manager.emit(self.mode, 
+                                          method='dpgmm', n_comp=n_comp)
                 else:
                     print('the number you type has to be between (1, 20)')
                 self.mode = ''
 
         if e.text == 'h':
             if self.mode == 'backend':
-                fall_off_size=int(self.key_buf.pop())
-                if 1<fall_off_size<100:
-                    self.clu_manager.emit(self.mode, group_id=self.current_group, 
-                                                     method='hdbscan', param=fall_off_size)
+                min_cluster_size=int(self.key_buf.pop())
+                if 1<min_cluster_size<100:
+                    self.clu_manager.emit(self.mode, 
+                                          method='hdbscan', min_cluster_size=min_cluster_size)
                 else:
                     print('the number you type has to be between (1, 100)')
                 self.mode = ''

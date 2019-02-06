@@ -55,6 +55,10 @@ class controller(object):
         def on_select(group_id):
             self.view.prb_view.select(group_id)
 
+        @self.view.clu_view.clu_manager.connect
+        def on_backend(method, **params):
+            self.recluster(method=method, **params)
+
 
         @self.view.spkview.event.connect
         def on_show(content):
@@ -86,8 +90,8 @@ class controller(object):
             self.update_view()
 
         @self.view.spkview.event.connect
-        def on_recluster(method, params):
-            self.recluster(method, params)
+        def on_recluster(method, **params):
+            self.recluster(method=method, **params)
 
         @self.view.spkview.event.connect
         def on_refine(method, args):
@@ -198,9 +202,9 @@ class controller(object):
         self.model.fet[i] = self.model.spk._tofet(i, method='pca')
         self.model.clu[i].delete(spk_idx)
 
-    def recluster(self, method, params):
+    def recluster(self, method, **params):
         group_id = self.current_group
-        self.model.cluster(group_id, method, params)
+        self.model.cluster(group_id, method, **params)
 
     def gmm_cluster(self, N=None):
         '''

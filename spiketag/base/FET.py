@@ -26,6 +26,7 @@ class cluster():
         self.clu = clu
         func = self.clu_func[clu_method]
         print(func)
+        print(kwargs)
         self.clu.emit('report', state='BUSY')                   # state report --- before async non-blocking clustering 
         ar = self.cpu.apply_async(func, fet=fet, **kwargs)
         def get_result(ar):
