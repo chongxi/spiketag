@@ -6,13 +6,13 @@ from numba import njit
 
 
 @njit(cache=True)
-def _locate_amplitude(spk, spk_times, fs, clu_idx):
+def _locate_amplitude(spk, spk_times, fs, clu_idx, peak_pos=8):
     '''
         locate the peak of amplitude, return index and peak value
     '''
-    times = spk_times[clu_idx]
+    times = spk_times[clu_idx]/fs
     nspks = clu_idx.shape[0]
-    spk_group = spk[clu_idx, :].reshape(nspks, -1)
+    spk_group = spk[clu_idx, peak_pos, :].reshape(nspks, -1)
     time_amplitudes = np.zeros((nspks, 2))
     
     for i in range(nspks):

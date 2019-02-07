@@ -158,7 +158,7 @@ class SPK():
     def remove(self, group, ids):
         self.spk[group] = np.delete(self.spk[group], ids, axis=0)
 
-    def _tofet(self, group, method='weighted-pca', ncomp=6, whiten=False):
+    def _tofet(self, group, method='pca', ncomp=6, whiten=False):
         spk = self.spk[group]
         if spk.shape[0] > 0:
             fet = _to_fet(spk, self.W, method, ncomp, whiten)
@@ -166,7 +166,7 @@ class SPK():
             fet = np.empty((0, ncomp), dtype=np.float32)
         return fet
 
-    def tofet(self, group_id=None, method='weighted-pca', ncomp=6, whiten=False):
+    def tofet(self, group_id=None, method='pca', ncomp=6, whiten=False):
 
         fet = {}
         pca_comp = {}

@@ -221,6 +221,8 @@ class spike_view(View):
             self.visuals[0].program['a_color'] = self.color
             self.visuals[0].program['a_box_index'] = self.box_index
 
+        self.update()
+
 
     def clear(self):
         """Reset the view."""

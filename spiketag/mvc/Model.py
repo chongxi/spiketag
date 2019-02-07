@@ -170,8 +170,8 @@ class MainModel(object):
         info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 
 
-    def cluster(self, group_id, method, params):
-        self.sort(clu_method=method, group_id=group_id)
+    def cluster(self, group_id, method, **params):
+        self.sort(clu_method=method, group_id=group_id, **params)
 
 
     def construct_transformer(self, group_id, ndim=4):
