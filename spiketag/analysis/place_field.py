@@ -134,6 +134,10 @@ class place_field(object):
         self.O = occupation.T.astype(int)  # Let each row list bins with common y range.
         self.P = self.O/float(self.O.sum()) # occupation prabability
 
+        #### parameter used to calculate the fields
+        self.kernlen = 21
+        self.kernstd = 3
+
 
     def plot_occupation_map(self):
         f, ax = plt.subplots(1,2,figsize=(20,9))
@@ -155,7 +159,21 @@ class place_field(object):
         return gkern2d
 
 
-    def get_field(self, spk_time, neuron_id, kernlen=21, std=3):
+    def _get_field(self, spk_times):
+        spk_tw = np.searchsorted(self.ts, spk_times) - 1
+        idx = np.setdiff1d(spk_tw, self.v_still_idx)
+        self.firing_ts  = self.ts[spk_tw] #[:,1]
+        self.firing_pos = self.pos[idx]        
+        self.firing_map, x_edges, y_edges = np.histogram2d(x=self.firing_pos[:,0], y=self.firing_pos[:,1], 
+                                                           bins=self.nbins, range=self.maze_range)
+        self.firing_map = self.firing_map.T
+        np.seterr(divide='ignore', invalid='ignore')
+        self.FR = self.firing_map/self.O/self.dt
+        self.FR = np.nan_to_num(self.FR)
+        self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
+
+
+    def get_field(self, spk_time_dict, neuron_id):
         '''
         f, ax = plt.subplots(1,2,figsize=(20,9))
         ax[0].plot(self.pos[:,0], self.pos[:,1])
@@ -164,23 +182,7 @@ class place_field(object):
         pc = ax[1].pcolormesh(X, Y, FR_GAU, cmap=cm.hot)
         colorbar(pc, ax=ax[1], label='Hz') 
         '''
-        spk_tw = np.searchsorted(self.ts, spk_time[neuron_id]) - 1
-        # spk_tw = np.vstack((spk_tw-1, spk_tw)).T
-        # idx = np.delete(spk_tw, self.v_still_idx)
-        idx = np.setdiff1d(spk_tw, self.v_still_idx)
-        self.firing_ts  = self.ts[spk_tw] #[:,1]
-        self.firing_pos = self.pos[idx]
-        self.firing_map, x_edges, y_edges = np.histogram2d(x=self.firing_pos[:,0], y=self.firing_pos[:,1], 
-                                                           bins=self.nbins, range=self.maze_range)
-        self.firing_map = self.firing_map.T
-        # if self.firing_map.sum() == 0:
-        #     print('no firing when animal move under 5cm/s')
-        np.seterr(divide='ignore', invalid='ignore')
-        self.FR = self.firing_map/self.O/self.dt
-        self.FR = np.nan_to_num(self.FR)
-        self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(kernlen, std), boundary='symm', mode='same')
-        # self.FR_smoothed = self.FR_smoothed[::-1]
-
+        self._get_field(spk_times=spk_time_dict[neuron_id])
 
     def plot_field(self, trajectory=False, cmap='gray', marker=True, alpha=0.5, markersize=5):
         f, ax = plt.subplots(1,1,figsize=(13,10));
@@ -196,11 +198,11 @@ class place_field(object):
 
 
 
-    def get_fields(self, spk_time, kernlen=21, std=3):
+    def get_fields(self, spk_time_dict):
         '''
-        spk_time is dictionary start from 1: {1: ... 2: ... 3: ...}
+        spk_time_dict is dictionary start from 1: {1: ... 2: ... 3: ...}
         '''
-        self.n_fields = len(spk_time.keys())
+        self.n_fields = len(spk_time_dict.keys())
         self.fields = {}
         self.fields_matrix = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
 
@@ -211,9 +213,9 @@ class place_field(object):
 
         self.firing_poshd = {}
 
-        for i in spk_time.keys():
+        for i in spk_time_dict.keys():
             ### get place fields from neuron i
-            self.get_field(spk_time, i, kernlen, std)
+            self.get_field(spk_time_dict, i)
             self.fields[i] = self.FR_smoothed
             self.firing_poshd[i] = self.firing_pos
             self.fields_matrix[i] = self.FR_smoothed
