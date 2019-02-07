@@ -39,7 +39,7 @@ class image_view(scene.SceneCanvas):
         self._update()
 
     def set_data(self, data):
-        self.image.set_data(np.flipud(data))
+        self.image.set_data(data)
         self.view.camera.set_range()
         # # scale and center image in canvas
         # s = 700. / max(self.image.size)
