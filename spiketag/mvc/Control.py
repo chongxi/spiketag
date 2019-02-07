@@ -103,7 +103,7 @@ class controller(object):
 
         @self.view.ampview.event.connect
         def on_clip(thres):
-            idx = np.where(self.model.spk[self.current_group][:,7,:].min(axis=1)>thres)[0]
+            idx = np.where(self.model.spk[self.current_group][:,8,:].min(axis=1)>thres)[0]
             print('delete {} spikes'.format(idx.shape))
             self.delete_spk(spk_idx=idx)
 

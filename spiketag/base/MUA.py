@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from numba import jit
+from numba import njit
 from multiprocessing import Pool
 from ..view import wave_view 
 from .SPK import SPK
@@ -21,16 +21,16 @@ def find_spk_in_time_seg(spk_times, time_segs):
     return np.hstack(np.array(spk_times_in_range))
 
 
-@jit(cache=True)
-def _to_spk(data, pos, chlist, spklen=19, prelen=8, cutoff_neg=-1000, cutoff_pos=1000):
-    n = len(pos)
-    spk = np.empty((n, spklen, len(chlist)), dtype=np.float32)
+@njit(cache=True)
+def _to_spk(data, pos, chlist, spklen=19, prelen=7, cutoff_neg=-1000, cutoff_pos=1000):
+    nspks = len(pos)
+    spk = np.empty((nspks, spklen, len(chlist)), dtype=np.float32)
     noise_idx = []
-    for i in range(n):
-        # i spike in chlist
-        spike_wav  = data[pos[i]-prelen+2:pos[i]-prelen+spklen+2, chlist]
+    for i in range(nspks):
+        spike_wav = data[pos[i]-prelen:pos[i]-prelen+spklen, chlist]
         spk[i, ...] = spike_wav
-        if max(spike_wav.ravel())>cutoff_pos or min(spike_wav.ravel())<cutoff_neg:
+        peaks  = spike_wav.reshape(1,-1)
+        if peaks.min()<cutoff_neg or peaks.max()>cutoff_pos: 
             noise_idx.append(i)
     _nan = np.where(chlist==-1)[0]
     spk[..., _nan] = 0
@@ -120,48 +120,62 @@ class MUA(object):
         data = self.data[:, nchs].astype(dtype)
         data.tofile(file_name)
 
+    def _get_spk_times(self, group_id, time_segs, method='spk_info'):
+        if method == 'spk_info':
+            pivotal_pos = self.pivotal_pos
+            pivotal_chs = self.probe[group_id]
+            spk_times = pivotal_pos[0][np.in1d(pivotal_pos[1], pivotal_chs)]
+            spk_times = find_spk_in_time_seg(spk_times, time_segs*self.fs)
+        return spk_times
+
+    def _tospk(self, group_id, time_segs, method='spk_info'):
+        pivotal_chs = self.probe[group_id]
+        spk_times   = self._get_spk_times(group_id, time_segs, method)
+        if spk_times.shape[0] > 0:
+            spks, noise_idx = _to_spk(data   = self.data, 
+                                      pos    = spk_times, 
+                                      chlist = pivotal_chs, 
+                                      spklen = self.spklen,
+                                      prelen = self.prelen,
+                                      cutoff_neg = self.cutoff_neg,
+                                      cutoff_pos = self.cutoff_pos)
+            return spks, spk_times, noise_idx
+        else:
+            return None, None, None
+
+    def _delete_spks(self, spks, spk_times, noise_idx):
+        spks = np.delete(spks, noise_idx, axis=0)
+        spk_times = np.delete(spk_times, noise_idx, axis=0)
+        return spks, spk_times
+
     def tospk(self, amp_cutoff=True, speed_cutoff=False, time_cutoff=True):
         info('mua.tospk() with time_cutoff={}, amp_cutoff={}, speed_cutoff={}'.format(
                                time_cutoff,    amp_cutoff,    speed_cutoff))
-        spkdict = {}
+        self.spkdict = {}
         self.spk_times = {}
         for g in self.probe.grp_dict.keys():
-            # pivotal_chs = self.probe.fetch_pivotal_chs(g)
-            pivotal_chs = self.probe.grp_dict[g]
-            spk_times = self.pivotal_pos[0][np.in1d(self.pivotal_pos[1], pivotal_chs)]
-            if time_cutoff is True:
-                self.spk_times[g] = find_spk_in_time_seg(spk_times, self.time_segs*self.fs)
+            spks, spk_times, noise_idx = self._tospk(group_id=g,  time_segs=self.time_segs, method='spk_info')
+            ### remove noise from spike
+            if amp_cutoff is True and spks is not None:
+                n_noise = float(noise_idx.shape[0])
+                n_spk   = float(spks.shape[0])
+                info('group {} delete {}%({}/{}) spks via cutoff'.format(g, n_noise/n_spk*100, n_noise, n_spk))
+                self.spkdict[g], self.spk_times[g] = self._delete_spks(spks, spk_times, noise_idx)
             else:
-                self.spk_times[g] = spk_times
-            if len(self.spk_times[g]) > 0:
-                spks, noise_idx = _to_spk(data   = self.data, 
-                                          pos    = self.spk_times[g], 
-                                          chlist = self.probe[g], 
-                                          spklen = self.spklen,
-                                          prelen = self.prelen,
-                                          cutoff_neg = self.cutoff_neg,
-                                          cutoff_pos = self.cutoff_pos)
-                ### remove noise from spike
-                if amp_cutoff is True:
-                    n_noise = float(noise_idx.shape[0])
-                    n_spk   = float(spks.shape[0])
-                    info('group {} delete {}%({}/{}) spks via cutoff'.format(g, n_noise/n_spk*100, n_noise, n_spk))
-                    spkdict[g] = np.delete(spks, noise_idx, axis=0)
-                    self.spk_times[g] = np.delete(self.spk_times[g], noise_idx, axis=0)
-                else:
-                    spkdict[g] = spks
-                ### remove spike during v_smoothed < 5cm/sec
-                if speed_cutoff is True and self.time_still is not None:
-                    _, idx_still = idx_still_spike(self.spk_times[g]/self.fs, self.time_still, 1/60.)
-                    n_idx_still = float(idx_still.shape[0])
-                    n_spk       = float(self.spk_times[g].shape[0])
-                    info('group {} delete {}%({}/{}) spks via speed'.format(g, n_idx_still/n_spk*100, n_idx_still, n_spk))
-                    spkdict[g] = np.delete(spkdict[g], idx_still, axis=0)
-                    self.spk_times[g] = np.delete(self.spk_times[g], idx_still, axis=0)
+                self.spkdict[g], self.spk_times[g] = spks, spk_times
+
+            ### remove spike during v_smoothed < 5cm/sec
+            if speed_cutoff is True and self.time_still is not None and spks is not None:
+                _, idx_still = idx_still_spike(self.spk_times[g]/self.fs, self.time_still, 1/60.)
+                n_idx_still = float(idx_still.shape[0])
+                n_spk       = float(self.spk_times[g].shape[0])
+                info('group {} delete {}%({}/{}) spks via speed'.format(g, n_idx_still/n_spk*100, n_idx_still, n_spk))
+                self.spkdict[g]   = np.delete(self.spkdict[g],   idx_still, axis=0)
+                self.spk_times[g] = np.delete(self.spk_times[g], idx_still, axis=0)
 
         info('----------------success------------------')     
         info(' ')               
-        return SPK(spkdict)
+        return SPK(self.spkdict)
 
     def get_nid(self, corr_cutoff=0.95):  # get noisy spk id
         # 1. dump spikes file (binary)
