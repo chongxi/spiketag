@@ -77,6 +77,7 @@ class MainModel(object):
         self._model_init_(self.spktag_filename)
 
 
+
     def _model_init_(self, spktag_filename=None):
         '''
         If spktag_filename is given, Model will generate spk,fet,clu from

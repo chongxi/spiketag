@@ -171,6 +171,7 @@ class place_field(object):
         self.FR = self.firing_map/self.O/self.dt
         self.FR = np.nan_to_num(self.FR)
         self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
+        return self.FR_smoothed
 
 
     def get_field(self, spk_time_dict, neuron_id):

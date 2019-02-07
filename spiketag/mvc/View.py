@@ -1,5 +1,5 @@
 import sys
-from ..view import probe_view, cluster_view, spike_view, scatter_3d_view, amplitude_view, ctree_view, trace_view, correlogram_view
+from ..view import probe_view, cluster_view, spike_view, scatter_3d_view, amplitude_view, ctree_view, trace_view, correlogram_view, pf_view
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QThread, QEventLoop
 from PyQt5.QtWidgets import QStatusBar, QMainWindow, QAction, QFileDialog, QWidget, QSplitter, QComboBox, QTextBrowser, QSlider, QPushButton, QTableWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
@@ -58,7 +58,8 @@ class MainView(QMainWindow):
         self.fetview1 = scatter_3d_view()
         self.ampview = amplitude_view(fs=self.prb.fs, scale=1)
         self.corview = correlogram_view(fs=self.prb.fs)
-        self.treeview = ctree_view()
+        # self.treeview = ctree_view()
+        self.pfview  = pf_view(pc=self._model.pc)
         self.traceview = trace_view(data=self._model.mua.data, fs=self.prb.fs)
         
         self.splitter1.addWidget(self.traceview.native)
@@ -69,7 +70,7 @@ class MainView(QMainWindow):
         self.splitter1.setSizes([30,50,80])  # trace_view, fet_view, spk_view
 
         self.splitter2.addWidget(self.corview.native) 
-        self.splitter2.addWidget(self.treeview.native)
+        self.splitter2.addWidget(self.pfview.native)
         self.splitter2.addWidget(self.ampview.native)
         self.splitter2.setSizes([40,40,100])  # corview, treeview, ampview
 
@@ -88,15 +89,20 @@ class MainView(QMainWindow):
         self.fetview1.set_data(fet, clu)   #[:,[0,1,3]].copy()
         # else:
         self.ampview.set_data(spk, clu, mua.spk_times[group_id])
-        self.treeview.set_data(clu) 
+        # self.treeview.set_data(clu) 
         self.traceview.set_data(chs, clu, mua.spk_times[group_id])
         try:
             self.corview.set_data(clu, mua.spk_times[group_id])
         except Exception as e:
             pass
 
+        self.pfview.set_data(clu, mua.spk_times[group_id]/self.prb.fs)
+
         self.traceview.locate_buffer = 1500
 
+        # everytime when view.set_data
+        # the corresponding clu will go through its registration process
+        # then won'g go through it again
         if self.clu._event_reg_enable is True:
             self.register_event()
 
@@ -108,6 +114,7 @@ class MainView(QMainWindow):
         self.ampview.register_event()
         self.traceview.register_event()
         self.corview.register_event()
+        self.pfview.register_event()  # make sure self.pfview already get pc
         self.clu._event_reg_enable = False
 
 
@@ -122,7 +129,7 @@ class MainView(QMainWindow):
         self.fetview1.set_data(model.fet[group_id], model.clu[group_id])   #[:,[0,1,3]].copy()
         # else:
         self.ampview.set_data(model.spk[group_id], model.clu[group_id], model.mua.spk_times[group_id])
-        self.treeview.set_data(model.clu[group_id]) 
+        # self.treeview.set_data(model.clu[group_id]) 
         self.traceview.set_data(self.prb[group_id], model.clu[group_id], model.mua.spk_times[group_id])
         # try:
         #     self.corview.set_data(model.clu[group_id], model.mua.spk_times[group_id])
