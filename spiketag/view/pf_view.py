@@ -18,7 +18,7 @@ class pf_view(scene.SceneCanvas):
         self.pc = pc
         self.view = self.central_widget.add_view()
         self.view.camera = 'panzoom'
-        self.image = scene.visuals.Image(parent=self.view.scene, method='subdivide')
+        self.image = scene.visuals.Image(parent=self.view.scene, method='subdivide', cmap='grays', clim=[0,1])
 
         self.debug = debug
         if show is True:

@@ -135,8 +135,8 @@ class place_field(object):
         self.P = self.O/float(self.O.sum()) # occupation prabability
 
         #### parameter used to calculate the fields
-        self.kernlen = 21
-        self.kernstd = 3
+        self.kernlen = 18
+        self.kernstd = 2.5
 
 
     def plot_occupation_map(self):
