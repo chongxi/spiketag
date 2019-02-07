@@ -6,7 +6,7 @@ from numba import njit
 
 
 @njit(cache=True)
-def _locate_amplitude(spk, spk_times, fs, clu_idx, peak_pos=7):
+def _locate_amplitude(spk, spk_times, fs, clu_idx, peak_pos=8):
     '''
         locate the peak of amplitude, return index and peak value
     '''
