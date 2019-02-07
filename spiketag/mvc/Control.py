@@ -150,6 +150,9 @@ class controller(object):
     def nclu(self):
         return len(self.model.clu[self.current_group].index_id)
 
+    @property
+    def selected_spk_times(self):
+        return self.model.gtimes[self.current_group][self.clu.selectlist]/self.model.mua.fs
 
     def get_spk_times(self, group_id=-1, cluster_id=1):
         if group_id==-1:

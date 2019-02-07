@@ -384,6 +384,10 @@ class CLU(EventEmitter):
         for idx, clu in zip(global_idx, clu_to):
             self.membership[idx] = clu
 
+        ## check illegal
+        if len(self.membership[self.membership==0]) == 0:
+            self.membership = self._membership_stack.pop()
+
         self.__construct__()
 
         if self.changed:   # prevent those redundant downstream cost (especially connect to many callbacks)

@@ -10,15 +10,15 @@ from ..utils import Timer
 
 class pf_view(scene.SceneCanvas):
     
-    def __init__(self, pc, show=False, debug=False):
-        scene.SceneCanvas.__init__(self, keys=None)
+    def __init__(self, pc, show=False, debug=False, title='place field'):
+        scene.SceneCanvas.__init__(self, keys=None, title=title)
 
         self.unfreeze()
 
         self.pc = pc
         self.view = self.central_widget.add_view()
         self.view.camera = 'panzoom'
-        self.image = scene.visuals.Image(parent=self.view.scene, method='subdivide', cmap='grays', clim=[0,1])
+        self.image = scene.visuals.Image(parent=self.view.scene, method='subdivide', cmap='hot', clim=[0.05, 1.05])
 
         self.debug = debug
         if show is True:
@@ -28,8 +28,11 @@ class pf_view(scene.SceneCanvas):
         self.clu = clu
         self.gtimes = gtimes
 
-    def render(self, spk_times):
+    def _get_field(self, spk_times):
         place_field =  self.pc._get_field(spk_times)
+        return place_field
+
+    def _render(self, place_field):
         self.image.set_data(place_field/place_field.max())
         self.view.camera.set_range()
 
@@ -39,7 +42,8 @@ class pf_view(scene.SceneCanvas):
     def register_event(self):
         @self.clu.connect
         def on_select(*args, **kwargs): 
-            self.render(self.gtimes[self.clu.selectlist])
+            place_field = self._get_field(self.gtimes[self.clu.selectlist])
+            self._render(place_field)
 
     def on_key_press(self, e):
         if e.text == 'r':
