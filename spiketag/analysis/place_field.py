@@ -160,9 +160,9 @@ class place_field(object):
 
 
     def _get_field(self, spk_times):
-        spk_tw = np.searchsorted(self.ts, spk_times) - 1
-        idx = np.setdiff1d(spk_tw, self.v_still_idx)
-        self.firing_ts  = self.ts[spk_tw] #[:,1]
+        spk_ts = np.searchsorted(self.ts, spk_times) - 1
+        idx = np.setdiff1d(spk_ts, self.v_still_idx)
+        self.firing_ts  = self.ts[spk_ts] #[:,1]
         self.firing_pos = self.pos[idx]        
         self.firing_map, x_edges, y_edges = np.histogram2d(x=self.firing_pos[:,0], y=self.firing_pos[:,1], 
                                                            bins=self.nbins, range=self.maze_range)
