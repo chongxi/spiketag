@@ -37,6 +37,13 @@ def licomb_Matrix(w, X):
     output:
     the linear combination w[0]*X[0] + w[1]*X[1] + ... + w[n]*X[N]
     X[0], X[1] ... X[N] are all 2D matrix
+
+    ### another way of doing it is einsum (einstein summation)
+    # x.shape: torch.Size([100, 800, 800])
+    # y.shape: torch.Size([100, 1])
+    # einsum works better than licomb_Matrix
+    # z = torch.einsum('ijk, il -> jk', (x, y))
+    # z = x (100,800,800) weighted by y (100,1) 
     '''
     Y = np.dot(w, X.reshape(w.shape[0], -1)).reshape(X.shape[1], X.shape[2])
     return Y
