@@ -10,7 +10,7 @@ from ..utils import Timer
 
 class pf_view(scene.SceneCanvas):
     
-    def __init__(self, pc, show=False, debug=False, title='place field'):
+    def __init__(self, pc=None, show=False, debug=False, title='place field'):
         scene.SceneCanvas.__init__(self, keys=None, title=title)
 
         self.unfreeze()
@@ -40,10 +40,11 @@ class pf_view(scene.SceneCanvas):
         self.pc = pc
 
     def register_event(self):
-        @self.clu.connect
-        def on_select(*args, **kwargs): 
-            place_field = self._get_field(self.gtimes[self.clu.selectlist])
-            self._render(place_field)
+        if self.pc is not None:
+            @self.clu.connect
+            def on_select(*args, **kwargs): 
+                place_field = self._get_field(self.gtimes[self.clu.selectlist])
+                self._render(place_field)
 
     def on_key_press(self, e):
         if e.text == 'r':

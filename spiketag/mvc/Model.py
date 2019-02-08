@@ -67,12 +67,15 @@ class MainModel(object):
                 self.time_still = self.ts[self.v_still_idx] 
 
         # TODO2: test this
-        if pc is not None:
+        elif pc is not None:
             self.pc = pc
             self.pc.ts += behavior_start_time  # behavior start time relative to the time 0 of ephys
             self.pc.initialize(bin_size=bin_size, v_cutoff=v_cutoff)
             if sort_movment_only:
                 self.time_still = self.pc.ts[self.pc.v_still_idx]
+
+        else:
+            self.pc = None
 
         self._model_init_(self.spktag_filename)
 
