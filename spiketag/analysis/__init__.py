@@ -80,9 +80,11 @@ def bayesian_decoding(Fr, suv, pos, pos_offset, bin_size, delta_t=100e-3):
 
 
 def argmax_2d_tensor(X):
+    if X.ndim<3:
+        X = X[np.newaxis, :]
     values, indices = torch.max(torch.from_numpy(X.reshape(X.shape[0],-1)), 1)
     post_xy = np.vstack((indices.numpy()%X.shape[2], indices.numpy()//X.shape[2])).T
-    return post_xy
+    return np.squeeze(post_xy)
 
 def smooth(y, box_pts):
     box = np.ones(box_pts)/box_pts
