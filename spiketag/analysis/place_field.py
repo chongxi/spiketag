@@ -185,6 +185,7 @@ class place_field(object):
         '''
         self._get_field(spk_times=spk_time_dict[neuron_id])
 
+
     def plot_field(self, trajectory=False, cmap='gray', marker=True, alpha=0.5, markersize=5):
         f, ax = plt.subplots(1,1,figsize=(13,10));
         pcm = ax.pcolormesh(self.X, self.Y, self.FR_smoothed, cmap=cmap);
@@ -196,7 +197,6 @@ class place_field(object):
         if marker:
             ax.plot(self.firing_pos[:,0], self.firing_pos[:,1], 'mo', alpha=alpha, markersize=markersize);
         return f,ax
-
 
 
     def get_fields(self, spk_time_dict):
@@ -259,7 +259,3 @@ class place_field(object):
         plt.grid('off')
         plt.show();
         return fig
-
-
-
-
