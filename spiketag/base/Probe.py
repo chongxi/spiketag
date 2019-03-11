@@ -320,6 +320,16 @@ class probe(BaseProbe):
                 self.__setitem__(i, chs - 1)
 
 
+    def _to_txt(self, filename):
+        with open(filename,'w') as f:
+            for ch, pos in self.mapping.items():
+                _str = str(ch)+": " + str(pos) + '\n'
+                f.write(_str)
+            for grpNo in range(self.n_group):
+                _str = "groupNo_" + str(grpNo) + ":" + str(self[grpNo]) + '\n'
+                f.write(_str)
+
+
 if __name__ == '__main__':
     from spiketag.base import ch_group, shank, probe
     # shk = shank()
