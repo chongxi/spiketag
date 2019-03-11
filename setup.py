@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from setuptools import setup
+from setuptools import setup, find_packages
 
 version = "0.1.0"
 
-setup(name='spike-tag',
+requirements = ['Click>=6.0', ]
+
+setup(name='spiketag',
       version=version,
       description='spike-sorting packages for project Xike',
       author=['Chongxi Lai'],
@@ -19,7 +21,11 @@ setup(name='spike-tag',
           'Intended Audience :: Science/Research',
           'Topic :: Scientific/Engineering'
       ],
-      packages=['spiketag'],
+      entry_points={
+          'console_scripts': [
+              'spiketag=spiketag.command:main',
+          ],
+      },
       install_requires=[
           'numpy',
           'scipy',
@@ -37,6 +43,7 @@ setup(name='spike-tag',
           docs=['sphinx', 'numpydoc'],
           demo=['vispy'],
       ),
+      packages=find_packages(include=['spiketag']),
       test_suite='test',
       keywords=[
           'Spike Sorting', 
