@@ -2,6 +2,7 @@ import numpy as np
 import json
 from collections import OrderedDict
 from spiketag.view import probe_view
+import pandas as pd
 from ..utils import EventEmitter
 
 
@@ -299,14 +300,16 @@ class probe(BaseProbe):
         ch_dict['recording']['channels'] = 175*[False]
         ch_dict['0'] = {}
         ch_dict['0']['enabled'] = 175*[True]
-        ch_dict['0']['mapping'] = list(ch_list+1)
+        ch_dict['0']['mapping'] = [int(_) for _ in (ch_list+1)]
         ch_dict['0']['reference'] = 175*[0]
 
         # for spiketag loading probe position mapping
-        ch_dict['shank_no'] = self.shanks.keys()
+        ch_dict['shank_no'] = [int(_) for _ in self.shanks.keys()]
         ch_dict['pos'] = {}
         for key, value in self.mapping.items():
-            ch_dict['pos'][key] = list(value)
+            ch_dict['pos'][int(key)] = [int(_) for _ in value]
+        self._ch_dict = ch_dict
+
         with open(filename, 'w') as fp:
             json.dump(ch_dict, fp, indent=4, separators=(',', ': '))
 
