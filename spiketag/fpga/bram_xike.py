@@ -43,7 +43,7 @@ class pca_hash(object):
         pca0, pca1, pca2, pca3 = pca_in
         x = struct.unpack('<i', struct.pack('4b', 
                                             pca0, pca1, pca2, pca3))[0]
-        write_tat_32(i, x, dtype='<i4', binpoint=0) 
+        write_tat_32(i, x, dtype='<i', binpoint=0) 
 
     def __setitem__(self, grpNo, pca_comp):
         ch = grpNo*self.dim + self.base
@@ -85,19 +85,19 @@ class shift_hash(object):
         self.nCh = nCh
         self.base = base_address
         self.dim   = 4
-        for i in range(self.nCh):
-            self.__setitem__(i,np.zeros(self.dim,))
+        # for i in range(self.nCh):
+        #     self.__setitem__(i,np.zeros(self.dim,))
         
     def __setitem__(self, chNo, shift):
         ch = chNo*self.dim + self.base
         for i, _shift in enumerate(shift):
-            write_tat_32(ch+i, _shift, dtype='<i4', binpoint=13) 
+            write_tat_32(ch+i, _shift, dtype='<i', binpoint=13) 
 
     def __getitem__(self, chNo):
         ch = chNo*self.dim + self.base
         x = []
         for i in range(self.dim):
-            x.append(read_tat_32(ch+i, dtype='<i4', binpoint=13))
+            x.append(read_tat_32(ch+i, dtype='<i', binpoint=13))
         return np.array(x)
 
     def __repr__(self):
@@ -115,16 +115,16 @@ class scale_hash(object):
         self.nCh = nCh
         self.base = base_address
         self.dim = 1
-        for i in range(self.nCh):
-            self.__setitem__(i,0)
+        # for i in range(self.nCh):
+        #     self.__setitem__(i,0)
 
     def __setitem__(self, chNo, _scale):
         ch = chNo + self.base
-        write_tat_32(ch, _scale, dtype='<i4', binpoint=13) 
+        write_tat_32(ch, _scale, dtype='<i', binpoint=13) 
 
     def __getitem__(self, chNo):
         ch = chNo + self.base
-        x0 = read_tat_32(ch, dtype='<i4', binpoint=13) 
+        x0 = read_tat_32(ch, dtype='<i', binpoint=13) 
         return x0
 
     def __repr__(self):
@@ -153,15 +153,15 @@ class vq_hash(object):
         vq_in = np.floor(np.asarray(vq_in)*2**7)
         vq_in = vq_in.astype(np.int32)
         vq0, vq1, vq2, vq3 = vq_in
-        x = struct.unpack('<i', struct.pack('4b', 
+        x = struct.unpack('<i', struct.pack('bbbb', 
                                             vq0, vq1, vq2, vq3))[0]
         ch = i + self.base
-        write_tat_32(ch, x, dtype='<i4', binpoint=0) 
+        write_tat_32(ch, x, dtype='<i', binpoint=0) 
 
     def read_vq_out(self, i):
         ch = i + self.base
         x = read_tat_32(ch, dtype='<i', binpoint=0)
-        y = struct.unpack('4b', struct.pack('<i', x))
+        y = struct.unpack('bbbb', struct.pack('<i', x))
         y = np.asarray(y).astype(np.float32)
         y = y/(2**7)
         return y
