@@ -29,13 +29,13 @@ class ch_ref(object):
         self.ch_ref[chNo] = ch_ref
         if type(chNo) is slice:
             for i,v in enumerate(ch_ref):
-                write_thr_32(i+self.base, ch_ref[i], dtype='<I4', binpoint=0) 
+                write_thr_32(i+self.base, ch_ref[i], dtype='<I', binpoint=0) 
         else:
-            write_thr_32(chNo+self.base, ch_ref, dtype='<I4', binpoint=0) 
+            write_thr_32(chNo+self.base, ch_ref, dtype='<I', binpoint=0) 
 
     def __getitem__(self, chNo):
         ch = chNo+self.base
-        return read_thr_32(ch, dtype='<I4', binpoint=0)
+        return read_thr_32(ch, dtype='<I', binpoint=0)
 
     def __repr__(self):
         for ch in np.arange(self.nCh):
@@ -63,13 +63,13 @@ class chgpNo(object):
         self.chgpNo[chNo] = chgpNo
         if type(chNo) is slice:
             for i,v in enumerate(chgpNo):
-                write_thr_32(i+self.base, chgpNo[i], dtype='<I4', binpoint=0) 
+                write_thr_32(i+self.base, chgpNo[i], dtype='<I', binpoint=0) 
         else:
-            write_thr_32(chNo+self.base, chgpNo, dtype='<I4', binpoint=0) 
+            write_thr_32(chNo+self.base, chgpNo, dtype='<I', binpoint=0) 
 
     def __getitem__(self, chNo):
         ch = chNo+self.base
-        return read_thr_32(ch, dtype='<I4', binpoint=0)
+        return read_thr_32(ch, dtype='<I', binpoint=0)
 
     def __repr__(self):
         for ch in np.arange(self.nCh):
@@ -95,13 +95,13 @@ class offset(object):
         self.offset[chNo] = offset
         if type(chNo) is slice:
             for i,v in enumerate(offset):
-                write_thr_32(i+self.base, offset[i], dtype='<i4', binpoint=13) 
+                write_thr_32(i+self.base, offset[i], dtype='<i', binpoint=13) 
         else:
-            write_thr_32(chNo+self.base, offset, dtype='<i4', binpoint=13) 
+            write_thr_32(chNo+self.base, offset, dtype='<i', binpoint=13) 
 
     def __getitem__(self, chNo):
         ch = chNo+self.base
-        return read_thr_32(ch, dtype='<i4', binpoint=13)
+        return read_thr_32(ch, dtype='<i', binpoint=13)
 
     def __repr__(self):
         for ch in np.arange(self.nCh):
@@ -130,15 +130,15 @@ class channel_hash(object):
     def __setitem__(self, chNo, ch_group):
         ch_nn0, ch_nn1, ch_nn2, ch_nn3 = ch_group
         # print ch_nn0, ch_nn1, ch_nn2, ch_nn3
-        x = struct.unpack('<I', struct.pack('4B', 
+        x = struct.unpack('<I', struct.pack('BBBB', 
                                             ch_nn0, ch_nn1, ch_nn2, ch_nn3))[0]
         ch = chNo+self.base
-        write_thr_32(ch, x, dtype='<I4', binpoint=0) 
+        write_thr_32(ch, x, dtype='<I', binpoint=0) 
 
     def __getitem__(self, chNo):
         ch = chNo+self.base
         x = read_thr_32(ch, dtype='<I', binpoint=0)
-        return struct.unpack('4B', struct.pack('<I', x))
+        return struct.unpack('BBBB', struct.pack('<I', int(x)))
 
     def __str__(self):
         self.hash_repr = ''
@@ -189,21 +189,21 @@ class threshold(object):
             if chNo == slice(None,None,None): 
                 for ch in np.arange(self.nCh):
                     if np.size(thr) == 1:
-                        write_thr_32(ch, thr,     dtype='<i4', binpoint=13)
+                        write_thr_32(ch, thr,     dtype='<i', binpoint=13)
                     else:
-                        write_thr_32(ch, thr[ch], dtype='<i4', binpoint=13)
+                        write_thr_32(ch, thr[ch], dtype='<i', binpoint=13)
             else:
                 for i, ch in enumerate(np.arange(chNo.start, chNo.stop, chNo.step)):
                     if np.size(thr) == 1:
-                        write_thr_32(ch, thr,     dtype='<i4', binpoint=13)
+                        write_thr_32(ch, thr,     dtype='<i', binpoint=13)
                     else:
-                        write_thr_32(ch, thr[i], dtype='<i4', binpoint=13) 
+                        write_thr_32(ch, thr[i], dtype='<i', binpoint=13) 
 
         else:
-            write_thr_32(chNo, thr, dtype='<i4', binpoint=13) 
+            write_thr_32(chNo, thr, dtype='<i', binpoint=13) 
 
     def __getitem__(self, chNo):
-        return read_thr_32(chNo, dtype='<i4', binpoint=13) 
+        return read_thr_32(chNo, dtype='<i', binpoint=13) 
 
     def __repr__(self):
         for ch in np.arange(self.nCh):

@@ -4,7 +4,7 @@ from binascii import hexlify
 
 
 ########### transformation and template #############
-def write_tat_32(offset, v, dtype='<i4', binpoint=14):
+def write_tat_32(offset, v, dtype='<i', binpoint=14):
     addr = offset * 4
     w32 = open('/dev/xillybus_template_32', 'wb')
     value = to_fixed_point(v, dtype, binpoint)
@@ -13,7 +13,7 @@ def write_tat_32(offset, v, dtype='<i4', binpoint=14):
     w32.write(value)
     w32.close()
 
-def read_tat_32(offset, dtype='<i4', binpoint=14):
+def read_tat_32(offset, dtype='<i', binpoint=14):
     addr = offset * 4
     r32 = open('/dev/xillybus_template_32', 'rb')
     r32.seek(addr)
@@ -25,7 +25,7 @@ def read_tat_32(offset, dtype='<i4', binpoint=14):
 
 
 ########### thr and ch hash #########################
-def write_thr_32(offset, v, dtype='<i4', binpoint=14):
+def write_thr_32(offset, v, dtype='<i', binpoint=14):
     addr = offset * 4
     w32 = open('/dev/xillybus_thr_32', 'wb')
     value = to_fixed_point(v, dtype, binpoint)
@@ -34,7 +34,7 @@ def write_thr_32(offset, v, dtype='<i4', binpoint=14):
     w32.write(value)
     w32.close()        
 
-def read_thr_32(offset, dtype='<i4', binpoint=14):
+def read_thr_32(offset, dtype='<i', binpoint=14):
     addr = offset * 4
     r32 = open('/dev/xillybus_thr_32', 'rb')
     r32.seek(addr)
@@ -46,7 +46,7 @@ def read_thr_32(offset, dtype='<i4', binpoint=14):
 
 def thr_reset(nCh):
     for addr in np.arange(nCh):
-        write_thr_32(addr, 0, '<i4', 0)
+        write_thr_32(addr, 0, '<i', 0)
 ####################################################
 
 
@@ -73,23 +73,23 @@ def read_mem_16(offset, dtype='<h', binpoint=0):
 
 def mem_reset(nCh):
     for addr in np.arange(nCh):
-        write_reg_16(addr, 0x0000, '<i2', 0)
+        write_reg_16(addr, 0x0000, '<i', 0)
 ####################################################
 
 
 ########### quantization ###########################
-def to_fixed_point(v, dtype='<i4', binpoint=14):
+def to_fixed_point(v, dtype='<i', binpoint=13):
     v = int(v * 2**binpoint)
     value = hexlify(struct.pack(dtype,v))
     # print value
     return struct.pack(dtype,v)
 
-def to_value(hexstring, dtype='<i4', binpoint=14):
+def to_value(hexstring, dtype='<i', binpoint=13):
     value = struct.unpack(dtype, hexstring)
     value = float(value[0]) / 2**binpoint
     return value
 
-def to2scomp(v, dtype='i4'):
+def to2scomp(v, dtype='<i'):
     value = hexlify(struct.pack(dtype,v))
     return value
 #####################################################
