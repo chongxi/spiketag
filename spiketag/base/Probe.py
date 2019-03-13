@@ -323,13 +323,13 @@ class probe(BaseProbe):
     def load(self, filename):
         with open(filename) as ff:
             prb_json = json.load(ff)
-            self.n_ch = prb_json['params']['n_ch']
-            self.fs = prb_json['params']['fs']
             grp_len = ch_dict['params']['group_len']
             for i in prb_json['pos'].keys():
                 self.mapping[int(i)] = prb_json['pos'][i] 
             for i, chs in enumerate(np.array(prb_json['0']['mapping']).reshape(-1, grp_len)):
                 self.__setitem__(i, chs - 1)
+            self.n_ch = prb_json['params']['n_ch']
+            self.fs = prb_json['params']['fs']
 
 
     def _to_txt(self, filename):
