@@ -367,7 +367,7 @@ class wave_view(scene.SceneCanvas):
             self._start_index = int(to) - self.pagesize / 2
             if self._start_index < 0:
                 self._start_index = 0
-            self._render(self.data[self._start_index:self._start_index + self.pagesize, self._chs_idx])
+            self._render(self.data[int(self._start_index):int(self._start_index + self.pagesize), self._chs_idx])
             self.highlight_ch()
             self.cross.start_index_changed(self._start_index)
             self.cross.view_changed()
@@ -377,7 +377,7 @@ class wave_view(scene.SceneCanvas):
 
         if tmp  >= 0 and tmp + self.pagesize < self.data.shape[0]:
             self._start_index = tmp
-            self._render(self.data[self._start_index:self._start_index + self.pagesize, self._chs_idx])
+            self._render(self.data[int(self._start_index):int(self._start_index + self.pagesize), self._chs_idx])
             self.highlight_ch()
             self.cross.start_index_changed(self._start_index)
             self.cross.view_changed()

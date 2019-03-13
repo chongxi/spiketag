@@ -2,7 +2,6 @@ import spiketag
 import click
 
 
-
 @click.group()
 def main():
     pass
@@ -10,13 +9,14 @@ def main():
 @main.command()
 @click.argument('binaryfile')
 @click.argument('probefile')
-@click.option('--nCh', prompt='nCh', default='160')
+@click.option('--nch', prompt='nch', default='160')
 @click.option('--fs', prompt='fs', default='25000.0')
-@click.option('--bits', prompt='bits', default='16')
+@click.option('--nbits', prompt='nbits', default='16')
 @click.option('--time', prompt='time', default='0')
 @click.option('--span', prompt='span', default='5')
-def check(binaryfile, probefile, nCh, bits, time, span):
-    click.echo('spiketag-check {}, {}bits, time={}, span={}'.format(file, bits, time, span))
+def check(binaryfile, probefile, nch, fs, nbits, time, span):
+    click.echo('spiketag-check {}:{} channels, {}bits, time={}, span={}'.format(binaryfile, nch, nbits, time, span))
+    spiketag.view_data(binaryfile, probefile, int(nch), float(fs), int(nbits), float(time), float(span))
 
 
 @main.command()

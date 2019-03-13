@@ -46,8 +46,8 @@ def idx_still_spike(time_spike, time_still, dt):
 
 
 class MUA(object):
-    def __init__(self, mua_filename, probe, numbytes=4, binary_radix=13, 
-                 spk_filename=None,
+    def __init__(self, mua_filename, probe, numbytes=4, binary_radix=13, scale=True, 
+                 spk_filename=None, 
                  cutoff=[-1500, 1000], time_segs=None, time_still=None, lfp=False):
         '''
         mua_filename:
@@ -68,8 +68,11 @@ class MUA(object):
         self.mua_file = mua_filename
         if probe.reorder_by_chip is True:
             self.bf.reorder_by_chip(probe._nchips)
-        with Timer('convert data from memmap to numpy with radix', verbose=True):
-            self.data = self.bf.asarray(binpoint=binary_radix)
+        if scale is True:
+            with Timer('convert data from memmap to numpy with radix', verbose=True):
+                self.data = self.bf.asarray(binpoint=binary_radix)
+        else:
+            self.data = self.bf.data.numpy().reshape(-1, self.nCh)
         # self.data = self.bf.data.numpy().reshape(-1, self.nCh)
         # self.scale = self.data.max() - self.data.min()
         self.t    = self.bf.t
