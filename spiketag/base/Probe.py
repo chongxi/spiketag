@@ -323,7 +323,7 @@ class probe(BaseProbe):
     def load(self, filename):
         with open(filename) as ff:
             prb_json = json.load(ff)
-            grp_len = ch_dict['params']['group_len']
+            grp_len = prb_json['params']['group_len']
             for i in prb_json['pos'].keys():
                 self.mapping[int(i)] = prb_json['pos'][i] 
             for i, chs in enumerate(np.array(prb_json['0']['mapping']).reshape(-1, grp_len)):
