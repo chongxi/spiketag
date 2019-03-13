@@ -308,6 +308,12 @@ class probe(BaseProbe):
         ch_dict['pos'] = {}
         for key, value in self.mapping.items():
             ch_dict['pos'][int(key)] = [int(_) for _ in value]
+
+        ch_dict['params'] = {}
+        ch_dict['params']['n_ch'] = int(self.n_ch)
+        ch_dict['params']['group_len'] = int(self.group_len)
+        ch_dict['params']['n_group'] = int(self.n_group)
+        ch_dict['params']['fs'] = int(self.fs)
         self._ch_dict = ch_dict
 
         with open(filename, 'w') as fp:
@@ -317,9 +323,12 @@ class probe(BaseProbe):
     def load(self, filename):
         with open(filename) as ff:
             prb_json = json.load(ff)
+            self.n_ch = prb_json['params']['n_ch']
+            self.fs = prb_json['params']['fs']
+            grp_len = ch_dict['params']['group_len']
             for i in prb_json['pos'].keys():
                 self.mapping[int(i)] = prb_json['pos'][i] 
-            for i, chs in enumerate(np.array(prb_json['0']['mapping']).reshape(-1,4)):
+            for i, chs in enumerate(np.array(prb_json['0']['mapping']).reshape(-1, grp_len)):
                 self.__setitem__(i, chs - 1)
 
 
