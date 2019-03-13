@@ -14,5 +14,12 @@ def view_data(filename, prbfile, nCh, fs, nbits, time=0, span=5):
     app.run()
 
 
-def check_fpga(var):
+def check_fpga(prbfile, var):
+    prb = probe()
+    prb.load(prbfile)    
+    prb.n_ch = 160
+    prb.fs  = 25000.
+    fpga = xike_config(prb)
+    if var in dir(fpga):
+        exec('print(fpga.{})'.format(var))
 

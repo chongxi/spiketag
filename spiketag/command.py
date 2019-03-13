@@ -18,14 +18,16 @@ def check(binaryfile, probefile, nch, fs, nbits, time, span):
     click.echo('spiketag-check {}:{} channels, {}bits, time={}, span={}'.format(binaryfile, nch, nbits, time, span))
     spiketag.view_data(binaryfile, probefile, int(nch), float(fs), int(nbits), float(time), float(span))
 
-
 @main.command()
 def sort():
     click.echo('spiketag-sort')
 
 @main.command()
-def load():
-    click.echo('spiketag-load')    
+@click.argument('probefile')
+@click.option('--var', prompt='ch_grpNo, ch_hash, ch_ref, thres, scale, shift, pca, vq')
+def fpga(probefile, var):
+    click.echo('check FPGA')
+    spiketag.check_fpga(probefile, var)    
 
 
 if __name__ == "__main__":

@@ -37,10 +37,14 @@ class ch_ref(object):
         ch = chNo+self.base
         return read_thr_32(ch, dtype='<I', binpoint=0)
 
-    def __repr__(self):
-        for ch in np.arange(self.nCh):
-            print('ch_ref of ch{0} is {1}'.format(ch, self.ch_ref[ch]))
-        return 'ch_ref done'
+    def __str__(self):
+        self.hash_repr = ''
+        for ch in range(self.nCh):
+            self.hash_repr += '{}:{}\n'.format(ch, self[ch])
+        return self.hash_repr
+
+    __repr__ = __str__
+
 
 
 class chgpNo(object):
@@ -71,10 +75,14 @@ class chgpNo(object):
         ch = chNo+self.base
         return read_thr_32(ch, dtype='<I', binpoint=0)
 
-    def __repr__(self):
-        for ch in np.arange(self.nCh):
-            print('chgpNo of ch{0} is {1}'.format(ch, self.chgpNo[ch]))
-        return 'chgpNo done'
+    def __str__(self):
+        self.hash_repr = ''
+        for ch in range(self.nCh):
+            self.hash_repr += '{}:{}\n'.format(ch, self[ch])
+        return self.hash_repr
+
+    __repr__ = __str__
+
 
 
 class offset(object):
@@ -103,10 +111,14 @@ class offset(object):
         ch = chNo+self.base
         return read_thr_32(ch, dtype='<i', binpoint=13)
 
-    def __repr__(self):
-        for ch in np.arange(self.nCh):
-            print('offset of ch{0} is {1}'.format(ch, self.offset[ch]))
-        return 'offset done'
+    def __str__(self):
+        self.hash_repr = ''
+        for ch in range(self.nCh):
+            self.hash_repr += '{}:{}\n'.format(ch, self[ch])
+        return self.hash_repr
+
+    __repr__ = __str__
+
 
 
 
@@ -142,8 +154,8 @@ class channel_hash(object):
 
     def __str__(self):
         self.hash_repr = ''
-        for i in range(self.nCh):
-            self.hash_repr += '{}:{}\n'.format(i, self.__getitem__(i))
+        for ch in range(self.nCh):
+            self.hash_repr += '{}:{}\n'.format(ch, self[ch])
         return self.hash_repr
 
     __repr__ = __str__
@@ -205,8 +217,16 @@ class threshold(object):
     def __getitem__(self, chNo):
         return read_thr_32(chNo, dtype='<i', binpoint=13) 
 
-    def __repr__(self):
-        for ch in np.arange(self.nCh):
-            print('threshold of ch{0} is {1}'.format(ch, self[ch]))
-        return 'threshold enable status: {0}'.format(bool(read_mem_16(self.enable_reg_addres)))
+    def __str__(self):
+        self.hash_repr = ''
+        for ch in range(self.nCh):
+            self.hash_repr += '{}:{}\n'.format(ch, self[ch])
+        return self.hash_repr
+
+    __repr__ = __str__
+
+    # def __repr__(self):
+    #     for ch in np.arange(self.nCh):
+    #         print('threshold of ch{0} is {1}'.format(ch, self[ch]))
+    #     # return 'threshold enable status: {0}'.format(bool(read_mem_16(self.enable_reg_addres)))
 
