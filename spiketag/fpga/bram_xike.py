@@ -52,7 +52,7 @@ class pca_hash(object):
         
     def read_pca_out(self, i):
         x = read_tat_32(i, dtype='<i', binpoint=0)
-        y = struct.unpack('bbbb', struct.pack('<i', x))
+        y = struct.unpack('bbbb', struct.pack('<i', int(x)))
         y = np.asarray(y).astype(np.float32)
         y = y/(2**7)
         return y
