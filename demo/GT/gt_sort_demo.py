@@ -7,14 +7,24 @@ from PyQt5.QtWidgets import QApplication
 import sys
 
 
-tritrode = probe(shank_no=1, grp_No=1)
-tritrode[0] = np.array([0,1,2])
-tritrode.mapping[0] = np.array([-90,0])
-tritrode.mapping[1] = np.array([90,0])
-tritrode.mapping[2] = np.array([0,10])
-tritrode.fs = 20000.
-tritrode.n_ch = 3
+'''
+Probe creation and save
+'''
+# tritrode = probe(shank_no=1, grp_No=1)
+# tritrode[0] = np.array([0,1,2])
+# tritrode.mapping[0] = np.array([-90,0])
+# tritrode.mapping[1] = np.array([90,0])
+# tritrode.mapping[2] = np.array([0,10])
+# tritrode.fs = 20000.
+# tritrode.n_ch = 3
+# tritrode._group_len = 3
+# tritrode.save('./tritrode.json')
 
+'''
+Probe load
+'''
+tritrode = probe()
+tritrode.load('./tritrode.json')
 
 # def model_view():
 #     model = MainModel('./cell_0109.bin', './cell_0109.spk.bin', tritrode, binary_radix=11)
@@ -29,9 +39,10 @@ def sort():
                       mua_filename='./cell_0109.bin', 
                       spk_filename='./cell_0109.spk.bin', 
                       binary_radix=11, 
+                      scale=False
                       # cutoff=[-100, 100],
                       # time_segs=[[0,320]],
-                      fall_off_size=15
+                      # fall_off_size=15
                      )
     # ctrl.model.get_spk()
     # ctrl.model.get_fet()

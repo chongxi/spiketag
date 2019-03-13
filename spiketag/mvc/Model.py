@@ -22,7 +22,7 @@ class MainModel(object):
     """
 
     def __init__(self, mua_filename, spk_filename, probe=None, spktag_filename=None, 
-                 numbytes=4, binary_radix=13, spklen=19, corr_cutoff=0.9, cutoff=[-15000, 1000],
+                 numbytes=4, binary_radix=13, scale=True, spklen=19, corr_cutoff=0.9, cutoff=[-15000, 1000],
                  fet_method='pca', fetlen=6, fet_whiten=False,
                  clu_method='hdbscan', fall_off_size=18, n_jobs=24,
                  time_segs=None,
@@ -37,6 +37,7 @@ class MainModel(object):
         self.probe = probe
         self.numbytes = numbytes
         self.binpoint = binary_radix
+        self.scale = scale
 
         # mua param
         self._corr_cutoff = corr_cutoff
@@ -97,6 +98,7 @@ class MainModel(object):
                            spk_filename = self.spk_filename, 
                            numbytes     = self.numbytes, 
                            binary_radix = self.binpoint,
+                           scale        = self.scale,
                            cutoff       = self._cutoff,         # for amp   cut_off
                            time_segs    = self._time_segs,      # for time  cut_off
                            time_still   = self.time_still,      # for speed cut_off
@@ -121,6 +123,7 @@ class MainModel(object):
                            spk_filename = self.spk_filename, 
                            numbytes     = self.numbytes, 
                            binary_radix = self.binpoint,
+                           scale        = self.scale,
                            cutoff       = self._cutoff, 
                            time_segs    = self._time_segs, 
                            time_still   = self.time_still,

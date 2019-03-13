@@ -66,15 +66,17 @@ class MUA(object):
         self.bf = bload(self.nCh, self.fs)
         self.bf.load(mua_filename, dtype=self.dtype)
         self.mua_file = mua_filename
+        self.binary_radix = binary_radix
+        self.scale = scale
+        self._scale_factor = 1.0 if self.scale else np.float32(2**self.binary_radix)
         if probe.reorder_by_chip is True:
             self.bf.reorder_by_chip(probe._nchips)
         if scale is True:
-            with Timer('convert data from memmap to numpy with radix', verbose=True):
-                self.data = self.bf.asarray(binpoint=binary_radix)
+            with Timer('scale the data: convert data from memmap to numpy with radix {}'.format(self.binary_radix), verbose=True):
+                self.data = self.bf.asarray(binpoint=self.binary_radix)
         else:
             self.data = self.bf.data.numpy().reshape(-1, self.nCh)
-        # self.data = self.bf.data.numpy().reshape(-1, self.nCh)
-        # self.scale = self.data.max() - self.data.min()
+
         self.t    = self.bf.t
         self.npts = self.bf._npts
         self.spklen = 19
@@ -140,9 +142,12 @@ class MUA(object):
                                       chlist = pivotal_chs, 
                                       spklen = self.spklen,
                                       prelen = self.prelen,
-                                      cutoff_neg = self.cutoff_neg,
-                                      cutoff_pos = self.cutoff_pos)
-            return spks, spk_times, noise_idx
+                                      cutoff_neg = self.cutoff_neg * self._scale_factor,
+                                      cutoff_pos = self.cutoff_pos * self._scale_factor)
+            if self.scale is True: # already scaled
+                return spks, spk_times, noise_idx
+            else:                  # haven't scaled so need to be scaled here
+                return spks/self._scale_factor, spk_times, noise_idx
         else:
             return None, None, None
 
