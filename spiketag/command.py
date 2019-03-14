@@ -1,8 +1,10 @@
 import click
 
+
 @click.group()
 def main():
     pass
+
 
 @main.command()
 @click.argument('binaryfile')
@@ -14,9 +16,11 @@ def check(binaryfile, probefile, nbits, time, span):
     from .spiketag import view_data
     view_data(binaryfile, probefile, int(nbits), float(time), float(span))
 
+
 @main.command()
 def sort():
     click.echo('spiketag-sort')
+
 
 @main.command()
 @click.option('--var', prompt='ch_grpNo, ch_hash, ch_ref, thres, scale, shift, pca, vq')
@@ -26,6 +30,18 @@ def fpga_check(var):
     fpga = xike_config()
     if var in dir(fpga):
         exec('print(fpga.{})'.format(var))  
+
+
+@main.command()
+@click.argument('cmd')
+def fpga_detector(cmd):
+    click.echo('set FPGA detector {} '.format(cmd))
+    from spiketag.fpga import xike_config
+    fpga = xike_config()
+    exec('fpga.{}'.format(cmd))  
+    # if var in dir(fpga):
+    #     exec('print(fpga.{})'.format(var))  
+
 
 @main.command()
 @click.argument('probefile')

@@ -37,6 +37,10 @@ class ch_ref(object):
         ch = chNo+self.base
         return read_thr_32(ch, dtype='<I', binpoint=0)
 
+    def __eq__(self, val):
+        for ch in range(self.nCh):
+            self[ch] = val
+
     def __str__(self):
         self.hash_repr = ''
         for ch in range(self.nCh):
@@ -111,6 +115,10 @@ class offset(object):
         ch = chNo+self.base
         return read_thr_32(ch, dtype='<i', binpoint=13)
 
+    def __eq__(self, val):
+        for ch in range(self.nCh):
+            self[ch] = val
+            
     def __str__(self):
         self.hash_repr = ''
         for ch in range(self.nCh):
@@ -216,6 +224,10 @@ class threshold(object):
 
     def __getitem__(self, chNo):
         return read_thr_32(chNo, dtype='<i', binpoint=13) 
+
+    def __eq__(self, val):
+        for ch in range(self.nCh):
+            self[ch] = val
 
     def __str__(self):
         self.hash_repr = ''
