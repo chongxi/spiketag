@@ -27,11 +27,25 @@ class ch_ref(object):
 
     def __setitem__(self, chNo, ch_ref):
         self.ch_ref[chNo] = ch_ref
+        # if type(chNo) is slice:
+        #     for i,v in enumerate(ch_ref):
+        #         write_thr_32(i+self.base, ch_ref[i], dtype='<I', binpoint=0) 
+        # else:
+        #     write_thr_32(chNo+self.base, ch_ref, dtype='<I', binpoint=0) 
+
         if type(chNo) is slice:
-            for i,v in enumerate(ch_ref):
-                write_thr_32(i+self.base, ch_ref[i], dtype='<I', binpoint=0) 
-        else:
-            write_thr_32(chNo+self.base, ch_ref, dtype='<I', binpoint=0) 
+            if chNo == slice(None,None,None): 
+                for ch in np.arange(self.nCh):
+                    if np.size(ch_ref) == 1:
+                        write_thr_32(ch+self.base, ch_ref,     dtype='<I', binpoint=0)
+                    else:
+                        write_thr_32(ch+self.base, ch_ref[ch], dtype='<I', binpoint=0)
+            else:
+                for i, ch in enumerate(np.arange(chNo.start, chNo.stop, chNo.step)):
+                    if np.size(ch_ref) == 1:
+                        write_thr_32(ch+self.base, ch_ref,     dtype='<I', binpoint=0)
+                    else:
+                        write_thr_32(ch+self.base, ch_ref[ch], dtype='<I', binpoint=0)
 
     def __getitem__(self, chNo):
         ch = chNo+self.base
@@ -118,7 +132,7 @@ class offset(object):
     def __eq__(self, val):
         for ch in range(self.nCh):
             self[ch] = val
-            
+
     def __str__(self):
         self.hash_repr = ''
         for ch in range(self.nCh):
