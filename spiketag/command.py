@@ -7,14 +7,36 @@ def main():
 
 
 @main.command()
-@click.argument('binaryfile')
+@click.argument('binaryfile', nargs=-1)
 @click.argument('probefile')
 @click.option('--nbits', prompt='nbits', default='32')
+@click.option('--chs', prompt='chs', default='0,128')
 @click.option('--time', prompt='time', default='0')
 @click.option('--span', prompt='span', default='10')
-def check(binaryfile, probefile, nbits, time, span):
-    from .spiketag import view_data
-    view_data(binaryfile, probefile, int(nbits), float(time), float(span))
+def view(binaryfile, probefile, nbits, chs, time, span):
+    from spiketag.base import probe
+    from spiketag.base import MUA 
+    from vispy import app
+    nbits, time, span = int(nbits), float(time), float(span)
+    chs_tbview = slice(*[int(_) for _ in chs.split(',')])
+    prb = probe()
+    prb.load(probefile)
+    if len(binaryfile) == 2:
+        mua_filename, spk_filename = binaryfile
+        click.echo('loadding {} and {}'.format(mua_filename, spk_filename))
+        mua = MUA(mua_filename=mua_filename, spk_filename=spk_filename,
+                  probe=prb, numbytes=nbits//8, scale=False)
+        if span == -1: span=None
+        mua.show(chs=prb.chs[chs_tbview], span=span, time=time)
+        app.run()
+    elif len(binaryfile) == 1:
+        mua_filename = binaryfile[0]
+        click.echo('loadding {}'.format(mua_filename))
+        mua = MUA(mua_filename=mua_filename, spk_filename=None,
+                  probe=prb, numbytes=nbits//8, scale=False)
+        if span == -1: span=None
+        mua.show(chs=prb.chs[chs_tbview], span=span, time=time)
+        app.run()
 
 
 @main.command()
@@ -39,14 +61,11 @@ def fpga_detector(cmd):
     from spiketag.fpga import xike_config
     fpga = xike_config()
     exec('fpga.{}'.format(cmd))  
-    # if var in dir(fpga):
-    #     exec('print(fpga.{})'.format(var))  
 
 
 @main.command()
 @click.argument('probefile')
 def fpga(probefile):
-    # from spiketag import check_fpga
     click.echo('init FPGA with probe file {}'.format(probefile))
     from spiketag.fpga import xike_config
     from spiketag.base import probe
