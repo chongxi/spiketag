@@ -156,6 +156,14 @@ class BaseProbe(EventEmitter):
     def grp_dict(self):
         return self._grp_dict
 
+    @property
+    def grp_matrix(self):
+        return np.array(list(self.grp_dict.values()))
+
+    @property
+    def mask_grp_matrix(self):
+        return self.mask_chs.reshape(-1, self.group_len)
+    
     @grp_dict.setter
     def grp_dict(self, grp_dict_in):
         self._grp_dict = grp_dict_in
@@ -192,10 +200,12 @@ class BaseProbe(EventEmitter):
 
     def ch_hash(self, ch):
         if ch in self.chs:
-            return self.grp_dict[self.ch2g[ch]]
+            grp = self.grp_matrix[np.where(self.grp_matrix==int(ch))[0][0]] 
+            return grp
+            # return self.grp_dict[self.ch2g[ch]]
         elif ch in self.mask_chs:
-            mask_grp = self.mask_chs.reshape(-1, self.group_len)
-            return mask_grp[np.where(mask_grp == ch)[0]][0]
+            mask_grp = self.mask_grp_matrix[np.where(self.mask_grp_matrix==int(ch))[0][0]] 
+            return mask_grp
         else:
             print('ch not in range, check prb.chs and prb.mask_chs')
 
@@ -290,7 +300,6 @@ class probe(BaseProbe):
 
 
     def save(self, filename):
-
         # for open-ephys gui and regular use
         self.n_ch = self._n_ch
         ch_list = np.hstack((self.chs, self.mask_chs))
@@ -323,13 +332,23 @@ class probe(BaseProbe):
     def load(self, filename):
         with open(filename) as ff:
             prb_json = json.load(ff)
-            grp_len = prb_json['params']['group_len']
+            try:
+                grp_len = prb_json['params']['group_len']
+                n_grp = prb_json['params']['n_group']
+            except:
+                grp_len = 4
+                n_grp   = 40
             for i in prb_json['pos'].keys():
                 self.mapping[int(i)] = prb_json['pos'][i] 
             for i, chs in enumerate(np.array(prb_json['0']['mapping']).reshape(-1, grp_len)):
-                self.__setitem__(i, chs - 1)
-            self.n_ch = prb_json['params']['n_ch']
-            self.fs = prb_json['params']['fs']
+                if i < n_grp:
+                    self[i] = chs-1
+            try:
+                self.n_ch = prb_json['params']['n_ch']
+                self.fs = prb_json['params']['fs']
+            except:
+                self.n_ch = 160
+                self.fs   = 25000.
 
 
     def _to_txt(self, filename):

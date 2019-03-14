@@ -8,15 +8,28 @@ def calculate_threshold(x, beta=4.0):
     thr = -beta*np.median(abs(x)/0.6745,axis=0)
     return thr
 
+class dummyobj(object):
+    pass
+
 class xike_config(object):
 
-    def __init__(self, probe, offset_value=32, thres_value=-500):
+    def __init__(self, probe=None, offset_value=32, thres_value=-500):
         """TODO: to be defined1.
         :offset_value: TODO
         :thres_value: TODO
         :ch_hash: TODO
 
         """
+        if probe is None:
+            probe = dummyobj()
+            probe.n_ch      = 160
+            probe.fs        = 25000.
+            probe.n_group   = 40
+            probe.group_len = 4
+            _set_channel_params_to_fpga = False
+        else:
+            _set_channel_params_to_fpga = True
+
         self._n_ch = probe.n_ch
         self.probe = probe
 
@@ -28,7 +41,12 @@ class xike_config(object):
         # the channel groupNo for transformer to report in FPGA
         self.ch_grpNo = bram_thres.chgpNo(nCh=self._n_ch)
         self.ch_ref = bram_thres.ch_ref(self._n_ch)
-        self.set_channel_group()
+
+        '''
+        1. if probe is selected then write to FPGA
+        '''
+        if _set_channel_params_to_fpga:
+            self.set_channel_params_to_fpga()
 
         '''
         2. dc_offset and threshold
@@ -58,7 +76,7 @@ class xike_config(object):
         self.pca   =   pca_hash(nCh=ngrp, base_address=ngrp * (p_dim + 1))
         self.vq    =    vq_hash(nCh=ngrp, base_address=ngrp * (p_dim + 1 + spklen*ch_span))
 
-    def set_channel_group(self):
+    def set_channel_params_to_fpga(self):
         for ch in range(self.probe.n_ch):
             self.ch_hash[ch] = self.probe.ch_hash(ch)
             try:

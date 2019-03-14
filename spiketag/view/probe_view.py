@@ -1,8 +1,8 @@
 import numpy as np
 from vispy import app, scene, visuals
 from vispy.util import keys
-from vispy.color import Color
-from collections import OrderedDict
+# from vispy.color import Color
+# from collections import OrderedDict
 from sklearn.neighbors import KDTree
 from itertools import combinations as comb
 from ..utils import Picker, key_buffer
