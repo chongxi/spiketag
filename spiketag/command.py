@@ -14,6 +14,10 @@ def main():
 @click.option('--time', prompt='time', default='0')
 @click.option('--span', prompt='span', default='10')
 def view(binaryfile, probefile, nbits, chs, time, span):
+    '''
+    view raw or mua file with or without spk_info:
+    `spiketag view mua.bin spk.bin prb.json`
+    '''
     from spiketag.base import probe
     from spiketag.base import MUA 
     from vispy import app
@@ -44,6 +48,10 @@ def view(binaryfile, probefile, nbits, chs, time, span):
 @click.argument('binaryfile', nargs=-1)
 @click.argument('probefile')
 def sort(binaryfile, probefile):
+    '''
+    sort without notebook:
+    `spiketag sort mua.bin spk.bin prb.json`
+    '''
     mua_filename, spk_filename = binaryfile
     click.echo('spiketag-sort: loadding {} and {}'.format(mua_filename, spk_filename))
     import sys
@@ -69,6 +77,10 @@ def sort(binaryfile, probefile):
 @main.command()
 @click.option('--var', prompt='ch_grpNo, ch_hash, ch_ref, thres, scale, shift, pca, vq')
 def fpga_check(var):
+    '''
+    check fpga params:
+    `spiketag fpga-check`
+    '''
     click.echo('check FPGA')
     from spiketag.fpga import xike_config
     fpga = xike_config()
@@ -79,6 +91,11 @@ def fpga_check(var):
 @main.command()
 @click.argument('cmd')
 def fpga_detector(cmd):
+    '''
+    set detector params:
+    `spiketag fpga-detector thres==-500`
+    `spiketag fpga-detector ch_ref==-14`
+    '''
     click.echo('set FPGA detector {} '.format(cmd))
     from spiketag.fpga import xike_config
     fpga = xike_config()
@@ -88,6 +105,10 @@ def fpga_detector(cmd):
 @main.command()
 @click.argument('probefile')
 def fpga(probefile):
+    '''
+    init fpga with probe file:
+    `spiketag fpga prb.json`
+    '''
     click.echo('init FPGA with probe file {}'.format(probefile))
     from spiketag.fpga import xike_config
     from spiketag.base import probe
@@ -101,6 +122,11 @@ def fpga(probefile):
 @main.command()
 @click.argument('notebookfile')
 def cp(notebookfile):
+    '''
+    start sorting using template notebook:
+    `spiketag cp sorter`
+    `spiketag cp sorter-fpga`
+    '''
     click.echo('copy notebook {} to current folder'.format(notebookfile))
     import os
     url = 'https://raw.githubusercontent.com/chongxi/spiketag/master/notebooks/template'
