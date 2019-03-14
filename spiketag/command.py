@@ -39,9 +39,31 @@ def view(binaryfile, probefile, nbits, chs, time, span):
         app.run()
 
 
+# @click.option('--time_cutoff', prompt='time_cutoff', default='0')
 @main.command()
-def sort():
-    click.echo('spiketag-sort')
+@click.argument('binaryfile', nargs=-1)
+@click.argument('probefile')
+def sort(binaryfile, probefile):
+    mua_filename, spk_filename = binaryfile
+    click.echo('spiketag-sort: loadding {} and {}'.format(mua_filename, spk_filename))
+    import sys
+    from PyQt5.QtWidgets import QApplication
+    from spiketag.mvc.Control import controller
+    from spiketag.base import probe
+    prb = probe()
+    prb.load(probefile)
+    app  = QApplication(sys.argv)
+    ctrl = controller(
+                      probe = prb,
+                      mua_filename=mua_filename, 
+                      spk_filename=spk_filename, 
+                      binary_radix=13, 
+                      scale=False
+                      # time_segs=[[0,320]]
+                     )
+    ctrl.model.sort(clu_method='dpgmm', group_id=0, n_comp=8, max_iter=400)
+    ctrl.show()
+    sys.exit(app.exec_())
 
 
 @main.command()
