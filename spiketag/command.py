@@ -98,5 +98,10 @@ def fpga(probefile):
     click.echo('init FPGA success, check fpga with "spiketag fpga-check"')
 
 
-if __name__ == "__main__":
-    sys.exit(main())  # pragma: no cover
+@main.command()
+@click.argument('notebookfile')
+def cp(notebookfile):
+    click.echo('copy notebook {} to current folder'.format(notebookfile))
+    import os
+    url = 'https://raw.githubusercontent.com/chongxi/spiketag/master/notebooks/template'
+    os.system('wget {}/{}.ipynb'.format(url, notebookfile))
