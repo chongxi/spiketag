@@ -173,6 +173,9 @@ class BaseProbe(EventEmitter):
 
     @property
     def chs(self):
+        '''
+        prb.chs is the channels aranged by tetrode grouping, it is prb.grp_matrix.ravel()
+        '''
         return np.hstack(self.grp_dict.values())
 
     @property
@@ -208,6 +211,17 @@ class BaseProbe(EventEmitter):
             return mask_grp
         else:
             print('ch not in range, check prb.chs and prb.mask_chs')
+
+    @property
+    def ch_idx(self):
+        '''
+        ch_idx is the index of np.arange(prb.n_ch) in prb.chs
+        for example the ch0 is the 44th in the prb.chs
+        '''
+        chs = np.hstack((self.chs, self.mask_chs))
+        assert(chs.shape[0] == self.n_ch)
+        self._ch_idx = np.squeeze(np.array([np.where(chs==ch)[0] for ch in np.arange(self.n_ch)]))
+        return self._ch_idx
 
     def __str__(self):
         return '\n'.join(['{}:{}'.format(key, val) for key, val in self.grp_dict.items()]) 
