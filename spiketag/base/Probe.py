@@ -163,6 +163,12 @@ class BaseProbe(EventEmitter):
     @property
     def mask_grp_matrix(self):
         return self.mask_chs.reshape(-1, self.group_len)
+
+    @property
+    def matrix(self):
+        self._matrix = np.vstack((self.grp_matrix, self.mask_grp_matrix))
+        return self._matrix
+    
     
     @grp_dict.setter
     def grp_dict(self, grp_dict_in):
