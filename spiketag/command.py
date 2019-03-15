@@ -8,7 +8,7 @@ def main():
 
 @main.command()
 @click.argument('binaryfile', nargs=-1)
-@click.argument('probefile')
+@click.argument('probefile',  nargs=1)
 @click.option('--nbits', prompt='nbits', default='32')
 @click.option('--chs', prompt='chs', default='0,128')
 @click.option('--time', prompt='time', default='0')
@@ -42,6 +42,33 @@ def view(binaryfile, probefile, nbits, chs, time, span):
         mua.show(chs=prb.chs[chs_tbview], span=span, time=time)
         app.run()
 
+
+@main.command()
+@click.argument('binaryfile', nargs=-1)
+@click.argument('probefile')
+@click.option('--nbits', prompt='nbits', default='32')
+def report(binaryfile, probefile, nbits):
+    '''
+    view raw or mua file with or without spk_info:
+    `spiketag view mua.bin spk.bin prb.json`
+    '''
+    from spiketag.base import probe
+    from spiketag.base import MUA 
+    nbits = int(nbits)
+    prb = probe()
+    prb.load(probefile)
+    if len(binaryfile) == 2:
+        mua_filename, spk_filename = binaryfile
+        click.echo('loadding {} and {}'.format(mua_filename, spk_filename))
+        mua = MUA(mua_filename=mua_filename, spk_filename=spk_filename,
+                  probe=prb, numbytes=nbits//8, scale=False)
+
+    elif len(binaryfile) == 1:
+        mua_filename = binaryfile[0]
+        click.echo('loadding {}'.format(mua_filename))
+        mua = MUA(mua_filename=mua_filename, spk_filename=None,
+                  probe=prb, numbytes=nbits//8, scale=False)
+ 
 
 # @click.option('--time_cutoff', prompt='time_cutoff', default='0')
 @main.command()
