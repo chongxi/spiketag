@@ -1,4 +1,6 @@
 import click
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 @click.group()
@@ -54,6 +56,8 @@ def report(binaryfile, probefile, nbits):
     '''
     from spiketag.base import probe
     from spiketag.base import MUA 
+    from collections import Counter
+    import seaborn as sns
     nbits = int(nbits)
     prb = probe()
     prb.load(probefile)
@@ -62,6 +66,33 @@ def report(binaryfile, probefile, nbits):
         click.echo('loadding {} and {}'.format(mua_filename, spk_filename))
         mua = MUA(mua_filename=mua_filename, spk_filename=spk_filename,
                   probe=prb, numbytes=nbits//8, scale=False)
+
+        ## report ch<-->nspks statistics
+        spk_info = np.fromfile(spk_filename, np.int32).reshape(-1,2)
+        t, ch = spk_info[:,0]/prb.fs, spk_info[:,1]
+        c = Counter(ch)
+        nspks = np.array([c[ch] for ch in prb.chs]) 
+
+        fig, ax = plt.subplots(1,2, figsize=(25,15), gridspec_kw = {'width_ratios':[3, 1]})
+        ax[0].plot(t, prb.ch_idx[ch], '.', markersize=1)
+        ax[0].set_ylim(ax[0].get_ylim()[::-1])
+        ax[0].set_xlabel('Time(secs)')
+        ax[0].set_ylabel('Virtual Channel Number')
+        ax[0].set_title('#spikes found on (channels) vs (time)')
+        nspks_img = ax[1].imshow(nspks.reshape(-1, prb.group_len), cmap='ocean_r')
+        ax[1].grid(which='minor', color='k', linestyle='-', linewidth=2)
+        ax[1].set_ylabel('Group Number')
+        ax[1].set_xticks(range(prb.group_len))
+        ax[1].set_yticks(range(prb.n_group))
+        ax[1].set_xlabel('Channels in the Group')
+        ax[1].set_title('#spikes found on (channels) in (group)')
+
+        for i in range(prb.grp_matrix.shape[0]):
+            for j in range(prb.grp_matrix.shape[1]):
+                ax[1].text(j, i, str(prb.grp_matrix[i,j]), color='black', ha='center', va='center', fontsize=8)
+
+        fig.colorbar(nspks_img)
+        plt.show()
 
     elif len(binaryfile) == 1:
         mua_filename = binaryfile[0]
