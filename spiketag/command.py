@@ -48,8 +48,7 @@ def view(binaryfile, probefile, nbits, chs, time, span):
 @main.command()
 @click.argument('binaryfile', nargs=-1)
 @click.argument('probefile')
-@click.option('--nbits', prompt='nbits', default='32')
-def report(binaryfile, probefile, nbits):
+def report(binaryfile, probefile, nbits=32):
     '''
     view raw or mua file with or without spk_info:
     `spiketag view mua.bin spk.bin prb.json`
