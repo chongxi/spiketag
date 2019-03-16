@@ -181,6 +181,11 @@ class MUA(object):
                 self.spkdict[g]   = np.delete(self.spkdict[g],   idx_still, axis=0)
                 self.spk_times[g] = np.delete(self.spk_times[g], idx_still, axis=0)
 
+        # check 0 spks case, fill in some random noise
+        for g in self.probe.grp_dict.keys():
+            if self.spkdict[g] is None:
+                self.spkdict[g] = np.random.randn(1, self.spklen, len(self.probe[g]))
+                self.spk_times[g] = np.array([0]) 
         info('----------------success------------------')     
         info(' ')               
         return SPK(self.spkdict)

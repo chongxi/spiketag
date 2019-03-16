@@ -160,10 +160,10 @@ class SPK():
 
     def _tofet(self, group, method='pca', ncomp=6, whiten=False):
         spk = self.spk[group]
-        if spk.shape[0] > 0:
+        if spk.shape[0] > 1:
             fet = _to_fet(spk, self.W, method, ncomp, whiten)
         else:
-            fet = np.empty((0, ncomp), dtype=np.float32)
+            fet = np.zeros((1, ncomp), dtype=np.float32)
         return fet
 
     def tofet(self, group_id=None, method='pca', ncomp=6, whiten=False):
