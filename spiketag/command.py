@@ -12,9 +12,9 @@ def main():
 @click.argument('binaryfile', nargs=2)
 @click.option('--nbits', prompt='nbits', default='16')
 @click.option('--fs', prompt='fs', default='25000')
-@click.option('--src_nch', prompt='nch', default='175')
-@click.option('--dst_nch', prompt='nch', default='160')
-def convert(binaryfile, nbits, src_nch, dst_nch):
+@click.option('--src_nch', prompt='src_nch', default='175')
+@click.option('--dst_nch', prompt='dst_nch', default='160')
+def convert(binaryfile, nbits, fs, src_nch, dst_nch):
     '''
     convert 175 chs open-ephys raw to 160 chs pure raw (16 bits)
     '''
@@ -22,11 +22,15 @@ def convert(binaryfile, nbits, src_nch, dst_nch):
     from spiketag.base import bload
     nbits, fs, src_nch, dst_nch = int(nbits), float(fs), int(src_nch), int(dst_nch)
     src_file, sink_file = binaryfile
-    click.echo('convert {} to {}'.format(src_file, sink_file))
+
     bf = bload(nCh=src_nch, fs=fs)
     bf.load(src_file, dtype=np.int16)
     data = bf.npmm.reshape(-1, src_nch)[:, :dst_nch]
+    click.echo('converting {} to {}'.format(src_file, sink_file))
     data.tofile(sink_file)
+    df = bload(nCh=dst_nch, fs=fs)
+    click.echo('convert finished')
+    df.load(sink_file, dtype=np.int16)
 
 
 @main.command()
