@@ -9,6 +9,18 @@ def main():
 
 
 @main.command()
+@click.argument('prbfile', nargs=1)
+def prb_check(prbfile, font_size=33):
+    '''
+    check prb by visualization
+    '''
+    from spiketag.base import probe
+    prb = probe()
+    prb.load(prbfile)
+    prb.show(font_size)
+
+
+@main.command()
 @click.argument('binaryfile', nargs=2)
 @click.option('--nbits', prompt='nbits', default='16')
 @click.option('--fs', prompt='fs', default='25000')
@@ -17,8 +29,8 @@ def main():
 def convert(binaryfile, nbits, fs, src_nch, dst_nch):
     '''
     convert 175 chs open-ephys raw to 160 chs pure raw (16 bits)
+    This process is prb ignorant
     '''
-    from spiketag.base import probe
     from spiketag.base import bload
     nbits, fs, src_nch, dst_nch = int(nbits), float(fs), int(src_nch), int(dst_nch)
     src_file, sink_file = binaryfile

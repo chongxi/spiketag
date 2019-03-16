@@ -313,7 +313,7 @@ class probe(BaseProbe):
                 self.mapping.update(shank.mapping)
 
 
-    def show(self, font_size=23):
+    def show(self, font_size=33):
         self.prb_view = probe_view()
         self.prb_view.set_data(self, font_size=font_size)
         self.prb_view.run()
