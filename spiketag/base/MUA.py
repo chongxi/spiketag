@@ -22,7 +22,7 @@ def find_spk_in_time_seg(spk_times, time_segs):
 
 
 @njit(cache=True)
-def _to_spk(data, pos, chlist, spklen=19, prelen=7, cutoff_neg=-1000, cutoff_pos=1000):
+def _to_spk(data, pos, chlist, spklen=19, prelen=7, cutoff_neg=-5000, cutoff_pos=1000):
     nspks = len(pos)
     spk = np.empty((nspks, spklen, len(chlist)), dtype=np.float32)
     noise_idx = []

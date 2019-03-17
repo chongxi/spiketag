@@ -104,7 +104,7 @@ class MainModel(object):
                            time_still   = self.time_still,      # for speed cut_off
                            lfp          = False)
 
-            self.get_spk()
+            self.get_spk(amp_cutoff=False)
             self.get_fet()
 
         # After first time
