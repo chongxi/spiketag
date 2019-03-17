@@ -46,6 +46,36 @@ def convert(binaryfile, nbits, fs, src_nch, dst_nch):
 
 
 @main.command()
+@click.argument('binaryfile', nargs=2)
+@click.option('--nbits', prompt='nbits', default='32')
+@click.option('--nch', prompt='nch', default='160')
+@click.option('--fs', prompt='fs', default='25000')
+def reverse_filter(binaryfile, nbits, nch, fs):
+    '''
+    MUA to RAW (inverse filter)
+    '''
+    from spiketag.base import mua_kernel as kernel
+    from spiketag.base import bload
+    nbits, fs, nch = int(nbits), float(fs), int(nch)
+    src_file, sink_file = binaryfile
+    if nbits==32:
+        datatype = np.int32
+    elif nbits==16:
+        datatype = np.int16
+
+    bf = bload(nCh=nch, fs=fs)
+    bf.load(src_file, dtype=datatype)
+    click.echo('deconvolve {} to RAW'.format(src_file))
+    bf.deconvolve(kernel)
+    data = bf.data.astype(datatype)
+    click.echo('save to {}'.format(sink_file))
+    data.tofile(sink_file)
+    df = bload(nCh=nch, fs=fs)
+    click.echo('deconvolution finished')
+    df.load(sink_file, dtype=np.int32)
+
+
+@main.command()
 @click.argument('binaryfile', nargs=-1)
 @click.argument('probefile',  nargs=1)
 @click.option('--nbits', prompt='nbits', default='32')
