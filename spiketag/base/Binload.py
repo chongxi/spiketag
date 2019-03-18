@@ -16,20 +16,34 @@ def fs2t(N, fs):
     return t
 
 def fft(x):
-    fx = torch.rfft(torch.from_numpy(x), 1, onesided=False)
-    return fx[:,0].numpy() + fx[:,1].numpy()*1j
+    GPU = torch.cuda.is_available()
+    if GPU:
+        x = torch.from_numpy(x).cuda()
+        fx = torch.rfft(x, 1, onesided=False)
+        complex_fx = fx[:,0].cpu().numpy() + fx[:,1].cpu().numpy()*1j
+        torch.cuda.empty_cache()
+    else:
+        x = torch.from_numpy(x)
+        fx = torch.rfft(x, 1, onesided=False)
+        complex_fx = fx[:,0].numpy() + fx[:,1].numpy()*1j
+    return complex_fx
 
 def ifft(complex_x):
     x = np.vstack((complex_x.real, complex_x.imag)).T
     # ifx = irfft(torch.from_numpy(x), 1, onesided=False)
-    ifx = torch.ifft(torch.from_numpy(x), 1)
-    return ifx.numpy()[:,0]
+    # if torch.cuda.is_available():
+    x = torch.from_numpy(x)
+    ifx = torch.ifft(x, 1)
+    reconstruct_x = ifx[:,0]
+    # torch.cuda.empty_cache()
+    return reconstruct_x 
 
 def _deconvolve(signal, kernel):
+    _h = fft(kernel)
     length = len(signal) - len(kernel) + 1
     kernel = np.hstack((kernel, np.zeros(len(signal) - len(kernel), dtype=np.float32))) # zero pad the kernel to same length
     H = fft(kernel)
-    deconvolved = np.real(ifft(fft(signal.astype(np.float32))*np.conj(H)/(H*np.conj(H))))
+    deconvolved = ifft(fft(signal.astype(np.float32))*np.conj(H)/(H*np.conj(H)))
     return deconvolved[:length]
 
 def memory_map(filename, access=mmap.ACCESS_WRITE):
@@ -118,7 +132,10 @@ class bload(object):
 
     def asarray(self, binpoint=13):
         ne.set_num_threads(32)
-        data = self.data.reshape(-1, self._nCh).numpy()
+        try:
+            data = self.data.reshape(-1, self._nCh).numpy()
+        except:
+            data = self.data.reshape(-1, self._nCh)
         _scale = np.float32(2**binpoint)
         self.data = torch.from_numpy(ne.evaluate('data/_scale'))
         return self.data.numpy()
