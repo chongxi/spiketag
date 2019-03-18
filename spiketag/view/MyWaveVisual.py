@@ -151,8 +151,8 @@ class MyWaveVisual(visuals.Visual):
         for chNo in spacial_code:
             for nrange in temporal_code:
                 n0, n1 = nrange   # from n0 to n1
-                start  = n0+chNo*self.npts
-                end    = n1+chNo*self.npts
+                start  = int(n0+chNo*self.npts)
+                end    = int(n1+chNo*self.npts)
                 self.color[start:end,:] = np.asarray(highlight_color)       
         self.shared_program['a_color'] = self.color
         self.update()
