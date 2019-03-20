@@ -206,6 +206,7 @@ class bload(object):
         thres_arr = -np.median(ne.evaluate('abs(data)*k/0.675'), axis=0)
         return thres_arr
 
+
     def detect_spks(self, delta=.3):
         '''
             detect spikes by peakdet and threshhold. (channel by channel)
