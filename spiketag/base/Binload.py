@@ -180,7 +180,7 @@ class bload(object):
         self.data = self.data.reshape(-1, self._nCh)
         data = torch.zeros_like(self.data)
         for ch in range(self._nCh):
-            data[:,ch] = self._filter(ch, band, ftype='low-pass', noise_level=0)
+            data[:,ch] = self._filter(ch, band, ftype=ftype, noise_level=noise_level)
         self.data = data
 
 
