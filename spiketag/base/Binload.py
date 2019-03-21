@@ -157,8 +157,8 @@ class bload(object):
         self.fs = new_fs
 
 
-    def filter(self, band, type='low-pass', noise_level=0):
-        if type == 'low-pass':
+    def _filter(self, ch, band, ftype='low-pass', noise_level=0):
+        if ftype == 'low-pass':
             fstart, fstop = band
             wstop = fstop/self.nyquist_fs
             b, a = signal.butter(5, wstop, analog=False)
@@ -171,12 +171,17 @@ class bload(object):
             plt.vlines(fstop, -10000, 100, 'r', '--')
             '''
             self.data = self.data.reshape(-1, self._nCh)
-            data = torch.zeros_like(self.data)
-            torch_type = torch.from_numpy(np.array([0]).astype(self.dtype)).type()
-            for ch in range(self._nCh):
-                data[:,ch] = torch.from_numpy(signal.filtfilt(b, a, self.data[:,ch]).astype(self.dtype))
-                data[:,ch] += (noise_level * torch.randn(data[:,ch].shape[0])).type(data.dtype) 
-            self.data = data
+            f_data = torch.from_numpy(signal.filtfilt(b, a, self.data[:,ch]).astype(self.dtype))
+            f_data += (noise_level * torch.randn(self.data[:,ch].shape[0])).type(self.data.dtype) 
+            return f_data   
+
+
+    def filter(self, band, ftype='low-pass', noise_level=0):
+        self.data = self.data.reshape(-1, self._nCh)
+        data = torch.zeros_like(self.data)
+        for ch in range(self._nCh):
+            data[:,ch] = self._filter(ch, band, ftype='low-pass', noise_level=0)
+        self.data = data
 
 
     def show(self, chs=None):
