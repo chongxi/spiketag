@@ -8,6 +8,7 @@ from ..utils import Timer, interpNd
 from ..utils.conf import info
 from ..view import wave_view
 import torch
+from scipy import signal
 
 
 def fs2t(N, fs):
@@ -103,6 +104,7 @@ class bload(object):
     def __init__(self, nCh=160, fs=25000):
         self._nCh = nCh
         self.fs = float(fs)
+        self.nyquist_fs = fs/2
 
     def load(self, file_name, dtype='int32'):
         '''
@@ -153,6 +155,28 @@ class bload(object):
     def resample(self, new_fs):
         self.data = torch.from_numpy(interpNd(self.data.numpy().reshape(-1, self._nCh), self.fs, new_fs, method='quadratic'))
         self.fs = new_fs
+
+
+    def filter(self, band, type='low-pass', noise_level=0):
+        if type == 'low-pass':
+            fstart, fstop = band
+            wstop = fstop/self.nyquist_fs
+            b, a = signal.butter(5, wstop, analog=False)
+            w, h = signal.freqz(b, a)
+            '''
+            plt.plot(np.linspace(0, nyquist_fs, w.shape[0]), 20 * np.log10(abs(h)))
+            plt.xlim([0,800])
+            plt.ylim([-80,10])
+            plt.grid(True, which='both')
+            plt.vlines(fstop, -10000, 100, 'r', '--')
+            '''
+            self.data = self.data.reshape(-1, self._nCh)
+            data = torch.zeros_like(self.data)
+            torch_type = torch.from_numpy(np.array([0]).astype(self.dtype)).type()
+            for ch in range(self._nCh):
+                data[:,ch] = torch.from_numpy(signal.filtfilt(b, a, self.data[:,ch]).astype(self.dtype))
+                data[:,ch] += (noise_level * torch.randn(data[:,ch].shape[0])).type(data.dtype) 
+            self.data = data
 
 
     def show(self, chs=None):
