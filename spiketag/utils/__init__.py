@@ -46,11 +46,38 @@ def inNd(a, b, axis=0, assume_unique=False):
 
 
 def interpNd(data, fs_old, fs_new, method='quadratic'):
-    N = data.shape[0]
+    N, nCh = data.shape
     t = fs2t(N, fs_old)
     new_t = np.arange(0, t[-1], 1/fs_new)
-    new_data = []
-    for datum in data.T:
+    new_data = np.zeros((new_t.shape[0], nCh))
+    for i, datum in enumerate(data.T):
+        print('resample {}th channel'.format(i))
         f = interp1d(t, datum, method)
-        new_data.append(f(new_t))
-    return np.vstack((new_data)).T
+        new_data[:,i] = f(new_t)
+    return new_data
+
+
+def searchsorted_nn(seq0, seq1, mode='right'):
+    '''
+    search seq1 in seq0
+    return the `left` or `right` nearest neighbour of seq1 in seq0
+    So the length of returned seq is the same as the length of seq1
+
+    Test:
+    a = np.cumsum(abs(np.random.randn(3,1)))
+    b = np.cumsum(abs(np.random.randn(5,1))) 
+    seq0, seq1 = a, b
+    print(searchsorted_nn(seq0, seq1, mode='left'))
+    plt.eventplot(seq0, lineoffsets=2.5)
+    plt.eventplot(seq1)
+    '''
+    if mode == 'left':
+        _seq = seq0[np.searchsorted(seq0, seq1) - 1]
+        _seq[(_seq-seq1)>=0] = np.nan
+        return _seq
+    elif mode == 'right':
+        idx = np.searchsorted(seq0, seq1)
+        idx[idx==len(seq0)] = 0
+        _seq = seq0[idx]
+        _seq[(_seq-seq1)<=0] = np.nan
+        return _seq
