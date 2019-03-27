@@ -119,6 +119,7 @@ class MainModel(object):
             self.clu_manager = status_manager()
             for _clu in self.clu.values():
                 self.clu_manager.append(_clu)
+            self.spktag.clu_manager = self.clu_manager
 
             info('load mua data for wave view')
             self.mua = MUA(probe        = self.probe,
