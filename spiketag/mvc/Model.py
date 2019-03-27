@@ -116,6 +116,9 @@ class MainModel(object):
             self.spk = self.spktag.tospk()
             self.fet = self.spktag.tofet()
             self.clu = self.spktag.toclu()
+            self.clu_manager = status_manager()
+            for _clu in self.clu.values():
+                self.clu_manager.append(_clu)
 
             info('load mua data for wave view')
             self.mua = MUA(probe        = self.probe,
@@ -173,6 +176,7 @@ class MainModel(object):
                              self.spk, 
                              self.fet, 
                              self.clu,
+                             self.clu_manager,
                              self.gtimes)
         info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
 

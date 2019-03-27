@@ -20,7 +20,7 @@ class status_manager(EventEmitter):
 
     clu_manager.append(clu) to recruit a clu as the state reporter
 
-    Every clu has four states: ['IDLE', 'BUSY', 'READY', 'DONE']
+    Every clu has five states: ['IDLE', 'BUSY', 'READY', 'DONE', 'NONE']
     Every clu is indexed by their own id: clu._id
     clu_manager[8] will return the `clu` which has the `_id` as 8
 
@@ -126,7 +126,7 @@ class CLU(EventEmitter):
         self._event_reg_enable = True  
 
         # as an reporter, it needs to report its own state
-        self.s = ['IDLE', 'BUSY', 'READY', 'DONE']
+        self.s = ['IDLE', 'BUSY', 'READY', 'DONE', 'NONE']
         self._state = self.s[0]
 
     @property

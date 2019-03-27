@@ -8,12 +8,13 @@ import pickle
 
 
 class SPKTAG(object):
-    def __init__(self, probe=None, spk=None, fet=None, clu=None, gtimes=None, filename=None):
+    def __init__(self, probe=None, spk=None, fet=None, clu=None, clu_manager=None, gtimes=None, filename=None):
         '''
-        spk    : spk object
-        fet    : fet object
-        clu    : dictionary of clu object (each item is a channel based clu object)
-        gtimes : dictionary of group with spike times
+        spk         : spk object
+        fet         : fet object
+        clu         : dictionary of clu object (each item is a channel based clu object)
+        clu_manager : clu manager
+        gtimes      : dictionary of group with spike times
         '''
         self.probe = probe
         if filename is not None: # load from file
@@ -27,6 +28,7 @@ class SPKTAG(object):
             self.fetlen  = fet.fetlen
             self.grplen  = self.probe.group_len
             self.ngrp    = len(self.probe.grp_dict.keys())
+            self.clu_manager = clu_manager
 
             self.dtype   = [('t', 'int32'),
                             ('group','int32'),  
@@ -46,6 +48,7 @@ class SPKTAG(object):
         meta["grplen"] = self.probe.group_len
         meta["fetlen"] = self.fetlen
         meta["spklen"] = self.spklen
+        meta["clu_statelist"] = self.clu_manager.state_list
         return meta
 
     def build_hdbscan_tree(self):
@@ -99,6 +102,7 @@ class SPKTAG(object):
         self.grplen = self.meta['grplen']
         self.spklen = self.meta['spklen']
         self.fetlen = self.meta['fetlen']
+        self.clu_statelist = self.meta['clu_statelist']
 
         # condensed tree info
         self.treeinfo = np.load(filename+'.npy').item()
@@ -107,7 +111,7 @@ class SPKTAG(object):
         self.dtype = [('t', 'int32'), 
                       ('group', 'int32'),  
                       ('spk', 'f4', (self.spklen, self.grplen)), 
-                      ('fet', 'f4',(self.fetlen,)),
+                      ('fet', 'f4', (self.fetlen,)),
                       ('clu', 'int32')]
         self.spktag = np.fromfile(filename, dtype=self.dtype)
 
@@ -132,6 +136,8 @@ class SPKTAG(object):
         cludict = {}
         for g in self.gtimes.keys():
             cludict[g] = CLU(self.spktag['clu'][self.spktag['group']==g], treeinfo=self.treeinfo[g])
+            cludict[g]._id    = g
+            cludict[g]._state = cludict[g].s[self.clu_statelist[g]]
         self.clu = cludict
         return self.clu
 
