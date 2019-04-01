@@ -160,10 +160,10 @@ class SPK():
 
     def _tofet(self, group, method='pca', ncomp=6, whiten=False):
         spk = self.spk[group]
-        if spk.shape[0] > 1:
+        if spk.shape[0] > ncomp:
             fet = _to_fet(spk, self.W, method, ncomp, whiten)
         else:
-            fet = np.zeros((1, ncomp), dtype=np.float32)
+            fet = np.zeros((spk.shape[0], ncomp), dtype=np.float32)
         return fet
 
     def tofet(self, group_id=None, method='pca', ncomp=6, whiten=False):
@@ -178,6 +178,7 @@ class SPK():
         else:
             for group in self.spk.keys():
                 fet[group] = self._tofet(group, method, ncomp, whiten)
+                info('group[{}]:{} spikes'.format(group, fet[group].shape[0]))
                 info('spk._tofet(group_id={}, method={}, ncomp={}, whiten={})'.format(group, method, ncomp, whiten))
             info('----------------success------------------')
             info(' ')
