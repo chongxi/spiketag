@@ -9,6 +9,7 @@ from ..utils.conf import info
 from ..view import wave_view
 import torch
 from scipy import signal
+import os.path as op
 
 
 def fs2t(N, fs):
@@ -87,6 +88,31 @@ def peakdet(v, delta, x = None):
     return np.array(maxtab[1:]), np.array(mintab[1:])	
 
 
+def lp_filter(fs, fstop, x):
+    nyquist_fs = fs/2
+    wstop = fstop/nyquist_fs
+    b, a = signal.butter(5, wstop, analog=False)
+    fx = torch.zeros_like(x)
+    print(fx.shape)
+    for i, _x in enumerate(x.transpose(0,1)):
+        print('filter {}th channel'.format(i))
+        _x = _x.numpy()
+        fx[:, i] = torch.from_numpy(signal.filtfilt(b, a, _x).astype(_x.dtype)) 
+    return fx
+
+def get_clock_spk():
+    import spiketag
+    res_folder = op.join(spiketag.__path__[0], 'res')
+    clk_spkwav = np.fromfile(res_folder+'/'+'clock_spk.bin', dtype=np.int16).reshape(-1, 4)
+    return clk_spkwav
+
+def shift(spk, n):
+    return np.roll(spk, shift=n, axis=1)
+
+def add_spikes(x, t, spk):
+    x[t:t+spk.shape[0], :] += torch.from_numpy(spk).type(x.dtype)
+
+
 class bload(object):
     '''
     load bin file data with file format
@@ -157,31 +183,40 @@ class bload(object):
         self.fs = new_fs
 
 
-    def _filter(self, ch, band, ftype='low-pass', noise_level=0):
+    def _filter(self, chs, sample_seg=None, fstart=0, fstop=300, ftype='low-pass', noise_level=0):
+        # base_line = np.zeros((bf.data.shape[0], 4))
         if ftype == 'low-pass':
-            fstart, fstop = band
-            wstop = fstop/self.nyquist_fs
-            b, a = signal.butter(5, wstop, analog=False)
-            w, h = signal.freqz(b, a)
-            '''
-            plt.plot(np.linspace(0, nyquist_fs, w.shape[0]), 20 * np.log10(abs(h)))
-            plt.xlim([0,800])
-            plt.ylim([-80,10])
-            plt.grid(True, which='both')
-            plt.vlines(fstop, -10000, 100, 'r', '--')
-            '''
-            self.data = self.data.reshape(-1, self._nCh)
-            f_data = torch.from_numpy(signal.filtfilt(b, a, self.data[:,ch]).astype(self.dtype))
-            f_data += (noise_level * torch.randn(self.data[:,ch].shape[0])).type(self.data.dtype) 
-            return f_data   
+            print('filter:{} -- fstart:{}, fstop:{}'.format(ftype, fstart, fstop))
+            if sample_seg is None:
+                x = self.data.reshape(-1, self._nCh)[:, chs]
+            else:
+                x = self.data.reshape(-1, self._nCh)[sample_seg[0]:sample_seg[1], chs]
+            base_line = lp_filter(fs=self.fs, fstop=fstop, x=x)
+            # base_line += (noise_level*torch.randn(*base_line.shape)).type(base_line.dtype)
+            return base_line   
 
 
-    def filter(self, band, ftype='low-pass', noise_level=0):
-        self.data = self.data.reshape(-1, self._nCh)
-        data = torch.zeros_like(self.data)
-        for ch in range(self._nCh):
-            data[:,ch] = self._filter(ch, band, ftype=ftype, noise_level=noise_level)
-        self.data = data
+    def _generate_clock_chs(self, chs, clk_spkwav=None, start=3000):
+        ## 1. get the baseline through low-pass filter
+        base_line = self._filter(chs=chs)
+        ## 2. add clock spikes, with shifted channels every 1000 samples
+        if clk_spkwav is None:
+            clk_spkwav = get_clock_spk()
+        k = 0
+        for i in range(3000, base_line.shape[0], 1000):
+            add_spikes(x=base_line, t=i, spk=shift(clk_spkwav, k))
+            k += 1
+        return base_line 
+        
+
+
+
+    # def filter(self, band, ftype='low-pass', noise_level=0):
+    #     self.data = self.data.reshape(-1, self._nCh)
+    #     data = torch.zeros_like(self.data)
+    #     for ch in range(self._nCh):
+    #         data[:,ch] = self._filter(ch, band, ftype=ftype, noise_level=noise_level)
+    #     self.data = data
 
 
     def show(self, chs=None):

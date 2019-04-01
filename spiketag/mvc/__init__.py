@@ -15,6 +15,9 @@ def config_dir():
 def origin_dir():
     return op.join(spiketag.__path__[0], 'res', 'spiketag')
 
+def res_dir():
+    return op.join(spiketag.__path__[0], 'res')
+
 def gen_config():
     config_file = op.join(config_dir(), 'state.json') 
     origin_file = op.join(origin_dir(), 'state.json')
