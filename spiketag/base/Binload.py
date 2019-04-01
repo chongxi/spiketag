@@ -138,12 +138,12 @@ class bload(object):
         bin.load('filename','float32')
         '''
         self.mm   = memory_map(file_name)
-        self.npmm = np.memmap(file_name, dtype=dtype, mode='r')
+        self.npmm = np.memmap(file_name, dtype=dtype, mode='readwrite')
         self.dtype = dtype
         self._npts = len(self.npmm)/self._nCh #full #pts/ch
         self._nbytes = self.npmm.nbytes
         self.t = fs2t(self._npts, self.fs)
-        self.data = torch.from_numpy(self.npmm)
+        self.data = torch.from_numpy(self.npmm.reshape(-1, self._nCh))
         info("#############  load data  ###################")
         info('{0} loaded, it contains: '.format(file_name))
         info('{0} * {1} points ({2} bytes) '.format(self._npts, self._nCh, self._nbytes))
