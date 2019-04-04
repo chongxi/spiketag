@@ -173,7 +173,7 @@ class SPK():
         shift = {}
         scale = {}
         
-        if group_id:
+        if group_id is not None:
             return self._tofet(group_id, method, ncomp, whiten)
         else:
             for group in self.spk.keys():
