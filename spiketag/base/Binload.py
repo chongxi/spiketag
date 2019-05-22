@@ -196,14 +196,17 @@ class bload(object):
             return base_line   
 
 
-    def _generate_clock_chs(self, chs, clk_spkwav=None, start=3000):
+    def _generate_clock_chs(self, chs, clk_spkwav=None, start=3000, interval=1000):
+        '''
+        Important: The first spikes shows up at 120.5 ms at the second channel in chs (when start=3000)
+        '''
         ## 1. get the baseline through low-pass filter
         base_line = self._filter(chs=chs)
         ## 2. add clock spikes, with shifted channels every 1000 samples
         if clk_spkwav is None:
             clk_spkwav = get_clock_spk()
         k = 0
-        for i in range(3000, base_line.shape[0], 1000):
+        for i in range(start, base_line.shape[0], interval):
             add_spikes(x=base_line, t=i, spk=shift(clk_spkwav, k))
             k += 1
         return base_line 
