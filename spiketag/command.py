@@ -21,6 +21,21 @@ def prb_check(prbfile, font_size=33):
 
 
 @main.command()
+@click.argument('binfile', nargs=1)
+@click.option('--dtype', prompt='dtype', default='int16')
+@click.option('--nch', prompt='nch', default='160')
+@click.option('--fs', prompt='fs', default='25000')
+def bin_check(binfile, dtype, nch, fs):
+    '''
+    check prb by visualization
+    '''
+    from spiketag.base import bload
+    fs, nch = float(fs), int(nch)
+    bf = bload(nCh=nch, fs=fs)
+    bf.load(binfile, dtype=dtype)
+
+
+@main.command()
 @click.argument('binaryfile', nargs=2)
 @click.option('--nbits', prompt='nbits', default='16')
 @click.option('--fs', prompt='fs', default='25000')
@@ -137,26 +152,34 @@ def report(binaryfile, probefile, nbits=32):
         ## report ch<-->nspks statistics
         spk_info = np.fromfile(spk_filename, np.int32).reshape(-1,2)
         t, ch = spk_info[:,0]/prb.fs, spk_info[:,1]
+        ch = ch[t>0.004]
+        t =   t[t>0.004]
         c = Counter(ch)
         nspks = np.array([c[ch] for ch in prb.chs]) 
-
+        sns.set_context('paper')
+        sns.set_style('white')
         fig, ax = plt.subplots(1,2, figsize=(25,15), gridspec_kw = {'width_ratios':[3, 1]})
-        ax[0].plot(t, prb.ch_idx[ch], '.', markersize=1)
+        ax[0].plot(t, prb.ch_idx[ch], '.', color='k', markersize=3, alpha=0.5)
         ax[0].set_ylim(ax[0].get_ylim()[::-1])
         ax[0].set_xlabel('Time(secs)')
         ax[0].set_ylabel('Virtual Channel Number')
+        ax[0].set_yticks(np.arange(0,160,4))
         ax[0].set_title('#spikes found on (channels) vs (time)')
-        nspks_img = ax[1].imshow(nspks.reshape(-1, prb.group_len), cmap='ocean_r')
+        nspks_img = ax[1].imshow(nspks.reshape(-1, prb.group_len), cmap='Blues') #ocean_r
         ax[1].grid(which='minor', color='k', linestyle='-', linewidth=2)
         ax[1].set_ylabel('Group Number')
         ax[1].set_xticks(range(prb.group_len))
         ax[1].set_yticks(range(prb.n_group))
         ax[1].set_xlabel('Channels in the Group')
         ax[1].set_title('#spikes found on (channels) in (group)')
+        sns.despine()
 
         for i in range(prb.grp_matrix.shape[0]):
             for j in range(prb.grp_matrix.shape[1]):
-                ax[1].text(j, i, str(prb.grp_matrix[i,j]), color='black', ha='center', va='center', fontsize=8)
+                if nspks[prb.grp_matrix[i,j]] < 20:
+                    ax[1].text(j, i, str(prb.grp_matrix[i,j]), color='black', ha='center', va='center', fontsize=8)
+                else:
+                    ax[1].text(j, i, str(prb.grp_matrix[i,j]), color='white', ha='center', va='center', fontsize=8)
 
         fig.colorbar(nspks_img)
         plt.show()
