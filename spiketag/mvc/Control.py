@@ -476,11 +476,11 @@ class controller(object):
     def _predict(self, points, n_dim=4):
         self.model.construct_kdtree(self.current_group, n_dim)
         d = []
-        for _kd in self.model.kd.iterkeys():
+        for _kd in self.model.kd.keys():
             tmp = _kd.query(points, 10)[0]
             d.append(tmp.mean(axis=1))
         d = np.vstack(np.asarray(d))
-        labels = np.asarray(self.model.kd.values())[np.argmin(d, axis=0)]
+        labels = np.asarray(list(self.model.kd.values()))[np.argmin(d, axis=0)]
         return labels
 
     def set_vq(self):
