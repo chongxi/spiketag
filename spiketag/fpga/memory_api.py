@@ -77,6 +77,33 @@ def mem_reset(nCh):
 ####################################################
 
 
+############ xillybus_control_regs_16 #######################
+def write_regs_16(offset, v, dtype='<h', binpoint=0):
+    addr = offset * 2
+    w16 = open('/dev/xillybus_control_regs_16', 'wb')
+    value = to_fixed_point(v, dtype, binpoint)
+    # print 'mem content:', hexlify(value)
+    w16.seek(addr)
+    w16.write(value)
+    w16.close()
+
+def read_reg_16(offset, dtype='<h', binpoint=0):
+    addr = offset * 2
+    r16 = open('/dev/xillybus_control_regs_16', 'rb')
+    r16.seek(addr)
+    hexstring = r16.read(2)
+    # print 'mem content:', hexlify(hexstring)
+    value = to_value(hexstring, dtype, binpoint)
+    r16.close() 
+    # value is always XXX.0 when binpoint = 0
+    return int(value)
+
+def mem_reset(nCh):
+    for addr in np.arange(nCh):
+        write_reg_16(addr, 0x0000, '<i', 0)
+####################################################
+
+
 ########### quantization ###########################
 def to_fixed_point(v, dtype='<i', binpoint=13):
     v = int(v * 2**binpoint)
