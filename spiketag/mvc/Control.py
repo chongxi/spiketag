@@ -427,14 +427,22 @@ class controller(object):
         _pca_comp, _shift, _scale = self.model.construct_transformer(group_id, ndim)
         return _pca_comp, _shift, _scale      
 
-    def set_transformer(self):
-        for i in self.model.groups:
-            _pca_comp, _shift, _scale = self.construct_transformer(group_id=i, ndim=4)
-            self.fpga._config_FPGA_transformer(grpNo=i, P=_pca_comp, b=_shift, a=_scale) 
-            assert(np.allclose(self.fpga.pca[i], _pca_comp, atol=1e-3))
-            assert(np.allclose(self.fpga.shift[i], _shift,  atol=1e-3))
-            assert(np.allclose(self.fpga.scale[i], _scale,  atol=1e-3))
+    def set_transformer(self, group_id, random=False):
+        _pca_comp, _shift, _scale = self.construct_transformer(group_id=group_id, ndim=4)
+        self.fpga._config_FPGA_transformer(grpNo=group_id, P=_pca_comp, b=_shift, a=_scale) 
+        # assert(np.allclose(self.fpga.pca[i], _pca_comp, atol=1e-3))
+        # assert(np.allclose(self.fpga.shift[i], _shift,  atol=1e-3))
+        # assert(np.allclose(self.fpga.scale[i], _scale,  atol=1e-3))
             
+    def check_transformer(self, group_id):
+        _spk = self.model.spk[group_id].T.reshape(76, -1).T
+        _fet = self._transform(_spk, self.fpga.pca[group_id], 
+                                     self.fpga.shift[group_id], 
+                                     self.fpga.scale[group_id])
+        from spiketag.view import scatter_3d_view
+        _fetview = scatter_3d_view()
+        _fetview.set_data(_fet)
+        _fetview.show()
 
     def build_vq(self, all=False, n_dim=4, n_vq=None):
         import warnings
