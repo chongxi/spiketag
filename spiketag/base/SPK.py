@@ -8,8 +8,9 @@ from ..utils.conf import info
 def _transform(X, P, shift, scale):
     '''
     y = scale*((PX)+shift) 
+    check the range of X, it has to be float32, if not, use X /= float(2**13)
     '''
-    y = (np.dot(X,P)+shift)/scale
+    y = (np.dot(X,P) + shift)/scale 
     return y
 
 

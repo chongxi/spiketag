@@ -80,7 +80,7 @@ class MUA(object):
         self.t    = self.bf.t
         self.npts = self.bf._npts
         self.spklen = 19
-        self.prelen = 9 
+        self.prelen = 7 
         self.cutoff_neg, self.cutoff_pos = cutoff[0], cutoff[1]
         if time_segs is None:
             self.time_segs = np.array([[self.t[0], self.t[-1]]])
