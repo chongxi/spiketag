@@ -473,13 +473,11 @@ class controller(object):
         self.vq_view.transparency = 0.9
         self.vq_view.show()
 
-
     def _validate_vq(self, n_dim=4):
         from sklearn.neighbors import KNeighborsClassifier as KNN
         knn = KNN(n_neighbors=1)
         knn.fit(self.points, self.labels)
         return knn.score(self.fet[:,:n_dim], self.clu.membership)
-
 
     def _predict(self, points, n_dim=4):
         self.model.construct_kdtree(self.current_group, n_dim)
