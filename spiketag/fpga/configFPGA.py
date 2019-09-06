@@ -63,9 +63,7 @@ class xike_config(object):
         b: (4, )                : shift[grpNo]
         a: ()                   : scale[grpNo]
         '''
-        self.transfomer_constructed = {}
-        for i in range(self.probe.n_group):
-            self.transfomer_constructed[i]=0
+        self._transformer_status = np.zeros((self.probe.n_group,))
 
         ngrp    = self.probe.n_group     # 40 for tetrodes
         ch_span = self.probe.group_len   # 4  for tetrodes ;  40*4=160 chs
@@ -91,19 +89,35 @@ class xike_config(object):
         self.thres[:] = threshold
 
     def init_FPGA_detector(self):
-        # dc offset
         write_mem_16(0, 1)
-        # self.thres.enable(True)
-        # self.thres[:] = self._thres_value
+
+
+    def _config_FPGA_probe(self, prb):
+        self.probe = prb
+        self.set_channel_params_to_fpga()
+
+    def _config_FPGA_ch_ref(self, grpNo, ch_ref):
+        for ch in self.probe[grpNo]:
+            self.ch_ref[ch] = ch_ref  
+
+    def _config_FPGA_thres(self, grpNo, threshold):
+        for ch in self.probe[grpNo]:
+            self.thres[ch] = threshold
 
     def _config_FPGA_transformer(self, grpNo, P, b, a):
-        self.transfomer_constructed[grpNo] = 1
         self.scale[grpNo] = a
         self.shift[grpNo] = b
         self.pca[grpNo]   = P
 
     def _config_FPGA_vq_knn(self, grpNo, vq):
         self.vq[grpNo] = vq
+
+    @property
+    def transformer_status(self):
+        for i in range(self.probe.n_group):
+            self._transformer_status[i] = self.scale[i] != 0
+        return self._transformer_status
+    
 
 
 # if __name__ == "__main__":
