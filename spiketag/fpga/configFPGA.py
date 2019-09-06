@@ -15,11 +15,8 @@ class xike_config(object):
 
     def __init__(self, probe=None, offset_value=32, thres_value=-500):
         """TODO: to be defined1.
-        :offset_value: TODO
-        :thres_value: TODO
-        :ch_hash: TODO
-
         """
+        
         if probe is None:
             probe = dummyobj()
             probe.n_ch      = 160
