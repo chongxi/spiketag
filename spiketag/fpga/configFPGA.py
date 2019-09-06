@@ -16,7 +16,7 @@ class xike_config(object):
     def __init__(self, probe=None, offset_value=32, thres_value=-500):
         """TODO: to be defined1.
         """
-        
+
         if probe is None:
             probe = dummyobj()
             probe.n_ch      = 160
@@ -59,6 +59,7 @@ class xike_config(object):
         P: (spklen*ch_span, 4)  : pca[grpNo]
         b: (4, )                : shift[grpNo]
         a: ()                   : scale[grpNo]
+        transformer_status track a
         '''
         self._transformer_status = np.zeros((self.probe.n_group,))
 

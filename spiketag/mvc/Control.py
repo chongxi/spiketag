@@ -472,6 +472,7 @@ class controller(object):
         self.vq_view.set_data(self.points, self.labels)
         self.vq_view.transparency = 0.9
         self.vq_view.show()
+        self._validate_vq()
 
     def _validate_vq(self, n_dim=4):
         from sklearn.neighbors import KNeighborsClassifier as KNN
