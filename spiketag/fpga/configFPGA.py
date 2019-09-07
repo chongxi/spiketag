@@ -1,6 +1,6 @@
 import numpy as np
 from .memory_api import read_mem_16, write_mem_16
-from .bram_xike  import pca_hash, scale_hash, shift_hash, vq_hash
+from .bram_xike  import pca_hash, scale_hash, shift_hash, vq_hash, label_hash
 from . import bram_thres
 
 
@@ -67,10 +67,12 @@ class xike_config(object):
         ch_span = self.probe.group_len   # 4  for tetrodes ;  40*4=160 chs
         spklen  = 19                     # 19
         p_dim   = 4
-        self.scale = scale_hash(nCh=ngrp, base_address=0)
-        self.shift = shift_hash(nCh=ngrp, base_address=ngrp * 1)
-        self.pca   =   pca_hash(nCh=ngrp, base_address=ngrp * (p_dim + 1))
-        self.vq    =    vq_hash(nCh=ngrp, base_address=ngrp * (p_dim + 1 + spklen*ch_span))
+        n_vq    = 500
+        self.scale = scale_hash(nCh=ngrp,  base_address=0)
+        self.shift = shift_hash(nCh=ngrp,  base_address=ngrp * 1)
+        self.pca   =   pca_hash(nCh=ngrp,  base_address=ngrp * (p_dim + 1))
+        self.vq    =    vq_hash(nCh=ngrp,  base_address=ngrp * (p_dim + 1 + spklen*ch_span))
+        self.label = label_hash(ngrp=ngrp, base_address=ngrp * (p_dim + 1 + spklen*ch_span + n_vq))
 
     def set_channel_params_to_fpga(self):
         for ch in range(self.probe.n_ch):

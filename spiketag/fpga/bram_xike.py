@@ -143,7 +143,7 @@ class vq_hash(object):
     In FPGA:       the vq[ch] is organized as a memory structure in bram_thres module in Xike
     Currently, the base address shift is 1952 = 128 + 57*32
     """
-    def __init__(self, nCh=32, base_address=1952, ndim=100):
+    def __init__(self, nCh=32, base_address=1952, ndim=500):
         self.nCh  = nCh
         self.base = base_address
         self.vq   = np.zeros(nCh)
@@ -179,3 +179,38 @@ class vq_hash(object):
         return vq
 
 
+class label_hash(object):
+    """
+    grp_id ==> hash_code ==> labels in the group
+    this hash_code is stored in label[ch]
+    In this class: the label[ch] is write and read intuitively as python convention
+    In FPGA:       the label[ch] is organized as a memory structure in bram_thres module in Xike
+    Currently, the base address shift is 1952 = 128 + 57*32
+    """
+    def __init__(self, ngrp=40, base_address=0, ndim=500):
+        self.ngrp = ngrp
+        self.base = base_address
+        self.dim = ndim
+
+    def __setitem__(self, grpNo, _scale):
+        i = grpNo + self.base
+        write_tat_32(i, _scale, dtype='<i', binpoint=13) 
+
+    def __getitem__(self, grpNo):
+        i = grpNo + self.base
+        x0 = read_tat_32(i, dtype='<i', binpoint=13) 
+        return x0
+
+    def __repr__(self):
+        _labels = np.zeros((self.ngrp, self.dim))
+        for i in range(self.ngrp):
+            _labels[i] = self.__getitem__(i)
+        print(_labels)
+        return ' '
+
+    @property
+    def value(self):
+        _labels = np.zeros((self.ngrp, self.dim))
+        for i in range(self.ngrp):
+            _labels[i] = self.__getitem__(i)
+        return _labels
