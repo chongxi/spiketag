@@ -109,8 +109,9 @@ class xike_config(object):
         self.shift[grpNo] = b
         self.pca[grpNo]   = P
 
-    def _config_FPGA_vq_knn(self, grpNo, vq):
-        self.vq[grpNo] = vq
+    def _config_FPGA_vq_knn(self, grpNo, vq, label):
+        self.vq[grpNo]    = vq
+        self.label[grpNo] = label
 
     @property
     def transformer_status(self):
