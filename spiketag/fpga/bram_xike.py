@@ -187,30 +187,37 @@ class label_hash(object):
     In FPGA:       the label[ch] is organized as a memory structure in bram_thres module in Xike
     Currently, the base address shift is 1952 = 128 + 57*32
     """
-    def __init__(self, ngrp=40, base_address=0, ndim=500):
-        self.ngrp = ngrp
+    def __init__(self, nCh=32, base_address=1952, ndim=500):
+        self.nCh  = nCh
         self.base = base_address
-        self.dim = ndim
+        self.lb   = np.zeros(nCh)
+        self.dim  = ndim
 
-    def __setitem__(self, grpNo, _scale):
-        i = grpNo + self.base
-        write_tat_32(i, _scale, dtype='<i', binpoint=13) 
+    def write_lb_in(self, i, lb_in):
+        lb_in = lb_in.astype(np.int32)
+        ch = i + self.base
+        write_tat_32(ch, lb_in, dtype='<i', binpoint=0) 
 
+    def read_lb_out(self, i):
+        ch = i + self.base
+        lb = read_tat_32(ch, dtype='<i', binpoint=0)
+        return lb
+
+    def __setitem__(self, grpNo, lb):
+        ch = grpNo*self.dim
+        for i, lb_in in enumerate(lb):
+            self.write_lb_in(ch+i, lb_in)
+ 
     def __getitem__(self, grpNo):
-        i = grpNo + self.base
-        x0 = read_tat_32(i, dtype='<i', binpoint=13) 
-        return x0
+        lb = np.zeros((self.dim,)).astype(np.int32)
+        ch = grpNo*self.dim
+        for i in range(self.dim):
+            lb[i] = self.read_lb_out(ch+i)
+        return lb
 
     def __repr__(self):
-        _labels = np.zeros((self.ngrp, self.dim))
-        for i in range(self.ngrp):
+        _labels = np.zeros((self.nCh, self.dim))
+        for i in range(self.nCh):
             _labels[i] = self.__getitem__(i)
         print(_labels)
         return ' '
-
-    @property
-    def value(self):
-        _labels = np.zeros((self.ngrp, self.dim))
-        for i in range(self.ngrp):
-            _labels[i] = self.__getitem__(i)
-        return _labels

@@ -72,7 +72,7 @@ class xike_config(object):
         self.shift = shift_hash(nCh=ngrp,  base_address=ngrp * 1)
         self.pca   =   pca_hash(nCh=ngrp,  base_address=ngrp * (p_dim + 1))
         self.vq    =    vq_hash(nCh=ngrp,  base_address=ngrp * (p_dim + 1 + spklen*ch_span))
-        self.label = label_hash(ngrp=ngrp, base_address=ngrp * (p_dim + 1 + spklen*ch_span + n_vq))
+        self.label = label_hash(nCh=ngrp,  base_address=ngrp * (p_dim + 1 + spklen*ch_span + n_vq))
 
     def set_channel_params_to_fpga(self):
         for ch in range(self.probe.n_ch):
