@@ -493,5 +493,8 @@ class controller(object):
     def set_vq(self):
         for grpNo in self.vq['points'].keys():
             x = self.vq['points'][grpNo]
+            y = self.vq['labels'][grpNo]
+            self.fpga.vq[grpNo]    = x
+            self.fpga.label[grpNo] = y
             print('group {} vq configured with shape {}'.format(grpNo, x.shape))
-            self.fpga.vq[grpNo] = x
+            
