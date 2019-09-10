@@ -273,3 +273,17 @@ class MainModel(object):
         with Timer("[MODEL] Model -- FET to CLU", verbose=conf.ENABLE_PROFILER):
             self.clu[group] = self.fet._toclu(group)
 
+    @property
+    def nspk_per_grp(self):
+        self._nspk = []
+        for grp_id in range(self.ngrp):
+            self._nspk.append(self.gtimes[grp_id].shape[0])    
+        return np.array(self._nspk)
+
+    @property
+    def nspk_per_clu(self):
+        self._nspk_per_clu = []
+        for grp_id in range(self.ngrp):
+            self._nspk_per_clu.append(np.array(list(self.clu[grp_id].index_count.values())))    
+        return self._nspk_per_clu    
+    
