@@ -1,7 +1,7 @@
-try:
-    from PyQt5 import QtWidgets as QtW
-except:
-    from PyQt4 import QtGui as QtW
+# try:
+from PyQt5 import QtWidgets as QtW
+# except:
+#     from PyQt4 import QtGui as QtW
 
 import sys
 import numpy as np
@@ -12,7 +12,7 @@ if __name__ == '__main__':
     appQt = QtW.QApplication(sys.argv)
     # appQt.setStyle('gtk')
     # appQt.setGraphicsSystem('raster')
-    rows, cols = 6, 8
+    rows, cols = 8, 5
     #rows, cols = 1, 1
     win = grid_scatter3d(rows, cols)
     win.show()
