@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import QApplication
 from spiketag.view.grid_scatter3d import grid_scatter3d
 from spiketag.fpga import xike_config
 from spiketag.utils import Timer
+from collections import deque
 
 
 class bmi_recv(object):
@@ -50,23 +51,21 @@ class bmi_recv(object):
         '''
         while True:
             buf = self.r32.read(self._size)
-            # ----- real-time processing the BMI output ------
-            # ----- This section should cost < 100us -----
-            # tic = time.time()
-            bmi_output = struct.unpack('<7i', buf)
-            timestamp, grp_id, fet0, fet1, fet2, fet3, spk_id = bmi_output
+            with Timer('real-time decoding', verbose=False):
+                # ----- real-time processing the BMI output ------
+                # ----- This section should cost < 100us -----
+                bmi_output = struct.unpack('<7i', buf)
+                timestamp, grp_id, fet0, fet1, fet2, fet3, spk_id = bmi_output
 
-            ##### real-time decoder
+                ##### real-time decoder
 
-            ##### queue for visualization
-            queue.put(bmi_output)
+                ##### queue for visualization
+                queue.put(bmi_output)
 
 
-            ##### file for visualization
-            # os.write(self.fd, buf)
-            # toc = time.time()
-            # print(toc-tic)
-            # ----- This section should cost < 100us -----
+                ##### file for visualization
+                # os.write(self.fd, buf)
+                # ----- This section should cost < 100us -----
 
 
     def start(self):
@@ -96,8 +95,8 @@ class BMI_GUI(QWidget):
         self._fet = {}
         self._clu = {}
         for i in range(40):
-            self._fet[i] = []
-            self._clu[i] = []
+            self._fet[i] = deque()
+            self._clu[i] = deque()
 
 
     def init_UI(self, keys='interactive'):
@@ -112,9 +111,10 @@ class BMI_GUI(QWidget):
         self.fpgaBtn.setStyleSheet("background-color: darkgrey")
         self.fpgaBtn.toggled.connect(self.fpga_process_toggle)            
 
-        self.fet_grid = grid_scatter3d(8, 5) 
-        self.N = 300
-        for i in range(40):
+        rows,cols=6,7
+        self.fet_grid = grid_scatter3d(rows, cols) 
+        self.N = 500
+        for i in range(rows*cols):
             self.fet_grid.fet_view[i].set_data(np.zeros((self.N,4), dtype=np.float32)) 
 
         layout = QVBoxLayout()
@@ -148,21 +148,25 @@ class BMI_GUI(QWidget):
     def test_update(self):
         group_need_update = []
         while not self.fpga.queue.empty():
-            with Timer('receive'):
+            with Timer('receive', verbose=False):
                 _timestamp, _grp_id, _fet0, _fet1, _fet2, _fet3, _spk_id = self.fpga.queue.get()
                 group_need_update.append(_grp_id)
                 self._fet[_grp_id].append(np.array([_fet0, _fet1, _fet2, _fet3])/float(2**16))
                 self._clu[_grp_id].append(_spk_id)
+                if len(self._fet[_grp_id]) > self.N:
+                    self._fet[_grp_id].popleft()
+                    self._clu[_grp_id].popleft()
 
-        with Timer('update'):
+        with Timer('update', verbose=True):
             for grp_id in group_need_update:
+                # if grp_id < 20:
                 fet = np.array(self._fet[grp_id])
                 clu = np.array(self._clu[grp_id])
-                if fet.shape[0]>0 and fet.shape[0]<=self.N:
-                    self.fet_grid.fet_view[grp_id].stream_in(fet, clu, highlight_no=30)
-                elif fet.shape[0]>self.N:
-                    self.fet_grid.fet_view[grp_id].stream_in(fet[-self.N:], clu[-self.N:], highlight_no=30)
-        # print(self.fpga.queue.get())
+                # if fet.shape[0]>0 and fet.shape[0]<=self.N:
+                self.fet_grid.fet_view[grp_id].stream_in(fet, clu, highlight_no=30)
+                # elif fet.shape[0]>self.N:
+                #     self.fet_grid.fet_view[grp_id].stream_in(fet[-self.N:], clu[-self.N:], highlight_no=30)
+            # print(self.fpga.queue.get())
 
 
     def fet_view_update(self):
