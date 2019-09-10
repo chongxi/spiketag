@@ -30,7 +30,7 @@ class controller(object):
         self.vq['points'] = {}
         self.vq['labels'] = {}
         self.vq['scores'] = {}
-        self._vq_npts = 100  # size of codebook to download to FPGA, there are many codebooks
+        self._vq_npts = 500  # size of codebook to download to FPGA, there are many codebooks
 
 
         if fpga is True:
@@ -444,41 +444,44 @@ class controller(object):
         _fetview.set_data(_fet)
         _fetview.show()
 
-    def build_vq(self, all=False, n_dim=4, n_vq=None):
+    def build_vq(self, grp_id, n_dim=4, n_vq=None, show=True):
         import warnings
         warnings.filterwarnings('ignore')
         # get the vq and vq labels
         from sklearn.cluster import MiniBatchKMeans
         
         vq = []
-        for _clu_id in self.clu.index_id:
-            if n_vq is None:
-                km = MiniBatchKMeans(self._vq_npts)
-            else:
-                km = MiniBatchKMeans(n_vq[_clu_id])
+        if n_vq is None:
+            k = self.model.nspk_per_clu[grp_id].sum() / self._vq_npts
+            n_vq = np.around(self.model.nspk_per_clu[grp_id] / k).astype(np.int32)
+            assert(n_vq.sum()==self._vq_npts)
+        for _clu_id in self.model.clu[grp_id].index_id:
+            km = MiniBatchKMeans(n_vq[_clu_id])
             X = self.fet[self.clu.index[_clu_id]][:,:n_dim]
             km.fit(X)
-            vq.append(km.cluster_centers_ )
+            vq.append(km.cluster_centers_)
         self.points = np.vstack(vq)  # these are vq
         self.labels = self._predict(self.points, n_dim) # these are vq labels
         self.scores = self._validate_vq(n_dim)
 
-        self.vq['points'][self.current_group] = self.points
-        self.vq['labels'][self.current_group] = self.labels
-        self.vq['scores'][self.current_group] = self.scores
+        self.vq['points'][grp_id] = self.points
+        self.vq['labels'][grp_id] = self.labels
+        self.vq['scores'][grp_id] = self.scores
+        print(self._validate_vq(grp_id))
 
-        self.vq_view = scatter_3d_view()
-        self.vq_view._size = 5
-        self.vq_view.set_data(self.points, self.labels)
-        self.vq_view.transparency = 0.9
-        self.vq_view.show()
-        self._validate_vq()
-
-    def _validate_vq(self, n_dim=4):
+        if show:
+            self.vq_view = scatter_3d_view()
+            self.vq_view._size = 5
+            self.vq_view.set_data(self.points, self.labels)
+            self.vq_view.transparency = 0.9
+            self.vq_view.show()
+        
+    def _validate_vq(self, grp_id, n_dim=4):
         from sklearn.neighbors import KNeighborsClassifier as KNN
         knn = KNN(n_neighbors=1)
         knn.fit(self.points, self.labels)
-        return knn.score(self.fet[:,:n_dim], self.clu.membership)
+        _score = knn.score(self.model.fet[grp_id][:,:n_dim], self.model.clu[grp_id].membership)
+        return _score
 
     def _predict(self, points, n_dim=4):
         self.model.construct_kdtree(self.current_group, n_dim)
