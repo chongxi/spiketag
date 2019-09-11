@@ -449,42 +449,44 @@ class controller(object):
         warnings.filterwarnings('ignore')
         # get the vq and vq labels
         from sklearn.cluster import MiniBatchKMeans
-        
-        vq = []
-        if n_vq is None:
-            k = self.model.nspk_per_clu[grp_id].sum() / self._vq_npts
-            n_vq = np.around(self.model.nspk_per_clu[grp_id] / k).astype(np.int32)
-            assert(n_vq.sum()==self._vq_npts)
-        for _clu_id in self.model.clu[grp_id].index_id:
-            km = MiniBatchKMeans(n_vq[_clu_id])
-            X = self.fet[self.clu.index[_clu_id]][:,:n_dim]
-            km.fit(X)
-            vq.append(km.cluster_centers_)
-        self.points = np.vstack(vq)  # these are vq
-        self.labels = self._predict(self.points, n_dim) # these are vq labels
-        self.scores = self._validate_vq(n_dim)
+       
+        if self.model.clu[grp_id].nclu>1:  # don't pass vq for those group has only one cluster
+            vq = []
+            if n_vq is None:
+                k = self.model.nspk_per_clu[grp_id].sum() / self._vq_npts
+                n_vq = np.around(self.model.nspk_per_clu[grp_id] / k).astype(np.int32)
+                err = n_vq.sum() - self._vq_npts
+                n_vq[-1] -= err
+            for _clu_id in self.model.clu[grp_id].index_id:
+                km = MiniBatchKMeans(n_vq[_clu_id])
+                X = self.model.fet[grp_id][self.model.clu[grp_id].index[_clu_id]][:,:n_dim]
+                km.fit(X)
+                vq.append(km.cluster_centers_)
 
-        self.vq['points'][grp_id] = self.points
-        self.vq['labels'][grp_id] = self.labels
-        self.vq['scores'][grp_id] = self.scores
-        print(self._validate_vq(grp_id))
+            self.vq['points'][grp_id] = np.vstack(vq)
+            self.vq['labels'][grp_id] = self._predict(grp_id, np.vstack(vq), n_dim)
+            self.vq['scores'][grp_id] = self._validate_vq(grp_id, n_dim)
+            print('group {}: accuracy:{}'.format(grp_id, self.vq['scores'][grp_id]))
 
-        if show:
-            self.vq_view = scatter_3d_view()
-            self.vq_view._size = 5
-            self.vq_view.set_data(self.points, self.labels)
-            self.vq_view.transparency = 0.9
-            self.vq_view.show()
+            if show:
+                self.vq_view = scatter_3d_view()
+                self.vq_view._size = 5
+                self.vq_view.set_data(self.vq['points'][grp_id], 
+                                      self.vq['labels'][grp_id])
+                self.vq_view.transparency = 0.9
+                self.vq_view.show()
+        else:
+            pass
         
     def _validate_vq(self, grp_id, n_dim=4):
         from sklearn.neighbors import KNeighborsClassifier as KNN
         knn = KNN(n_neighbors=1)
-        knn.fit(self.points, self.labels)
+        knn.fit(self.vq['points'][grp_id], self.vq['labels'][grp_id])
         _score = knn.score(self.model.fet[grp_id][:,:n_dim], self.model.clu[grp_id].membership)
         return _score
 
-    def _predict(self, points, n_dim=4):
-        self.model.construct_kdtree(self.current_group, n_dim)
+    def _predict(self, grp_id, points, n_dim=4):
+        self.model.construct_kdtree(grp_id, n_dim)
         d = []
         for _kd in self.model.kd.keys():
             tmp = _kd.query(points, 10)[0]
@@ -494,10 +496,25 @@ class controller(object):
         return labels
 
     def set_vq(self):
+        # step 1: set FPGA transfomer and build vq 
+        for grp_id in range(self.prb.n_group):
+            if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu[grp_id].nclu>1:
+                self.set_transformer(group_id=grp_id)
+                self.build_vq(grp_id=grp_id, show=False)
+            else:
+                pass
+
+        # step 2: set FPGA vq
         for grpNo in self.vq['points'].keys():
             x = self.vq['points'][grpNo]
             y = self.vq['labels'][grpNo]
             self.fpga.vq[grpNo]    = x
             self.fpga.label[grpNo] = y
-            print('group {} vq configured with shape {}'.format(grpNo, x.shape))
-            
+            # print('group {} vq configured with shape {}'.format(grpNo, x.shape))
+
+    def reset_vq(self):
+        # step 1: set FPGA transfomer
+        for grp_id in range(self.prb.n_group):
+            if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu[grp_id].nclu>1:
+                self.set_transformer(group_id=grp_id)
+                self.fpga.label[grpNo] = np.zeros((500,))
