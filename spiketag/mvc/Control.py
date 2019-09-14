@@ -457,6 +457,7 @@ class controller(object):
                 n_vq = np.around(self.model.nspk_per_clu[grp_id] / k).astype(np.int32)
                 err = n_vq.sum() - self._vq_npts
                 n_vq[-1] -= err
+                assert(n_vq.sum()==500)
             for _clu_id in self.model.clu[grp_id].index_id:
                 km = MiniBatchKMeans(n_vq[_clu_id])
                 X = self.model.fet[grp_id][self.model.clu[grp_id].index[_clu_id]][:,:n_dim]
@@ -515,6 +516,7 @@ class controller(object):
     def reset_vq(self):
         # step 1: set FPGA transfomer
         for grp_id in range(self.prb.n_group):
+            self.fpga.scale[grp_id] = 0  # this will ban the tranformer and check fpga.transformer status
             if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu[grp_id].nclu>1:
                 self.set_transformer(group_id=grp_id)
                 self.fpga.label[grpNo] = np.zeros((500,))
