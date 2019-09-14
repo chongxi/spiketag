@@ -27,7 +27,7 @@ class bmi_recv(object):
         self.prb = prb
         # self.group_idx = np.array(self.prb.grp_dict.keys())
         self.reset()
-        # self.load_vq()
+
 
     def close(self):
         self.r32.close()
@@ -64,7 +64,7 @@ class bmi_recv(object):
 
 
                 ##### file for visualization
-                # os.write(self.fd, buf)
+                os.write(self.fd, buf)
                 # ----- This section should cost < 100us -----
 
 
@@ -86,17 +86,22 @@ class bmi_recv(object):
 class BMI_GUI(QWidget):
     def __init__(self):
         QWidget.__init__(self)
-        self.init_UI()
         self.fet_view_timer = QtCore.QTimer(self)
         self.fet_view_timer.timeout.connect(self.test_update)   # fet_view_update
         self.current_group = 0
         self.fpga = bmi_recv()
-        self.fresh_interval = 60
+        self.fpga_setting = xike_config()
+        self.track_groups()
+        self.fresh_interval = 30
         self._fet = {}
         self._clu = {}
         for i in range(40):
-            self._fet[i] = deque()
-            self._clu[i] = deque()
+            # self._fet[i] = deque()
+            # self._clu[i] = deque()
+            self._fet[i] = np.zeros((40, 4))
+            self._clu[i] = np.zeros((40,), dtype=np.int64)
+
+        self.init_UI()
 
 
     def init_UI(self, keys='interactive'):
@@ -113,9 +118,12 @@ class BMI_GUI(QWidget):
 
         rows,cols=6,7
         self.fet_grid = grid_scatter3d(rows, cols) 
-        self.N = 500
+        self.N = 6000
         for i in range(rows*cols):
+            if i in self._group_on_track:
+                self.fet_grid.fet_view[i].info = i
             self.fet_grid.fet_view[i].set_data(np.zeros((self.N,4), dtype=np.float32)) 
+
 
         layout = QVBoxLayout()
         layout.addWidget(self.fpgaBtn)
@@ -145,28 +153,46 @@ class BMI_GUI(QWidget):
         self.fet_view_timer.stop()
 
 
+    @property
+    def group_on_track(self):
+        return self._group_on_track
+
+
+    def track_groups(self, grp_ids=None):
+        if grp_ids is None:
+            self._group_on_track = np.where(self.fpga_setting.transformer_status)[0]
+        else:
+            self._group_on_track = grp_ids
+        print('groups on track:{}'.format(self.group_on_track))
+
+
     def test_update(self):
         group_need_update = []
+        _nspk, limit = 0, 40
         while not self.fpga.queue.empty():
             with Timer('receive', verbose=False):
                 _timestamp, _grp_id, _fet0, _fet1, _fet2, _fet3, _spk_id = self.fpga.queue.get()
-                group_need_update.append(_grp_id)
-                self._fet[_grp_id].append(np.array([_fet0, _fet1, _fet2, _fet3])/float(2**16))
-                self._clu[_grp_id].append(_spk_id)
-                if len(self._fet[_grp_id]) > self.N:
-                    self._fet[_grp_id].popleft()
-                    self._clu[_grp_id].popleft()
+                if _grp_id in self._group_on_track:
+                    group_need_update.append(_grp_id)
+                    incoming_fet = np.array([_fet0, _fet1, _fet2, _fet3])/float(2**16)
+                    incoming_clu = int(_spk_id)
+                    self._fet[_grp_id] = np.roll(self._fet[_grp_id], 1, axis=0)
+                    self._fet[_grp_id][0] = incoming_fet
+                    self._clu[_grp_id] = np.roll(self._clu[_grp_id], 1)
+                    self._clu[_grp_id][0] = incoming_clu
+
+                    _nspk += 1
+                    if _nspk>limit:
+                        while not self.fpga.queue.empty():
+                            self.fpga.queue.get()
+                        break
 
         with Timer('update', verbose=True):
             for grp_id in group_need_update:
-                # if grp_id < 20:
-                fet = np.array(self._fet[grp_id])
-                clu = np.array(self._clu[grp_id])
-                # if fet.shape[0]>0 and fet.shape[0]<=self.N:
-                self.fet_grid.fet_view[grp_id].stream_in(fet, clu, highlight_no=30)
-                # elif fet.shape[0]>self.N:
-                #     self.fet_grid.fet_view[grp_id].stream_in(fet[-self.N:], clu[-self.N:], highlight_no=30)
-            # print(self.fpga.queue.get())
+                with Timer('render', verbose=False):
+                    self.fet_grid.fet_view[grp_id].stream_in(self._fet[grp_id][:_nspk], 
+                                                             self._clu[grp_id][:_nspk],
+                                                             rho=1, highlight_no=10)
 
 
     def fet_view_update(self):
@@ -216,4 +242,8 @@ if __name__ == '__main__':
     app = QApplication(sys.argv) 
     gui = BMI_GUI()
     gui.show()
+    # fpga.thres[:] = -300.
+    # fpga.thres[:] = -150.
+    # fpga.thres[80:84] = -590.
+    # print(fpga.thres)
     sys.exit(app.exec_())
