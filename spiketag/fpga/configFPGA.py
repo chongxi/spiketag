@@ -27,17 +27,17 @@ class xike_config(object):
         else:
             _set_channel_params_to_fpga = True
 
-        self._n_ch = probe.n_ch
+        self.n_ch = 160 # probe.n_ch
         self.probe = probe
 
         '''
         1. ch_hash, ch_grpNo and ch_ref
         '''
         # the channel hashing for spike grouping protocol in FPGA
-        self.ch_hash = bram_thres.channel_hash(nCh=self._n_ch, base_address=256)
+        self.ch_hash = bram_thres.channel_hash(nCh=self.n_ch, base_address=256)
         # the channel groupNo for transformer to report in FPGA
-        self.ch_grpNo = bram_thres.chgpNo(nCh=self._n_ch)
-        self.ch_ref = bram_thres.ch_ref(self._n_ch)
+        self.ch_grpNo = bram_thres.chgpNo(nCh=self.n_ch)
+        self.ch_ref = bram_thres.ch_ref(self.n_ch)
 
         '''
         1. if probe is selected then write to FPGA
@@ -48,9 +48,9 @@ class xike_config(object):
         '''
         2. dc_offset and threshold
         '''
-        self.dc = bram_thres.offset(nCh=self._n_ch)
-        self.dc[:] = np.ones((self._n_ch,)) * offset_value
-        self.thres = bram_thres.threshold(nCh=self._n_ch)
+        self.dc = bram_thres.offset(nCh=self.n_ch)
+        self.dc[:] = np.ones((self.n_ch,)) * offset_value
+        self.thres = bram_thres.threshold(nCh=self.n_ch)
 
         '''
         3. Transformer and VQ
@@ -61,22 +61,24 @@ class xike_config(object):
         a: ()                   : scale[grpNo]
         transformer_status track a
         '''
-        self._transformer_status = np.zeros((self.probe.n_group,))
-
         # ngrp    = self.probe.n_group     # 40 for tetrodes
-        ngrp    = 40 # now fixed in current version of FPGA
-        ch_span = 4  # 4  for tetrodes ;  40*4=160 chs (fixed for current version of FPGA)
-        spklen  = 19                     # 19
-        p_dim   = 4
-        n_vq    = 500
-        self.scale = scale_hash(nCh=ngrp,  base_address=0)
-        self.shift = shift_hash(nCh=ngrp,  base_address=ngrp * 1)
-        self.pca   =   pca_hash(nCh=ngrp,  base_address=ngrp * (p_dim + 1))
-        self.vq    =    vq_hash(nCh=ngrp,  base_address=ngrp * (p_dim + 1 + spklen*ch_span))
-        self.label = label_hash(nCh=ngrp,  base_address=ngrp * (p_dim + 1 + spklen*ch_span + n_vq))
+        self.ngrp    = 40 # now fixed in current version of FPGA
+        self.ch_span = 4  # 4  for tetrodes ;  40*4=160 chs (fixed for current version of FPGA)
+        self.spklen  = 19                     # 19
+        self.p_dim   = 4
+        self.n_vq    = 500
+        self._transformer_status = np.zeros((self.ngrp,))
+
+        self.scale = scale_hash(nCh=self.ngrp,  base_address=0)
+        self.shift = shift_hash(nCh=self.ngrp,  base_address=self.ngrp * 1)
+        self.pca   =   pca_hash(nCh=self.ngrp,  base_address=self.ngrp * (self.p_dim + 1))
+        self.vq    =    vq_hash(nCh=self.ngrp,  base_address=self.ngrp * (self.p_dim + 1 + self.spklen*self.ch_span))
+        self.label = label_hash(nCh=self.ngrp,  base_address=self.ngrp * (self.p_dim + 1 + self.spklen*self.ch_span + self.n_vq))
 
     def set_channel_params_to_fpga(self):
+        assert(self.n_ch == self.probe.n_ch)  # very important!
         for ch in range(self.probe.n_ch):
+            ## it is possible that the probe.ch_hash is less than 40 groups (e.g. only 128 channels used)
             self.ch_hash[ch] = self.probe.ch_hash(ch)
             try:
                 self.ch_grpNo[ch] = self.probe.ch2g[ch]
@@ -91,7 +93,6 @@ class xike_config(object):
 
     def init_FPGA_detector(self):
         write_mem_16(0, 1)
-
 
     def _config_FPGA_probe(self, prb):
         self.probe = prb
@@ -120,7 +121,9 @@ class xike_config(object):
             self._transformer_status[i] = self.scale[i] != 0
         return self._transformer_status
     
-
+    def reset_transformer(self):
+        for grpNo in range(self.ngrp):
+            self.scale[grpNo] = 0
 
 # if __name__ == "__main__":
    # config(offset_value = 32, thres_value = -500)
