@@ -63,8 +63,9 @@ class xike_config(object):
         '''
         self._transformer_status = np.zeros((self.probe.n_group,))
 
-        ngrp    = self.probe.n_group     # 40 for tetrodes
-        ch_span = self.probe.group_len   # 4  for tetrodes ;  40*4=160 chs
+        # ngrp    = self.probe.n_group     # 40 for tetrodes
+        ngrp    = 40 # now fixed in current version of FPGA
+        ch_span = 4  # 4  for tetrodes ;  40*4=160 chs (fixed for current version of FPGA)
         spklen  = 19                     # 19
         p_dim   = 4
         n_vq    = 500
