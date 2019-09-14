@@ -519,4 +519,4 @@ class controller(object):
             self.fpga.scale[grp_id] = 0  # this will ban the tranformer and check fpga.transformer status
             if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu[grp_id].nclu>1:
                 self.set_transformer(group_id=grp_id)
-                self.fpga.label[grpNo] = np.zeros((500,))
+                self.fpga.label[grp_id] = np.zeros((500,))
