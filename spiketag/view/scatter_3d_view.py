@@ -40,6 +40,8 @@ class scatter_3d_view(scene.SceneCanvas):
         self.mode = ''
         self.dimension = None
         self.dimension_text = scene.visuals.Text(parent=self.scene)
+        self.info_text = scene.visuals.Text(parent=self.scene, bold=True)
+        self.info = None
         self.debug = debug
         # Add a 3D axis to keep us oriented
         scene.visuals.XYZAxis(parent=self.view.scene)
@@ -132,9 +134,15 @@ class scatter_3d_view(scene.SceneCanvas):
         self.scatter.set_data(self.fet[:, self.dimension], size=self._size, edge_color=self.color, face_color=self.color)
 
         self.dimension_text.text = str(self.dimension) 
-        self.dimension_text.pos  = np.array([20,10])
+        self.dimension_text.pos  = np.array([20,12])
         self.dimension_text.color = (1,1,1,0.5) 
         self.dimension_text.font_size = 5 
+
+        if self.info is not None:
+            self.info_text.text = str(self.info) 
+            self.info_text.pos  = np.array([225,10])
+            self.info_text.color = (1,1,0,1) 
+            self.info_text.font_size = 12
 
     def _stream_in_data(self, fet, clu=None):
         stream_size = fet.shape[0]
