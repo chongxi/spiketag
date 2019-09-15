@@ -253,7 +253,7 @@ class probe(BaseProbe):
         prb.shanks[0].ch_group
 
     '''
-    def __init__(self, fs=25000., nch=160, group_len=4, prb_type=None, grp_No=None, shank_no=None):
+    def __init__(self, fs=25000., nch=160, group_len=4, prb_type=None, grp_No=None, shank_no=None, prbfile=None):
         super(probe, self).__init__()
         if shank_no is not None:
             self.shanks = {}
@@ -272,6 +272,10 @@ class probe(BaseProbe):
         else:
             self._n_group = grp_No
         self.sorting_status = np.zeros((self._n_group,)).astype(np.int)
+
+        # init with a already existing probe file
+        if prbfile is not None:
+            self.load(prbfile)
 
     def auto_pos(self):
         if self.type == 'bow_tie':
@@ -320,6 +324,7 @@ class probe(BaseProbe):
 
 
     def save(self, filename):
+        self.filename = filename
         # for open-ephys gui and regular use
         self.n_ch = self._n_ch
         ch_list = np.hstack((self.chs, self.mask_chs))
@@ -350,6 +355,7 @@ class probe(BaseProbe):
 
 
     def load(self, filename):
+        self.filename = filename
         with open(filename) as ff:
             prb_json = json.load(ff)
             try:
