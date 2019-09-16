@@ -11,6 +11,7 @@ from ..utils.conf import error, warning
 from ..base.CLU import CLU
 from ._core import _get_array, _accumulate
 from ._core import _spkNo2maskNo_numba, _cache_out, _cache_in_vector, _cache_in_scalar, _representsInt, _get_box_index
+from collections import deque
 
 
 class spike_view(View):
@@ -27,6 +28,7 @@ class spike_view(View):
         self._magnet_const = 1 # k in knn when emit magnet event to absorb spikes from cluster 0
         self._magnet_mode = False # set magnet_mode to True will lock the magnet_sink_id until magnet_mode is set False
         self._sink_id = 0
+        self._select_buffer = deque()
 
         self.event = EventEmitter() 
         # self.events.add(model_modified=Event)
@@ -543,6 +545,7 @@ class spike_view(View):
                         self._selected = {selected_cluster:self._get_close_spks(box,tpos)}
                         self.highlight(selected=self._selected)
                         self.clu.select(self.selected_spk, caller=self.__module__)
+                        self._select_buffer.clear()
                     
                     elif len(modifiers) ==1 and modifiers[0].name == 'Shift':
                         '''
@@ -588,7 +591,14 @@ class spike_view(View):
     def on_key_press(self, e):
 
         if e.key.name == 'Escape':
-            self.clu.select(np.array([]))
+            # self.clu.select(np.array([]))
+            if len(self._select_buffer)>1:
+                self._select_buffer.pop()
+                self.clu.select(np.concatenate(self._select_buffer))
+            elif len(self._select_buffer)==1:
+                self._select_buffer.pop()
+                self.clu.select(np.array([]))
+
             self._magnet_const = 1
             self._magnet_mode = False
             self._bursting_time_threshold = 0.4
@@ -608,6 +618,7 @@ class spike_view(View):
             # if self.is_single_mode:
             newly_selected = self.clu.local2global({self.cluster_mouse_on: np.arange(self.clu[self.cluster_mouse_on].size)})
             selected_spks = np.append(self.clu.selectlist, newly_selected)
+            self._select_buffer.append(newly_selected)
             self.clu.select(selected_spks)
             self._sink_id = self.cluster_mouse_on
                 # all_spkNolist = np.arange(self.clu[self.cluster_mouse_on].size)

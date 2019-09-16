@@ -43,8 +43,11 @@ class pf_view(scene.SceneCanvas):
         if self.pc is not None:
             @self.clu.connect
             def on_select(*args, **kwargs): 
-                place_field = self._get_field(self.gtimes[self.clu.selectlist])
-                self._render(place_field)
+                if len(self.clu.selectlist) > 0:
+                    place_field = self._get_field(self.gtimes[self.clu.selectlist])
+                    self._render(place_field)
+                else:
+                    pass
 
     def on_key_press(self, e):
         if e.text == 'r':
