@@ -217,7 +217,7 @@ def sort(binaryfile, probefile):
                       scale=False
                       # time_segs=[[0,320]]
                      )
-    ctrl.model.sort(clu_method='dpgmm', group_id=0, n_comp=8, max_iter=400)
+    # ctrl.model.sort(clu_method='dpgmm', group_id=0, n_comp=8, max_iter=400)
     ctrl.show()
     sys.exit(app.exec_())
 
