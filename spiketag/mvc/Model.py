@@ -23,7 +23,7 @@ class MainModel(object):
 
     def __init__(self, mua_filename, spk_filename, probe=None, spktag_filename=None, 
                  numbytes=4, binary_radix=13, scale=True, spklen=19, corr_cutoff=0.9, cutoff=[-15000, 1000],
-                 fet_method='pca', fetlen=6, fet_whiten=False,
+                 fet_method='pca', fetlen=4, fet_whiten=False,
                  clu_method='hdbscan', fall_off_size=18, n_jobs=24,
                  time_segs=None,
                  playground_log=None, session_id=0, 

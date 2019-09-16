@@ -50,6 +50,8 @@ class controller(object):
             self.show(group_id)
             self.view.status_bar.setStyleSheet("color:black")
             self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, chs, nspks))
+            self.view.setWindowTitle("Spiketag: {} units".format(self.unit_done)) 
+            
 
         @self.view.clu_view.clu_manager.connect
         def on_select(group_id):
@@ -149,6 +151,14 @@ class controller(object):
     @property
     def nclu(self):
         return len(self.model.clu[self.current_group].index_id)
+
+    @property
+    def group_done(self):
+        return np.where(np.array(self.model.clu_manager.state_list)==3)[0]
+
+    @property
+    def unit_done(self):
+        return sum(list(self.spk_times_all[1].values()))
 
     @property
     def selected_spk_times(self):
@@ -260,6 +270,7 @@ class controller(object):
     def update_view(self):
         i = self.current_group
         self.view.set_data(i, self.model.mua, self.model.spk[i], self.model.fet[i], self.model.clu[i])
+        self.view.setWindowTitle("Spiketag: {} units".format(self.unit_done)) 
 
 
     def sort(self, clu_method='hdbscan'):
@@ -499,7 +510,7 @@ class controller(object):
     def set_vq(self):
         # step 1: set FPGA transfomer and build vq 
         for grp_id in range(self.prb.n_group):
-            if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu[grp_id].nclu>1:
+            if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu_manager.state_list[grp_id]==3:
                 self.set_transformer(group_id=grp_id)
                 self.build_vq(grp_id=grp_id, show=False)
             else:
@@ -517,6 +528,10 @@ class controller(object):
         # step 1: set FPGA transfomer
         for grp_id in range(self.prb.n_group):
             self.fpga.scale[grp_id] = 0  # this will ban the tranformer and check fpga.transformer status
-            if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu[grp_id].nclu>1:
+            if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu_manager.state_list[grp_id]==3:
                 self.set_transformer(group_id=grp_id)
                 self.fpga.label[grp_id] = np.zeros((500,))
+
+    def done(self):
+        self.reset_vq()
+        self.set_vq()
