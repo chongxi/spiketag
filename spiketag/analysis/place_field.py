@@ -55,7 +55,7 @@ class place_field(object):
     def initialize(self, bin_size, v_cutoff, maze_range=None):
         self.dt = self.ts[1] - self.ts[0]
         self.get_maze_range(maze_range)
-        self.get_speed(smooth_window=60, std=15, v_cutoff=5) 
+        self.get_speed(smooth_window=60, std=15, v_cutoff=v_cutoff) 
         self.occupation_map(bin_size)
 
 
