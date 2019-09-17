@@ -29,6 +29,8 @@ class spike_view(View):
         self._magnet_mode = False # set magnet_mode to True will lock the magnet_sink_id until magnet_mode is set False
         self._sink_id = 0
         self._select_buffer = deque()
+        self._clu_compare_point = 0
+        self.scan_mode = False
 
         self.event = EventEmitter() 
         # self.events.add(model_modified=Event)
@@ -546,6 +548,8 @@ class spike_view(View):
                         self.highlight(selected=self._selected)
                         self.clu.select(self.selected_spk, caller=self.__module__)
                         self._select_buffer.clear()
+                        self._clu_compare_point = 0
+                        self.scan_mode = False
                     
                     elif len(modifiers) ==1 and modifiers[0].name == 'Shift':
                         '''
@@ -602,6 +606,26 @@ class spike_view(View):
             self._magnet_const = 1
             self._magnet_mode = False
             self._bursting_time_threshold = 0.4
+            self._clu_compare_point = 0
+            self.scan_mode = False
+
+        if e.text == 'w':
+            if not self.scan_mode: self.scan_mode = not self.scan_mode
+            if self.scan_mode and self._clu_compare_point == 0: # when scan start
+                self._spks_for_compare = self.clu.selectlist
+                self._spks_scanning = self.clu.index[0]
+            elif self.scan_mode and self._clu_compare_point!=0:
+                self._spks_scanning = self.clu.index[abs(self._clu_compare_point % self.clu.nclu)]
+            self._clu_compare_point += 1
+            self.clu.select(np.hstack((self._spks_for_compare, self._spks_scanning)))
+            # type 'w' again to scan, when reach maximum goes back to zero
+
+        if e.text == 'W':
+            if self.scan_mode:
+                self._clu_compare_point -= 1
+                self._spks_scanning = self.clu.index[abs(self._clu_compare_point % self.clu.nclu)]
+                self.clu.select(np.hstack((self._spks_for_compare, self._spks_scanning)))
+
 
         if e.text == 'c':
             self.view_lock = not self.view_lock
@@ -620,6 +644,8 @@ class spike_view(View):
             selected_spks = np.append(self.clu.selectlist, newly_selected)
             self._select_buffer.append(newly_selected)
             self.clu.select(selected_spks)
+            self._clu_compare_point = 0
+            self.scan_mode = False
             self._sink_id = self.cluster_mouse_on
                 # all_spkNolist = np.arange(self.clu[self.cluster_mouse_on].size)
                 # self._selected[self.cluster_mouse_on] = all_spkNolist
