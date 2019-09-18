@@ -159,6 +159,8 @@ class CLU(EventEmitter):
         index_count: dict of {id: counts}
         index_id:    array of id
         '''
+        if self.membership.dtype != np.int:
+            self.membership = self.membership.astype(np.int)
         self.index       = {}
         self.index_count = {}
         self.index_id    = np.unique(self.membership)
@@ -344,6 +346,17 @@ class CLU(EventEmitter):
         self.__construct__()
         self.emit('cluster', action = 'exchange')
 
+    @instack_membership
+    def reorder(self, sorted_idx):
+        '''
+            reorder clusters
+        '''
+        new_labels = np.zeros(self.membership.shape, dtype=np.int)
+        for i, sorted_clu_id in enumerate(sorted_idx):
+            new_labels[self.membership==sorted_clu_id] = i
+        self.membership = new_labels
+        self.__construct__()
+        self.emit('cluster', action = 'reorder')
 
     def delete(self, idx):
         # self._membership_stack.append(self.membership.copy())
