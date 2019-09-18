@@ -41,7 +41,7 @@ def idx_still_spike(time_spike, time_still, dt):
     idx = np.searchsorted(time_still, time_spike) - 1
     dd = time_spike - time_still[idx]
     idx_still = np.where(dd < dt)[0]
-    assert(np.max(time_spike[idx_still] - time_still[idx[idx_still]])<dt)
+    # assert(np.max(time_spike[idx_still] - time_still[idx[idx_still]])<dt)
     return idx[idx_still], idx_still
 
 
@@ -174,7 +174,8 @@ class MUA(object):
 
             ### remove spike during v_smoothed < 5cm/sec
             if speed_cutoff is True and self.time_still is not None and spks is not None:
-                _, idx_still = idx_still_spike(self.spk_times[g]/self.fs, self.time_still, 1/60.)
+                dt = 1/30. # behavior time bin is 33.333 ms
+                _, idx_still = idx_still_spike(self.spk_times[g]/self.fs, self.time_still, dt)
                 n_idx_still = float(idx_still.shape[0])
                 n_spk       = float(self.spk_times[g].shape[0])
                 info('group {} delete {}%({}/{}) spks via speed'.format(g, n_idx_still/n_spk*100, n_idx_still, n_spk))

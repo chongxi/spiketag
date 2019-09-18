@@ -51,7 +51,7 @@ class controller(object):
             self.view.status_bar.setStyleSheet("color:black")
             self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, chs, nspks))
             self.view.setWindowTitle("Spiketag: {} units".format(self.unit_done)) 
-            
+
 
         @self.view.clu_view.clu_manager.connect
         def on_select(group_id):
@@ -385,15 +385,34 @@ class controller(object):
     def get_fields(self, group_id=-1, kernlen=21, std=3):
         if group_id == -1:
             group_id = self.current_group
-        spk_time = {}
-        for clu_id in self.model.clu[group_id].index.keys():
-            spk_time[clu_id] = self.get_spk_times(group_id, clu_id)
-        self.model.pc.get_fields(spk_time, kernlen, std)
+        # spk_time = {}
+        # for clu_id in self.model.clu[group_id].index.keys():
+        #     spk_time[clu_id] = self.get_spk_times(group_id, clu_id)
+        self.model.pc.get_fields(self.spk_times, kernlen, std)
         self.fields[group_id] = self.model.pc.fields
 
 
     def plot_fields(self, N=4, size=3):
         self.model.pc.plot_fields(N, size)
+
+
+    def field_reorder(self, group_id=-1, thres=1):
+        '''
+        1. merge clusters based on its spatial information (bits), merge if lower than thres bits
+        2. reorder clusters according to spatial bits
+        '''
+        if group_id == -1:
+            group_id = self.current_group
+        self.model.pc.get_fields(self.spk_time)
+        self.model.pc.rank_fields('spatial_bit_smoothed_spike')
+        # 1. merge low bits clusters
+        low_spatial_clus = np.where(self.model.pc.metric['spatial_bit_smoothed_spike']<thres)[0]
+        self.clu.merge(low_spatial_clus)
+        # 2. reorder clusters according to bits (0: lowest noise, 1: highest, 2: second highest ... )
+        self.model.pc.get_fields(self.spk_time)
+        self.model.pc.rank_fields('spatial_bit_smoothed_spike')        
+        sorted_idx = np.roll(self.model.pc.sorted_fields_id, 1) # put noise first as grey cluster
+        self.clu.reorder(sorted_idx)
 
 
     def replay(self, maze_folder, neuron_id, replay_speed=10, replay_start_time=0., mirror=True, spk_time=None):
