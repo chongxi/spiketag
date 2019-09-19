@@ -10,6 +10,7 @@ from ..fpga import xike_config
 from ..analysis.place_field import place_field
 from ..view import scatter_3d_view
 from playground.view import maze_view
+from ..fpga import write_mem_16, read_mem_16
 
 
 class controller(object):
@@ -37,7 +38,7 @@ class controller(object):
             # initialize FPGA channel grouping
             # both ch_hash and ch_grpNo are configured
             # every channel has a `ch_hash` and a `ch_grpNo` 
-            self.fpga = xike_config(probe=self.prb, offset_value=32)
+            self.fpga = xike_config(probe=self.prb)
             
             
         @self.view.prb.connect
@@ -186,13 +187,13 @@ class controller(object):
         self._spk_time_all = {}
         self._nclu_all = {}
         for grp_id in range(self.prb.n_group):
-            _spk_times = {}
-            cluNo = self.model.clu[grp_id].index.keys()
-            for i in cluNo:
-                if i != 0:  # first cluster always noise
-                    _spk_times[i-1] = self.get_spk_times(grp_id, cluster_id=i)  # start from 0
-            self._spk_time_all[grp_id] = _spk_times
-            self._nclu_all[grp_id] = len(cluNo) - 1
+            if self.model.clu_manager.state_list[grp_id]==3:
+                _spk_times = {}
+                cluNo = self.model.clu[grp_id].index.keys()
+                for i in cluNo:
+                    _spk_times[i] = self.get_spk_times(grp_id, cluster_id=i)  # start from 0
+                self._spk_time_all[grp_id] = _spk_times
+                self._nclu_all[grp_id] = len(cluNo)
         return self._spk_time_all, self._nclu_all
 
 
@@ -535,7 +536,13 @@ class controller(object):
             else:
                 pass
 
-        # step 2: set FPGA vq
+        # step 2: change labels such that each group has a different range that no overlapping
+        base_label = 0  # start from zero
+        for _grpNo, _labels in self.vq['labels'].items():
+            _labels += base_label
+            base_label = _labels.max() + 1 # each group start from the max label of last group + 1
+
+        # step 3: set FPGA vq
         for grpNo in self.vq['points'].keys():
             x = self.vq['points'][grpNo]
             y = self.vq['labels'][grpNo]
@@ -554,3 +561,4 @@ class controller(object):
     def done(self):
         self.reset_vq()
         self.set_vq()
+        write_mem_16(0, self.unit_done)
