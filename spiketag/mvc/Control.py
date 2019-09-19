@@ -475,7 +475,7 @@ class controller(object):
         _fetview.set_data(_fet)
         _fetview.show()
 
-    def build_vq(self, grp_id, n_dim=4, n_vq=None, show=True):
+    def build_vq(self, grp_id, n_dim=4, n_vq=None, show=True, method='proportional'):
         import warnings
         warnings.filterwarnings('ignore')
         # get the vq and vq labels
@@ -484,8 +484,12 @@ class controller(object):
         if self.model.clu[grp_id].nclu>1:  # don't pass vq for those group has only one cluster
             vq = []
             if n_vq is None:
-                k = self.model.nspk_per_clu[grp_id].sum() / self._vq_npts
-                n_vq = np.around(self.model.nspk_per_clu[grp_id] / k).astype(np.int32)
+                if method == 'proportional':
+                    k = self.model.nspk_per_clu[grp_id].sum() / self._vq_npts
+                    n_vq = np.around(self.model.nspk_per_clu[grp_id] / k).astype(np.int32)
+                elif method == 'equal':
+                    k = int(self._vq_npts/self.model.clu[grp_id].nclu)
+                    n_vq = np.ones((self.model.clu[grp_id].nclu,)).astype(np.int32) * k
                 err = n_vq.sum() - self._vq_npts
                 n_vq[-1] -= err
                 assert(n_vq.sum()==500)
@@ -499,6 +503,8 @@ class controller(object):
             self.vq['labels'][grp_id] = self._predict(grp_id, np.vstack(vq), n_dim)
             self.vq['scores'][grp_id] = self._validate_vq(grp_id, n_dim)
             print('group {}: accuracy:{}'.format(grp_id, self.vq['scores'][grp_id]))
+
+            assert(self.vq['labels'][grp_id].max() == self.model.clu[grp_id].nclu - 1)
 
             if show:
                 self.vq_view = scatter_3d_view()
@@ -527,12 +533,12 @@ class controller(object):
         labels = np.asarray(list(self.model.kd.values()))[np.argmin(d, axis=0)]
         return labels
 
-    def set_vq(self):
+    def set_vq(self, vq_method='proportional'):
         # step 1: set FPGA transfomer and build vq 
         for grp_id in range(self.prb.n_group):
             if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu_manager.state_list[grp_id]==3:
                 self.set_transformer(group_id=grp_id)
-                self.build_vq(grp_id=grp_id, show=False)
+                self.build_vq(grp_id=grp_id, show=False, method=vq_method)
             else:
                 pass
 
@@ -558,7 +564,7 @@ class controller(object):
                 self.set_transformer(group_id=grp_id)
                 self.fpga.label[grp_id] = np.zeros((500,))
 
-    def done(self):
+    def done(self, vq_method='proportional'):
         self.reset_vq()
-        self.set_vq()
+        self.set_vq(vq_method)
         write_mem_16(0, self.unit_done)
