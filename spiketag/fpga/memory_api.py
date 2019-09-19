@@ -51,6 +51,11 @@ def thr_reset(nCh):
 
 
 ############ xillybus_mem_16 #######################
+'''
+mem_16 has 16 bits and 32 addresses
+This RAM is used for setting some communication variable
+between PC and FPGA. 
+'''
 def write_mem_16(offset, v, dtype='<h', binpoint=0):
     addr = offset * 2
     w16 = open('/dev/xillybus_mem_16', 'wb')
