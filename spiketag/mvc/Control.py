@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.neighbors import KDTree
 from .Model import MainModel
+from ..analysis import spk_time_to_scv 
 from .View import MainView
 from ..base import CLU
 from ..utils import warning, conf
@@ -10,7 +11,6 @@ from ..fpga import xike_config
 from ..analysis.place_field import place_field
 from ..view import scatter_3d_view
 from playground.view import maze_view
-from ..fpga import write_mem_16, read_mem_16
 
 
 class controller(object):
@@ -215,10 +215,11 @@ class controller(object):
     def spk_times_all_in_one_array(self):
         return np.array(list(self.spk_times_all_in_one.values()))
 
-    @property
-    def noisy_spike_idx(self):
-        return self._noisy_spike_idx
-
+    def spk_count_vector(self, bin_size=33.33, ts=None):
+        if ts is None:
+            ts = self.model.pc.ts
+        self._scv = spk_time_to_scv(self.spk_times_all_in_one, delta_t=bin_size, ts=ts)
+        return self._scv
 
     def delete_spk(self, spk_idx):
         i = self.current_group
@@ -580,4 +581,3 @@ class controller(object):
         self.reset_vq()
         self.set_vq(vq_method)
         self.fpga.set_unit_number(self.unit_done)
-        # write_mem_16(0, self.unit_done)

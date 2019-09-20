@@ -6,24 +6,24 @@ import torch
 import numpy as np
 
 
-def spk_time_to_suv(spk_time, ts, delta_t=250e-3, sublist=None):
+def spk_time_to_scv(spk_time, ts, delta_t=250e-3, sublist=None):
     if sublist is None:
         spk_time_list=list(spk_time.values())
     else:
         spk_time_list = [spk_time.get(key) for key in sublist]
-    suv = suv_from_spk_time_list(spk_time_list, ts, delta_t)
+    suv = scv_from_spk_time_list(spk_time_list, ts, delta_t)
     return suv
 
 @njit(cache=True, parallel=True, fastmath=True)
-def suv_from_spk_time_list(spk_time_list, ts, delta_t=250e-3):
+def scv_from_spk_time_list(spk_time_list, ts, delta_t=250e-3):
     N = len(spk_time_list)
     T = ts.shape[0]
     suv = np.zeros((N,T))
     for j in prange(T):    
         for i in prange(N):
 #             suv[i, j] = np.where(np.logical_and(spk_time_list[i]>=ts[j]-dt, spk_time_list[i]<ts[j]))[0].shape[0]
-            suv[i, j] = np.sum(np.logical_and( spk_time_list[i] >  ts[j]-delta_t, 
-                                               spk_time_list[i] <= ts[j]          ))
+            suv[i, j] = np.sum(np.logical_and(spk_time_list[i] >  ts[j]-delta_t, 
+                                              spk_time_list[i] <= ts[j]))
     return suv
 
 
