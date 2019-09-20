@@ -155,7 +155,9 @@ class controller(object):
 
     @property
     def group_done(self):
-        return np.where(np.array(self.model.clu_manager.state_list)==3)[0]
+        self._group_done = np.where(np.array(self.model.clu_manager.state_list)==3)[0]
+        print('{} groups done'.format(self._group_done.shape[0]))
+        return self._group_done
 
     @property
     def unit_done(self):
@@ -191,9 +193,10 @@ class controller(object):
                 _spk_times = {}
                 cluNo = self.model.clu[grp_id].index.keys()
                 for i in cluNo:
-                    _spk_times[i] = self.get_spk_times(grp_id, cluster_id=i)  # start from 0
+                    if i>0:  # first one is noise
+                        _spk_times[i-1] = self.get_spk_times(grp_id, cluster_id=i)  # start from 0
                 self._spk_time_all[grp_id] = _spk_times
-                self._nclu_all[grp_id] = len(cluNo)
+                self._nclu_all[grp_id] = len(cluNo) - 1 # first one is noise
         return self._spk_time_all, self._nclu_all
 
 
@@ -207,6 +210,14 @@ class controller(object):
                 self._spk_times_all_in_one[i] = _spk_time
                 i += 1
         return self._spk_times_all_in_one
+
+    @property
+    def spk_times_all_in_one_array(self):
+        return np.array(list(self.spk_times_all_in_one.values()))
+
+    @property
+    def noisy_spike_idx(self):
+        return self._noisy_spike_idx
 
 
     def delete_spk(self, spk_idx):
@@ -480,7 +491,7 @@ class controller(object):
         warnings.filterwarnings('ignore')
         # get the vq and vq labels
         from sklearn.cluster import MiniBatchKMeans
-        
+
         vq = []
         if n_vq is None:
             if method == 'proportional':
@@ -544,7 +555,10 @@ class controller(object):
         base_label = 0  # start from zero
         for _grpNo, _labels in self.vq['labels'].items():
             _labels += base_label
-            base_label = _labels.max() + 1 # each group start from the max label of last group + 1
+            _labels[_labels==base_label] = 0
+            if _labels.max() != 0:
+                base_label = _labels.max() # base_label gets up each group by its #units
+
 
         # step 3: set FPGA vq
         for grpNo in self.vq['points'].keys():
@@ -565,4 +579,5 @@ class controller(object):
     def done(self, vq_method='proportional'):
         self.reset_vq()
         self.set_vq(vq_method)
-        write_mem_16(0, self.unit_done)
+        self.fpga.set_unit_number(self.unit_done)
+        # write_mem_16(0, self.unit_done)
