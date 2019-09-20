@@ -13,7 +13,7 @@ class dummyobj(object):
 
 class xike_config(object):
 
-    def __init__(self, probe=None, offset_value=32, thres_value=-500):
+    def __init__(self, probe=None):
         """TODO: to be defined1.
         """
 
@@ -49,7 +49,7 @@ class xike_config(object):
         2. dc_offset and threshold
         '''
         self.dc = bram_thres.offset(nCh=self.n_ch)
-        self.dc[:] = np.ones((self.n_ch,)) * offset_value
+        self.dc[:] = np.ones((self.n_ch,)) * 32 # emprical, this need some invesigation why the offset exists
         self.thres = bram_thres.threshold(nCh=self.n_ch)
 
         '''
