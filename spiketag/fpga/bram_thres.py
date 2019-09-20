@@ -19,11 +19,11 @@ class ch_ref(object):
         self.base = base_address
         self.ch_ref = np.zeros(nCh)
 
-    def enable(self, flag):
-        if flag is True:
-            write_mem_16(self.enable_reg_addres,0b0001)
-        elif flag is False:
-            write_mem_16(self.enable_reg_addres,0b0000)
+    # def enable(self, flag):
+    #     if flag is True:
+    #         write_mem_16(self.enable_reg_addres,0b0001)
+    #     elif flag is False:
+    #         write_mem_16(self.enable_reg_addres,0b0000)
 
     def __setitem__(self, chNo, ch_ref):
         self.ch_ref[chNo] = ch_ref
@@ -75,11 +75,11 @@ class chgpNo(object):
         self.base = base_address
         self.chgpNo = np.zeros(nCh)
 
-    def enable(self, flag):
-        if flag is True:
-            write_mem_16(self.enable_reg_addres,0b0001)
-        elif flag is False:
-            write_mem_16(self.enable_reg_addres,0b0000)
+    # def enable(self, flag):
+    #     if flag is True:
+    #         write_mem_16(self.enable_reg_addres,0b0001)
+    #     elif flag is False:
+    #         write_mem_16(self.enable_reg_addres,0b0000)
 
     def __setitem__(self, chNo, chgpNo):
         self.chgpNo[chNo] = chgpNo
@@ -111,11 +111,11 @@ class offset(object):
         self.base = base_address
         self.offset = np.zeros(nCh)
 
-    def enable(self, flag):
-        if flag is True:
-            write_mem_16(self.enable_reg_addres,0b0001)
-        elif flag is False:
-            write_mem_16(self.enable_reg_addres,0b0000)
+    # def enable(self, flag):
+    #     if flag is True:
+    #         write_mem_16(self.enable_reg_addres,0b0001)
+    #     elif flag is False:
+    #         write_mem_16(self.enable_reg_addres,0b0000)
 
     def __setitem__(self, chNo, offset):
         self.offset[chNo] = offset
@@ -205,17 +205,17 @@ class threshold(object):
     thres[:] = thres_arr
     """
     def __init__(self, nCh=32):
-        self.enable_reg_addres = 0
+        # self.enable_reg_addres = 0
         self.nCh = nCh
         # thr_reset(nCh)
-        self.enable(True)
+        # self.enable(True)
         self.thres = np.zeros(nCh)
 
-    def enable(self, flag):
-        if flag is True:
-            write_mem_16(self.enable_reg_addres,0b0001)
-        elif flag is False:
-            write_mem_16(self.enable_reg_addres,0b0000)
+    # def enable(self, flag):
+    #     if flag is True:
+    #         write_mem_16(self.enable_reg_addres,0b0001)
+    #     elif flag is False:
+    #         write_mem_16(self.enable_reg_addres,0b0000)
 
     def __setitem__(self, chNo, thr):
         self.thres[chNo] = thr 
