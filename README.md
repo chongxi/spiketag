@@ -19,6 +19,9 @@ Make sure CUDA 10.0 is installed (nvcc --version) and nvidia driver is loaded co
 
 Others:
 
-6. sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0
-   sudo apt-get install ffmpeg libav-tools
-   sudo pip install pyaudio
+6. 
+```
+sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0
+sudo apt-get install ffmpeg libav-tools
+sudo pip install pyaudio
+```
