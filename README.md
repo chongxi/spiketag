@@ -13,6 +13,12 @@ For py37 developer
 4. go to spiketag: python setup.py develop
 
 
-Make sure CUDA 10.0 is installed (nvcc --version)
+Make sure CUDA 10.0 is installed (nvcc --version) and nvidia driver is loaded correctly (nvidia-smi)
 
 5. conda install pytorch torchvision -c pytorch
+
+Others:
+
+6. sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0
+   sudo apt-get install ffmpeg libav-tools
+   sudo pip install pyaudio
