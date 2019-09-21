@@ -105,7 +105,7 @@ class SPKTAG(object):
         self.clu_statelist = self.meta['clu_statelist']
 
         # condensed tree info
-        self.treeinfo = np.load(filename+'.npy').item()
+        self.treeinfo = np.load(filename+'.npy', allow_pickle=True).item()
 
         # spiketag
         self.dtype = [('t', 'int32'), 
