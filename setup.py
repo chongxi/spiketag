@@ -37,7 +37,8 @@ setup(name='spiketag',
           'vispy',
           'phy',
           'seaborn',
-          'hdbscan'
+          'hdbscan',
+          'ipyparallel'
       ],
       extras_require=dict(
           docs=['sphinx', 'numpydoc'],
