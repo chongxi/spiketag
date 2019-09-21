@@ -12,3 +12,8 @@ For py37 developer
 4. go to vispy: python setup.py develop
 
 5. go to spiketag: python setup.py develop
+
+
+Make sure CUDA 10.0 is installed
+
+6. conda install pytorch torchvision -c pytorch
