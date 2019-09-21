@@ -7,13 +7,12 @@ For py37 developer
 2. conda install -c hargup/label/pypi pyopengl-accelerate
 
 ## only 2.0.2 is compatabile with current vispy
-3. conda install matplotlib=2.0.2 
 
-4. go to vispy: python setup.py develop
+3. go to vispy: python setup.py develop
 
-5. go to spiketag: python setup.py develop
+4. go to spiketag: python setup.py develop
 
 
-Make sure CUDA 10.0 is installed
+Make sure CUDA 10.0 is installed (nvcc --version)
 
-6. conda install pytorch torchvision -c pytorch
+5. conda install pytorch torchvision -c pytorch
