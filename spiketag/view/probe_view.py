@@ -88,7 +88,7 @@ class probe_view(scene.SceneCanvas):
         self.prb = prb
         self.n_grp = len(prb.grp_dict.keys())
         mapping = prb.mapping
-        pos = np.vstack((prb.mapping.values()))
+        pos = np.vstack(list((prb.mapping.values())))
         self.xmin = pos[:,0].min() - 50
         self.xmax = pos[:,0].max() + 50
         self.ymin = pos[:,1].min() - 25
@@ -96,8 +96,8 @@ class probe_view(scene.SceneCanvas):
         self.font_size = font_size
 
 
-        self.electrode_id = np.hstack(mapping.keys())
-        self.electrode_pos = np.vstack(mapping.values())
+        self.electrode_id = np.hstack(list(mapping.keys()))
+        self.electrode_pos = np.vstack(list(mapping.values()))
         self.electrode_pos_KD = KDTree(self.electrode_pos, leaf_size=30, metric='euclidean')
         self.electrode_pads_color = np.repeat(np.array([1., 1., 1., 1.]).reshape(1,-1), self.electrode_pos.shape[0], axis=0)
         self.electrode_pads.set_data(self.electrode_pos, symbol='square', face_color=self.electrode_pads_color, size=self.font_size)

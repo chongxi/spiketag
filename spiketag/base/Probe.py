@@ -182,7 +182,7 @@ class BaseProbe(EventEmitter):
         '''
         prb.chs is the channels aranged by tetrode grouping, it is prb.grp_matrix.ravel()
         '''
-        return np.hstack(self.grp_dict.values())
+        return np.hstack(list(self.grp_dict.values()))
 
     @property
     def bad_chs(self):
