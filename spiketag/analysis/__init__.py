@@ -6,6 +6,14 @@ import torch
 import numpy as np
 
 
+from numba.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
+import warnings
+
+warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
+warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
+
+
+
 def spk_time_to_scv(spk_time, ts, delta_t=250e-3, sublist=None):
     if sublist is None:
         spk_time_list=list(spk_time.values())
@@ -72,7 +80,7 @@ def bayesian_decoding(Fr, suv, pos, pos_offset, bin_size, delta_t=100e-3):
     possion_matrix = delta_t*Fr.sum(axis=0)
     log_fr = np.log(Fr) # make sure Fr[Fr==0] = 1e-12
     for i in prange(suv.shape[1]): # i is time point
-        suv_weighted_log_fr = licomb_Matrix(suv[:,i], log_fr)
+        suv_weighted_log_fr = licomb_Matrix(suv[:,i].ravel(), log_fr)
         true_xy[i] = (pos[i]-pos_offset)//bin_size
         post_2d[i] = np.exp(suv_weighted_log_fr - possion_matrix)
     return true_xy, post_2d
