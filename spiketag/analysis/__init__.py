@@ -21,7 +21,6 @@ def scv_from_spk_time_list(spk_time_list, ts, delta_t=250e-3):
     suv = np.zeros((N,T))
     for j in prange(T):    
         for i in prange(N):
-#             suv[i, j] = np.where(np.logical_and(spk_time_list[i]>=ts[j]-dt, spk_time_list[i]<ts[j]))[0].shape[0]
             suv[i, j] = np.sum(np.logical_and(spk_time_list[i] >  ts[j]-delta_t, 
                                               spk_time_list[i] <= ts[j]))
     return suv
