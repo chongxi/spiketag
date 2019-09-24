@@ -1,5 +1,5 @@
 cython >= 0.24
-numba == 0.42.0
+numba == 0.45.1
 matplotlib == 2.0.2
 numexpr >= 2.5.2
 numpy >= 1.15.0
