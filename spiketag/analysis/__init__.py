@@ -86,10 +86,17 @@ def argmax_2d_tensor(X):
     post_xy = np.vstack((indices.numpy()%X.shape[2], indices.numpy()//X.shape[2])).T
     return np.squeeze(post_xy)
 
-def smooth(y, box_pts):
-    box = np.ones(box_pts)/box_pts
-    y_smooth = np.convolve(y, box, mode='same')
-    return y_smooth
+def smooth(x, window_len=60):
+    '''
+    moving weighted average
+    '''
+    tau = 0.0005
+    y = np.empty_like(x)
+    box = np.exp(tau*np.arange(window_len))
+    box = box/float(box.sum())
+    for i in range(y.shape[1]):
+        y[:,i] = np.convolve(x[:,i], box, mode='same')
+    return y
 
 # def smooth(x, window_len=50, window='hanning'):
 #     """smooth the data using a window with requested size.
