@@ -91,13 +91,14 @@ class xike_config(object):
     def set_threshold(self, threshold):
         self.thres[:] = threshold
 
-    def set_unit_number(self, n_units):
-        write_mem_16(0, n_units)
-
     @property
     def n_units(self):
         self._n_units = read_mem_16(0)
         return self._n_units
+
+    @n_units.setter
+    def n_units(self, val):
+        write_mem_16(0, val)
 
     def _config_FPGA_probe(self, prb):
         self.probe = prb
