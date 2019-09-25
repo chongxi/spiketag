@@ -30,3 +30,16 @@ def firing_pos_from_scv(scv, pos, neuron_id, valid_bin):
     for i in range(len(firing_pos)):
         _firing_pos_array[i] = firing_pos[i]
     return _firing_pos_array
+
+
+def interp_nan(data):
+    '''
+    use this to fix any bad position segment (use `np.apply_along_axis` trick)
+    np.apply_along_axis(interp_nan, 0, pos_seg)
+    '''
+    bad_indexes = np.isnan(data)
+    good_indexes = np.logical_not(bad_indexes)
+    good_data = data[good_indexes]
+    interpolated = np.interp(bad_indexes.nonzero()[0], good_indexes.nonzero()[0], good_data)
+    data[bad_indexes] = interpolated
+    return data
