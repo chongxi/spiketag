@@ -169,9 +169,36 @@ class place_field(object):
         self.firing_map = self.firing_map.T
         np.seterr(divide='ignore', invalid='ignore')
         self.FR = self.firing_map/self.O/self.dt
-        self.FR = np.nan_to_num(self.FR)
+        # self.FR = np.nan_to_num(self.FR)
+        self.FR[np.isnan(self.FR)] = 0
+        self.FR[np.isinf(self.FR)] = 0
         self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
         return self.FR_smoothed
+
+
+    def _firing_map_from_scv(self, scv, neuron_id, section=None):
+        '''
+        firing heat map constructed from spike count vector (scv) and position
+        '''
+        # assert(scv.shape[1]==self.pos.shape[0])
+        firing_pos = []
+        t_bin = 0
+        total_bin = scv.shape[1]
+        valid_bin = np.array(np.array(section)*total_bin, dtype=np.int)
+        for count in scv[neuron_id]:
+            count = int(count)
+            if count!=0 and valid_bin[0]<t_bin<valid_bin[1]: # compute when in bin range and has spike count
+                for i in range(count):
+                    firing_pos.append(self.pos[t_bin])
+            t_bin += 1
+        firing_pos = np.vstack(firing_pos)
+        firing_map, x_edges, y_edges = np.histogram2d(x=firing_pos[:,0], y=firing_pos[:,1], 
+                                                      bins=self.nbins, range=self.maze_range)
+        firing_map = firing_map.T/self.O
+        firing_map[np.isnan(firing_map)] = 0
+        firing_map[np.isinf(firing_map)] = 0
+        firing_map_smoothed = signal.convolve2d(firing_map, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
+        return firing_map_smoothed        
 
 
     def get_field(self, spk_time_dict, neuron_id):
