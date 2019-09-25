@@ -580,4 +580,4 @@ class controller(object):
     def done(self, vq_method='proportional'):
         self.reset_vq()
         self.set_vq(vq_method)
-        self.fpga.set_unit_number(self.unit_done)
+        self.fpga.n_units = self.unit_done
