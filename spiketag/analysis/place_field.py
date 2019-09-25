@@ -4,6 +4,7 @@ from scipy import signal
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 from scipy.interpolate import interp1d
+from .core import firing_pos_from_scv
 
 
 
@@ -149,7 +150,10 @@ class place_field(object):
         ax[1].pcolormesh(self.X, self.Y, self.O, cmap=cm.hot)
         plt.show()
 
-
+    @property
+    def map_binned_size(self):
+        return np.array(np.diff(self.maze_range)/self.bin_size, dtype=np.int).ravel()[::-1]
+    
     @staticmethod
     def gkern(kernlen=21, std=2):
         """Returns a 2D Gaussian kernel array."""
@@ -176,28 +180,23 @@ class place_field(object):
         return self.FR_smoothed
 
 
-    def _firing_map_from_scv(self, scv, neuron_id, section=None):
+    def firing_map_from_scv(self, scv, section=[0,1]):
         '''
         firing heat map constructed from spike count vector (scv) and position
         '''
         # assert(scv.shape[1]==self.pos.shape[0])
-        firing_pos = []
-        t_bin = 0
-        total_bin = scv.shape[1]
+        n_neurons, total_bin = scv.shape
         valid_bin = np.array(np.array(section)*total_bin, dtype=np.int)
-        for count in scv[neuron_id]:
-            count = int(count)
-            if count!=0 and valid_bin[0]<t_bin<valid_bin[1]: # compute when in bin range and has spike count
-                for i in range(count):
-                    firing_pos.append(self.pos[t_bin])
-            t_bin += 1
-        firing_pos = np.vstack(firing_pos)
-        firing_map, x_edges, y_edges = np.histogram2d(x=firing_pos[:,0], y=firing_pos[:,1], 
-                                                      bins=self.nbins, range=self.maze_range)
-        firing_map = firing_map.T/self.O
-        firing_map[np.isnan(firing_map)] = 0
-        firing_map[np.isinf(firing_map)] = 0
-        firing_map_smoothed = signal.convolve2d(firing_map, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
+        firing_map_smoothed = np.zeros((n_neurons, *self.map_binned_size))
+        for neuron_id in range(n_neurons):
+            firing_pos = firing_pos_from_scv(scv, self.pos, neuron_id, valid_bin)
+            firing_map, x_edges, y_edges = np.histogram2d(x=firing_pos[:,0], y=firing_pos[:,1], 
+                                                          bins=self.nbins, range=self.maze_range)
+            firing_map = firing_map.T/self.O/self.dt
+            firing_map[np.isnan(firing_map)] = 0
+            firing_map[np.isinf(firing_map)] = 0
+            firing_map_smoothed[neuron_id] = signal.convolve2d(firing_map, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
+            firing_map_smoothed[firing_map_smoothed==0] = 1e-25
         return firing_map_smoothed        
 
 
