@@ -6,17 +6,18 @@ import mpl_toolkits.axes_grid1
 import matplotlib.widgets
 
 
-def comet(pos, fs, pos_compare=None, start=None, stop=None, length=300, interval=1, markersize=25, blit=True, **kwargs):
+def comet(pos, fs, pos_compare=None, start=1, stop=None, length=300, interval=1, markersize=25, blit=True, player=False, **kwargs):
     '''
     ani = comet2(pos=pos, pos_compare=pos[300:, :], start=300, stop=pos.shape[0], length=300, interval=1, 
                  blit=True)
     '''
-    if start is None:
-        start = 0
     if stop is None:
-        stop  = pos.shape[0]
+        if pos_compare is not None:
+            stop = min(pos.shape[0], pos_compare.shape[0])
+        else:
+            stop = pos.shape[0] 
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(dpi=200)
     range_min, range_max = pos.min(axis=0), pos.max(axis=0)
     margin = (range_min[0]+range_max[0])/2*0.2
     space  = (range_max[0]-range_min[0])//10
@@ -68,9 +69,12 @@ def comet(pos, fs, pos_compare=None, start=None, stop=None, length=300, interval
         else:
             return point1, line1, time_text
 
-    ani = Player(fig, init_func=init, func=update, mini=start, maxi=stop, interval=interval, blit=blit, **kwargs)
-    # ani = animation.FuncAnimation(fig, init_func=init, func=update, frames=np.arange(start, stop), interval=interval, **kwargs)
+    if player is True:
+        ani = Player(fig, init_func=init, func=update, mini=start, maxi=stop, interval=interval, blit=blit, **kwargs)
+    else:
+        ani = animation.FuncAnimation(fig, init_func=init, func=update, frames=np.arange(start, stop), interval=interval, blit=blit, **kwargs)
     return ani
+
 
 
 class _slider(matplotlib.widgets.Slider):
@@ -98,6 +102,7 @@ class _slider(matplotlib.widgets.Slider):
         #     return
 
 
+
 class Player(animation.FuncAnimation):
     def __init__(self, fig, func, frames=None, init_func=None, fargs=None,
                  save_count=None, mini=0, maxi=100, loc=(0.125, 0.92), repeat=False, blit=True, **kwargs):
@@ -110,7 +115,8 @@ class Player(animation.FuncAnimation):
         self.func = func
         self.init_gui(loc)
         self.step_len=1
-        fig.canvas.mpl_connect('key_press_event', self.press)
+        self.fig.canvas.mpl_connect('key_press_event', self.press)
+
         animation.FuncAnimation.__init__(self, self.fig, self.func, frames=self.play(), 
                                            init_func=init_func, fargs=fargs, blit=blit,
                                            save_count=save_count, **kwargs )    
