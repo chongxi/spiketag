@@ -6,7 +6,7 @@ import mpl_toolkits.axes_grid1
 import matplotlib.widgets
 
 
-def comet(pos, fs, pos_compare=None, start=1, stop=None, length=300, interval=1, markersize=25, blit=True, player=False, **kwargs):
+def comet(pos, fs, pos_compare=None, start=1, stop=None, length=300, interval=1, markersize=25, blit=True, player=False, dpi=200, **kwargs):
     '''
     ani = comet2(pos=pos, pos_compare=pos[300:, :], start=300, stop=pos.shape[0], length=300, interval=1, 
                  blit=True)
@@ -17,7 +17,7 @@ def comet(pos, fs, pos_compare=None, start=1, stop=None, length=300, interval=1,
         else:
             stop = pos.shape[0] 
 
-    fig, ax = plt.subplots(dpi=200)
+    fig, ax = plt.subplots(dpi=dpi)
     range_min, range_max = pos.min(axis=0), pos.max(axis=0)
     margin = (range_min[0]+range_max[0])/2*0.2
     space  = (range_max[0]-range_min[0])//10
