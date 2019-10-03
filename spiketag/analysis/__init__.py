@@ -99,7 +99,8 @@ def smooth(x, window_len=60):
     '''
     tau = 0.0005
     y = np.empty_like(x)
-    box = np.exp(tau*np.arange(window_len))
+    # box = np.exp(tau*np.arange(window_len))
+    box = np.ones((window_len,))
     box = box/float(box.sum())
     for i in range(y.shape[1]):
         y[:,i] = np.convolve(x[:,i], box, mode='same')
