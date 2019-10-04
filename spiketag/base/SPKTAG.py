@@ -2,6 +2,7 @@ from .MUA import MUA
 from .SPK import SPK
 from .FET import FET
 from .CLU import CLU
+from .CLU import status_manager
 import numpy as np
 import json
 import pickle
@@ -150,4 +151,38 @@ class SPKTAG(object):
             gtimes[g] = times[np.where(groups == g)[0]]
         self.gtimes = gtimes
         return self.gtimes
+        
+
+    def get_spk_times(self, group_id, cluster_id):
+        '''
+        get spike times from a specific group with a specific cluster number
+        '''
+        idx = self.clu[group_id][cluster_id]
+        spk_times = self.gtimes[group_id][idx]/25000.
+        return spk_times
+
+    def get_spk_time_dict(self):
+        '''
+        callable after clu_manager is initiated
+        '''
+        k = 0
+        spk_time_dict = {}
+        for grp_No, grp_state in enumerate(self.clu_manager.state_list):
+            if grp_state == 3: # done state
+                for clu_No in range(1, self.clu[grp_No].nclu):
+                    spk_time_dict[k] = self.get_spk_times(grp_No, clu_No)
+                    k+=1
+        return spk_time_dict
+
+    def load(self, filename):
+        self.fromfile(filename)
+        self.gtimes = self.to_gtimes()
+        self.spk = self.tospk()
+        self.fet = self.tofet()
+        self.clu = self.toclu()
+        self.clu_manager = status_manager()
+        for _clu in self.clu.values():
+            self.clu_manager.append(_clu)
+        self.spk_time_dict = self.get_spk_time_dict()
+        print('{} neurons extracted'.format(len(self.spk_time_dict)))
         
