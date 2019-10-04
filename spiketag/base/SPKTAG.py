@@ -184,5 +184,6 @@ class SPKTAG(object):
         for _clu in self.clu.values():
             self.clu_manager.append(_clu)
         self.spk_time_dict = self.get_spk_time_dict()
-        print('{} neurons extracted'.format(len(self.spk_time_dict)))
-        
+        self.spk_time_array = np.array(list(self.spk_time_dict.values()))
+        self.n_units = len(self.spk_time_dict)
+        print('{} neurons extracted'.format(self.n_units))
