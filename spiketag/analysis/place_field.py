@@ -2,6 +2,7 @@ from playground.base import logger
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
+import seaborn as sns
 from matplotlib.pyplot import cm
 from scipy.interpolate import interp1d
 from .core import firing_pos_from_scv
@@ -251,6 +252,7 @@ class place_field(object):
         spk_time_dict is dictionary start from 1: {1: ... 2: ... 3: ...}
         '''
         self.n_fields = len(spk_time_dict.keys())
+        self.n_units  = self.n_fields
         self.fields = {}
         self.fields_matrix = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
 
@@ -282,7 +284,7 @@ class place_field(object):
         self.sorted_fields_id = np.argsort(self.metric[metric])[::-1]
 
 
-    def plot_fields(self, N, size=1.8, cmap='gray', marker=True, markersize=1, alpha=0.5, order=True):
+    def plot_fields(self, N=12, size=3, cmap='hot', marker=False, markersize=1, alpha=0.8, order=True):
         '''
         order: if True will plot with ranked fields according to the metric 
         '''
@@ -308,13 +310,29 @@ class place_field(object):
         return fig
 
 
+    def raster(self, ls, colorful=False, xlim=None, ylim=None):
+        color_list = ['C{}'.format(i) for i in range(self.n_units)]
+        fig, ax = plt.subplots(1,1, figsize=(15,10));
+        if colorful:
+            ax.eventplot(positions=self.spk_time_array, colors=color_list, ls=ls, alpha=.2);
+        else:
+            ax.eventplot(positions=self.spk_time_array, colors='k', ls=ls, alpha=.2);
+        if xlim is not None:
+            ax.set_xlim(xlim);
+        if ylim is not None:
+            ax.set_ylim(ylim);
+        ax.set_ylabel('unit')
+        ax.set_xlabel('time (secs)')
+        sns.despine()
+        return fig
+
+
     def load_spktag(self, spktag_file, show=False):
         spktag = SPKTAG()
         spktag.load(spktag_file)
         self.spktag_file = spktag_file
-        self.spk_time_array, self.spk_time_dict, self.n_units = spktag.spk_time_array, spktag.spk_time_dict, spktag.n_units
+        self.spk_time_array, self.spk_time_dict = spktag.spk_time_array, spktag.spk_time_dict
         self.get_fields(self.spk_time_dict)
         self.rank_fields('spatial_bit_smoothed_spike')
         if show is True:
-            self.plot_fields(N=12, size=3, cmap='hot', 
-                             marker=False, markersize=1, alpha=0.9, order=True);
+            self.field_fig = self.plot_fields();
