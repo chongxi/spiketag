@@ -312,8 +312,8 @@ class place_field(object):
         spktag = SPKTAG()
         spktag.load(spktag_file)
         self.spktag_file = spktag_file
-        self.spk_time_array, self.spk_time_dict = spktag.spk_time_array, spktag.spk_time_dict
-        self.get_fields(spk_time_full)
+        self.spk_time_array, self.spk_time_dict, self.n_units = spktag.spk_time_array, spktag.spk_time_dict, spktag.n_units
+        self.get_fields(self.spk_time_dict)
         self.rank_fields('spatial_bit_smoothed_spike')
         if show is True:
             self.plot_fields(N=12, size=3, cmap='hot', 
