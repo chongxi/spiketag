@@ -366,6 +366,6 @@ class place_field(object):
             scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=self.ts)
         else:
             scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=ts)
-        scv = scv[pc.sorted_fields_id]
+        scv = scv[self.sorted_fields_id]
         return scv
     
