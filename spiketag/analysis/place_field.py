@@ -53,24 +53,42 @@ class place_field(object):
         self.n_fields = 0
 
 
-    def initialize(self, bin_size, v_cutoff, maze_range=None):
-        self.dt = self.ts[1] - self.ts[0]
-        self.get_maze_range(maze_range)
-        self.get_speed(smooth_window=60, std=15, v_cutoff=v_cutoff) 
-        self.occupation_map(bin_size)
-
-
     def interp_pos(self, t, pos, N=1):
         '''
         convert irregularly sampled pos into regularly sampled pos
         N is the dilution sampling factor. N=2 means half of the resampled pos
+        example:
+        >>> new_fs = 200.
+        >>> pc.ts, pc.pos = pc.interp_pos(ts, pos, N=fs/new_fs)
         '''
         dt = np.mean(np.diff(t))
         x, y = interp1d(t, pos[:,0], fill_value="extrapolate"), interp1d(t, pos[:,1], fill_value="extrapolate")
         new_t = np.arange(0.0, dt*len(t), dt*N)
         new_pos = np.hstack((x(new_t).reshape(-1,1), y(new_t).reshape(-1,1)))
         return new_t, new_pos 
-        
+
+
+    def align_with_recording(self, recording_start_time, recording_end_time, replay_offset=0):
+        '''
+        ts before alignment   |--------------------|
+        behavior  start:      |
+        behavior    end:                           |
+        recording start:         |------------
+        recording   end:          ------------|
+        replay_offset  :             |
+        ts after alignment           |------------| 
+        '''
+        self.ts += replay_offset   # 0 if the ephys is not offset by replaying through neural signal generator
+        self.pos = self.pos[np.logical_and(self.ts>recording_start_time, self.ts<recording_end_time)]
+        self.ts  =  self.ts[np.logical_and(self.ts>recording_start_time, self.ts<recording_end_time)]
+
+
+    def initialize(self, bin_size, v_cutoff, maze_range=None):
+        self.dt = self.ts[1] - self.ts[0]
+        self.get_maze_range(maze_range)
+        self.get_speed(smooth_window=60, std=15, v_cutoff=v_cutoff) 
+        self.occupation_map(bin_size)
+
 
     def get_maze_range(self, maze_range=None):
         if maze_range is None:
