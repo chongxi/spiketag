@@ -77,6 +77,76 @@ def comet(pos, fs, pos_compare=None, start=1, stop=None, length=300, interval=1,
 
 
 
+def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None, length=300, interval=1, markersize=25, blit=True, player=False, dpi=200, **kwargs):
+    '''
+    ani = comet2(pos=pos, pos_compare=pos[300:, :], start=300, stop=pos.shape[0], length=300, interval=1, 
+                 blit=True)
+    '''
+    if stop is None:
+        if pos_compare is not None:
+            stop = min(pos.shape[0], pos_compare.shape[0])
+        else:
+            stop = pos.shape[0] 
+
+    fig, ax = plt.subplots(1, 2, dpi=dpi)
+    range_min, range_max = pos.min(axis=0), pos.max(axis=0)
+    margin = (range_min[0]+range_max[0])/2*0.2
+    space  = (range_max[0]-range_min[0])//10
+    ax.set_xlim((range_min[0]-margin, range_max[0]+margin))
+    ax.set_ylim((range_min[1]-margin, range_max[1]+margin))
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(space))
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(space))
+
+    time_text    = ax.text(.01, .96, '', transform=ax.transAxes)
+
+    point1, = ax.plot([],[], marker="o", color="blue", ms=markersize, alpha=.5)
+    line1,  = ax.plot([], [], lw=2, label='pos1')
+
+    if pos_compare is not None:
+        point2, = ax.plot([],[], marker="o", color="crimson", ms=markersize, alpha=.5)
+        line2,  = ax.plot([], [], lw=2, label='pos2')
+
+    plt.legend()
+
+    def init():
+        time_text.set_text('')
+        point1.set_data([], []) 
+        line1.set_data([], []) 
+        if pos_compare is not None:
+            point2.set_data([], []) 
+            line2.set_data([], []) 
+            return point1, point2, line1, line2, time_text 
+        else:
+            return point1, line1, time_text
+
+
+    def update(i):
+        time_text.set_text("time: {0:.3f} sec".format(i/fs)) # resolution 0.033 sec for 30 fps
+        if i-length<0:
+            a = 0
+        else:
+            a = i-length
+        x1 = pos[a:i, 0]
+        y1 = pos[a:i, 1]
+        line1.set_data(x1, y1) 
+        point1.set_data(x1[-1], y1[-1])
+
+        if pos_compare is not None:
+            x2 = pos_compare[a:i, 0]
+            y2 = pos_compare[a:i, 1]
+            line2.set_data(x2, y2) 
+            point2.set_data(x2[-1], y2[-1])
+            return point1, point2, line1, line2, time_text
+        else:
+            return point1, line1, time_text
+
+    if player is True:
+        ani = Player(fig, init_func=init, func=update, mini=start, maxi=stop, interval=interval, blit=blit, **kwargs)
+    else:
+        ani = animation.FuncAnimation(fig, init_func=init, func=update, frames=np.arange(start, stop), interval=interval, blit=blit, **kwargs)
+    return ani
+
+
 class _slider(matplotlib.widgets.Slider):
     def draw_val(self, val):
         """
