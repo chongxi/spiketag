@@ -77,7 +77,7 @@ def comet(pos, fs, pos_compare=None, start=1, stop=None, length=300, interval=1,
 
 
 
-def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None, length=300, interval=1, markersize=25, blit=True, player=False, dpi=200, **kwargs):
+def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None, length=300, interval=1, markersize=25, blit=True, player=False, dpi=100, **kwargs):
     '''
     ani = comet2(pos=pos, pos_compare=pos[300:, :], start=300, stop=pos.shape[0], length=300, interval=1, 
                  blit=True)
@@ -88,23 +88,33 @@ def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None
         else:
             stop = pos.shape[0] 
 
-    fig, ax = plt.subplots(1, 2, dpi=dpi)
+    fig= plt.figure(dpi=dpi, figsize=(10,15))
+    gs = fig.add_gridspec(nrows=3, ncols=1, wspace=0.05)
+    ax = [[],[]]
+    ax[0] = fig.add_subplot(gs[:2, 0])
+    ax[1] = fig.add_subplot(gs[2, 0])
+
     range_min, range_max = pos.min(axis=0), pos.max(axis=0)
     margin = (range_min[0]+range_max[0])/2*0.2
     space  = (range_max[0]-range_min[0])//10
-    ax.set_xlim((range_min[0]-margin, range_max[0]+margin))
-    ax.set_ylim((range_min[1]-margin, range_max[1]+margin))
-    ax.xaxis.set_major_locator(ticker.MultipleLocator(space))
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(space))
+    ax[0].set_xlim((range_min[0]-margin, range_max[0]+margin))
+    ax[0].set_ylim((range_min[1]-margin, range_max[1]+margin))
+    ax[0].xaxis.set_major_locator(ticker.MultipleLocator(space))
+    ax[0].yaxis.set_major_locator(ticker.MultipleLocator(space))
+    
+    ax[1].set_ylim([mua_count.min(), mua_count.max()])
+    ax[1].set_ylabel('#total spikes/frame(20ms)')
 
-    time_text    = ax.text(.01, .96, '', transform=ax.transAxes)
+    time_text    = ax[0].text(.01, .96, '', transform=ax[0].transAxes)
 
-    point1, = ax.plot([],[], marker="o", color="blue", ms=markersize, alpha=.5)
-    line1,  = ax.plot([], [], lw=2, label='pos1')
+    point1, = ax[0].plot([],[], marker="o", color="blue", ms=markersize, alpha=.5)
+    line1,  = ax[0].plot([], [], lw=2, label='pos1')
+    
+    line_mua_rate, = ax[1].plot([], [], '-o', lw=2)
 
     if pos_compare is not None:
-        point2, = ax.plot([],[], marker="o", color="crimson", ms=markersize, alpha=.5)
-        line2,  = ax.plot([], [], lw=2, label='pos2')
+        point2, = ax[0].plot([],[], marker="o", color="crimson", ms=markersize, alpha=.5)
+        line2,  = ax[0].plot([], [], lw=2, label='pos2')
 
     plt.legend()
 
@@ -112,33 +122,38 @@ def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None
         time_text.set_text('')
         point1.set_data([], []) 
         line1.set_data([], []) 
+        line_mua_rate.set_data([], [])
         if pos_compare is not None:
             point2.set_data([], []) 
             line2.set_data([], []) 
-            return point1, point2, line1, line2, time_text 
+            return point1, point2, line1, line2, time_text, line_mua_rate
         else:
-            return point1, line1, time_text
+            return point1, line1, time_text, line_mua_rate
 
 
     def update(i):
         time_text.set_text("time: {0:.3f} sec".format(i/fs)) # resolution 0.033 sec for 30 fps
         if i-length<0:
             a = 0
+            ax[1].set_xlim([0, length])
         else:
             a = i-length
+            ax[1].set_xlim([a, i])
         x1 = pos[a:i, 0]
         y1 = pos[a:i, 1]
         line1.set_data(x1, y1) 
         point1.set_data(x1[-1], y1[-1])
+        
+        line_mua_rate.set_data(np.arange(a,i), mua_count[a:i])
 
         if pos_compare is not None:
             x2 = pos_compare[a:i, 0]
             y2 = pos_compare[a:i, 1]
             line2.set_data(x2, y2) 
             point2.set_data(x2[-1], y2[-1])
-            return point1, point2, line1, line2, time_text
+            return point1, point2, line1, line2, time_text, line_mua_rate
         else:
-            return point1, line1, time_text
+            return point1, line1, time_text, line_mua_rate
 
     if player is True:
         ani = Player(fig, init_func=init, func=update, mini=start, maxi=stop, interval=interval, blit=blit, **kwargs)

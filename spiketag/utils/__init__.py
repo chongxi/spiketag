@@ -1,5 +1,5 @@
 from .utils import Timer, EventEmitter, Picker, key_buffer
-from .tool import comet, Player
+from .tool import comet, Player, decoder_viewer
 from .cameras import YSyncCamera
 from .conf import logger, debug, info, warning, error, critical
 from . import conf
