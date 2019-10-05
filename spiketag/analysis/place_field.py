@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.pyplot import cm
 from scipy.interpolate import interp1d
-from .core import firing_pos_from_scv
+from .core import spk_time_to_scv, firing_pos_from_scv
 from ..base import SPKTAG
 
 
@@ -337,6 +337,14 @@ class place_field(object):
 
 
     def load_spktag(self, spktag_file, show=False):
+        '''
+        1. load spktag
+        2. extract unit time stamps
+        3. calculate the place fields
+        4. rank based on its information bit
+        5. (optional) plot place fields of each unit
+        check pc.n_units, pc.n_fields and pc.metric after this
+        '''
         spktag = SPKTAG()
         spktag.load(spktag_file)
         self.spktag_file = spktag_file
@@ -345,3 +353,19 @@ class place_field(object):
         self.rank_fields('spatial_bit_smoothed_spike')
         if show is True:
             self.field_fig = self.plot_fields();
+
+
+    def get_scv(self, t_window, ts=None):
+        '''
+        The offline binner to calculate the spike count vector (scv)
+        run `pc.load_spktag(spktag_file)` first
+        t_window is the window to count spikes
+        ts is the list defining the sliding window
+        '''
+        if ts is None:
+            scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=self.ts)
+        else:
+            scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=ts)
+        scv = scv[pc.sorted_fields_id]
+        return scv
+    
