@@ -129,6 +129,15 @@ class place_field(object):
         ax.axhline(5, c='m', ls='-.')
         '''
         # return v_smoothed, v
+
+    def plot_speed(self, start, stop, thres=5):
+        fig, ax = plt.subplots(1,1, figsize=(18,8))
+        period = np.logical_and(self.ts>start, self.ts<stop)
+        plt.plot(self.ts[period], self.v[period], alpha=.7)
+        plt.plot(self.ts[period], self.v_smoothed[period], lw=3)
+        ax.axhline(thres, c='m', ls='-.')
+        sns.despine()
+        return fig
         
 
     def occupation_map(self, bin_size=4, time_cutoff=None):
