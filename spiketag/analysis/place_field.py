@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 from scipy.interpolate import interp1d
 from .core import firing_pos_from_scv
+from ..base import SPKTAG
 
 
 
@@ -81,6 +82,8 @@ class place_field(object):
         self.ts += replay_offset   # 0 if the ephys is not offset by replaying through neural signal generator
         self.pos = self.pos[np.logical_and(self.ts>recording_start_time, self.ts<recording_end_time)]
         self.ts  =  self.ts[np.logical_and(self.ts>recording_start_time, self.ts<recording_end_time)]
+        self.tstart = recording_start_time
+        self.tend   = recording_end_time
 
 
     def initialize(self, bin_size, v_cutoff, maze_range=None):
@@ -303,3 +306,15 @@ class place_field(object):
         plt.grid('off')
         plt.show();
         return fig
+
+
+    def load_spktag(self, spktag_file, show=False):
+        spktag = SPKTAG()
+        spktag.load(spktag_file)
+        self.spktag_file = spktag_file
+        self.spk_time_array, self.spk_time_dict = spktag.spk_time_array, spktag.spk_time_dict
+        self.get_fields(spk_time_full)
+        self.rank_fields('spatial_bit_smoothed_spike')
+        if show is True:
+            self.plot_fields(N=12, size=3, cmap='hot', 
+                             marker=False, markersize=1, alpha=0.9, order=True);
