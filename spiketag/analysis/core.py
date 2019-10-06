@@ -53,7 +53,7 @@ def licomb_Matrix(w, X):
 
 
 @njit(cache=True, parallel=True, fastmath=True)
-def bayesian_decoding(Fr, suv, pos, pos_offset, bin_size, delta_t=100e-3):
+def bayesian_decoding(Fr, suv, delta_t=100e-3):
     '''
     fast version of below labmda expression
     log_posterior = lambda x,y,i: np.nansum(np.log(Fr[:,x,y]) * suv[:,i]) - 100e-3*Fr[:,x,y].sum(axis=0)
@@ -62,12 +62,10 @@ def bayesian_decoding(Fr, suv, pos, pos_offset, bin_size, delta_t=100e-3):
 
     Usage:
     1. for all suv
-    true_xy, post_2d = bayesian_decoding(Fr=Fr, suv=suv[:, :], pos=pc.pos, pos_offset=pc.maze_original, 
-                                         bin_size=pc.bin_size, delta_t=100e-3)
+    true_xy, post_2d = bayesian_decoding(Fr=Fr, suv=suv[:, :], delta_t=100e-3)
 
     2. for specific suv
-    true_xy, post_2d = bayesian_decoding(Fr=Fr, suv=suv[:, 100:101], pos=pc.pos, pos_offset=pc.maze_original, 
-                                         bin_size=pc.bin_size, delta_t=100e-3)
+    true_xy, post_2d = bayesian_decoding(Fr=Fr, suv=suv[:, 100:101], delta_t=100e-3)
     '''
 
     true_xy = np.zeros((suv.shape[1],2))
@@ -77,9 +75,8 @@ def bayesian_decoding(Fr, suv, pos, pos_offset, bin_size, delta_t=100e-3):
     log_fr = np.log(Fr) # make sure Fr[Fr==0] = 1e-12
     for i in prange(suv.shape[1]): # i is time point
         suv_weighted_log_fr = licomb_Matrix(suv[:,i].ravel(), log_fr)
-        true_xy[i] = (pos[i]-pos_offset)//bin_size
         post_2d[i] = np.exp(suv_weighted_log_fr - possion_matrix)
-    return true_xy, post_2d
+    return post_2d
 
 
 def argmax_2d_tensor(X):
