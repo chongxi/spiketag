@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.pyplot import cm
 from scipy.interpolate import interp1d
-from .core import spk_time_to_scv, firing_pos_from_scv
+from .core import spk_time_to_scv, firing_pos_from_scv, smooth
 from ..base import SPKTAG
 
 
@@ -92,6 +92,7 @@ class place_field(object):
         self.get_maze_range(maze_range)
         self.get_speed(smooth_window=60, std=15, v_cutoff=v_cutoff) 
         self.occupation_map(bin_size)
+        self.binned_pos = smooth((self.pos-self.maze_original)//self.bin_size, 3)
 
 
     def get_maze_range(self, maze_range=None):
