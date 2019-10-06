@@ -1,5 +1,7 @@
 from .core import bayesian_decoding, argmax_2d_tensor
 import numpy as np
+from sklearn.metrics import r2_score
+
 
 
 class Decoder(object):
@@ -54,6 +56,15 @@ class Decoder(object):
     def get_scv(self):
         self.scv, self.ts, self.pos = self.pc.get_scv(t_window=self.t_window, t_step=self.t_step)
 
+    def evaluate(self, y_predict, y_true, multioutput=True):
+        if multioutput is True:
+            score = r2_score(y_true, y_predict, multioutput='raw_values')
+        else:
+            score = r2_score(y_true, y_predict)
+        return score
+
+
+
 
 class NaiveBayes(Decoder):
     """NaiveBayes Decoder for place prediction
@@ -94,10 +105,11 @@ class NaiveBayes(Decoder):
         return (train_X, train_y), (valid_X, valid_y), (test_X, test_y) 
 
         
-    def fit(self, X=None):
+    def fit(self, X=None, y=None):
         '''
         Naive Bayes place decoder fitting use precise spike timing to compute the representation 
         (Rather than using binned spike count vector in t_window)
+        Therefore the X and y is None for the consistency of the decoder API
         '''
         self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], rank=False)
         self.fr = self.pc.fields_matrix
