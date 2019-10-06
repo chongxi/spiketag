@@ -18,6 +18,7 @@ def spk_time_to_scv(spk_time, ts, delta_t=250e-3, sublist=None):
     suv = scv_from_spk_time_list(spk_time_list, ts, delta_t)
     return suv
 
+
 @njit(cache=True, parallel=True, fastmath=True)
 def scv_from_spk_time_list(spk_time_list, ts, delta_t=250e-3):
     N = len(spk_time_list)
@@ -86,6 +87,7 @@ def argmax_2d_tensor(X):
     post_xy = np.vstack((indices.numpy()%X.shape[2], indices.numpy()//X.shape[2])).T
     return np.squeeze(post_xy)
 
+
 def smooth(x, window_len=60):
     '''
     moving weighted average
@@ -100,13 +102,13 @@ def smooth(x, window_len=60):
     return y
 
 
-
 def gkern2d(kernlen=21, std=2):
     """Returns a 2D Gaussian kernel array."""
     gkern1d = signal.gaussian(kernlen, std=std).reshape(kernlen, 1)
     _gkern2d = np.outer(gkern1d, gkern1d)
     _gkern2d /= _gkern2d.sum()
     return _gkern2d
+
 
 def gkern3d(kernlen=21, std=3):
     gkern1d = signal.gaussian(kernlen, std=std).reshape(kernlen, 1)
