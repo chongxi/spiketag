@@ -231,7 +231,7 @@ class place_field(object):
         return firing_map_smoothed        
 
 
-    def get_field(self, spk_time_dict, neuron_id):
+    def get_field(self, spk_time_dict, neuron_id, start=None, end=None):
         '''
         f, ax = plt.subplots(1,2,figsize=(20,9))
         ax[0].plot(self.pos[:,0], self.pos[:,1])
@@ -240,7 +240,12 @@ class place_field(object):
         pc = ax[1].pcolormesh(X, Y, FR_GAU, cmap=cm.hot)
         colorbar(pc, ax=ax[1], label='Hz') 
         '''
-        self._get_field(spk_times=spk_time_dict[neuron_id])
+        spk_times = spk_time_dict[neuron_id]
+        ### for cross-validation and field stability check
+        ### calculate representation from `start` to `end`
+        if start is not None and end is not None:
+            spk_times = spk_times[np.logical_and(start<=spk_times, spk_times<end)]
+        self._get_field(spk_times)
 
 
     def plot_field(self, trajectory=False, cmap='gray', marker=True, alpha=0.5, markersize=5):
@@ -256,7 +261,7 @@ class place_field(object):
         return f,ax
 
 
-    def get_fields(self, spk_time_dict):
+    def get_fields(self, spk_time_dict, start=None, end=None, rank=True):
         '''
         spk_time_dict is dictionary start from 1: {1: ... 2: ... 3: ...}
         '''
@@ -274,7 +279,7 @@ class place_field(object):
 
         for i in spk_time_dict.keys():
             ### get place fields from neuron i
-            self.get_field(spk_time_dict, i)
+            self.get_field(spk_time_dict, i, start, end)
             self.fields[i] = self.FR_smoothed
             self.firing_poshd[i] = self.firing_pos
             self.fields_matrix[i] = self.FR_smoothed
@@ -284,6 +289,9 @@ class place_field(object):
             self.metric['spatial_sparcity'][i] = info_sparcity(self.FR, self.P)
 
         self.fields_matrix[self.fields_matrix==0] = 1e-25
+
+        if rank is True:
+            self.rank_fields('spatial_bit_smoothed_spike')
 
 
     def rank_fields(self, metric):
@@ -349,8 +357,7 @@ class place_field(object):
         spktag.load(spktag_file)
         self.spktag_file = spktag_file
         self.spk_time_array, self.spk_time_dict = spktag.spk_time_array, spktag.spk_time_dict
-        self.get_fields(self.spk_time_dict)
-        self.rank_fields('spatial_bit_smoothed_spike')
+        self.get_fields(self.spk_time_dict, rank=True)
         if show is True:
             self.field_fig = self.plot_fields();
 
@@ -364,12 +371,12 @@ class place_field(object):
         '''
         if t_step is None:
             scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=self.ts)
-            scv = scv[self.sorted_fields_id]
+            # scv = scv[self.sorted_fields_id]
             return scv
         else:
             new_ts = np.arange(self.t_start, self.t_end, t_step)
             scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=new_ts)
-            scv = scv[self.sorted_fields_id]
+            # scv = scv[self.sorted_fields_id]
             x, y = interp1d(self.ts, self.pos[:,0], fill_value="extrapolate"), interp1d(self.ts, self.pos[:,1], fill_value="extrapolate")
             new_pos = np.hstack((x(new_ts).reshape(-1,1), y(new_ts).reshape(-1,1))) 
             return scv, new_ts, new_pos
