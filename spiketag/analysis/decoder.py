@@ -68,7 +68,7 @@ class NaiveBayes(Decoder):
         super(NaiveBayes, self).__init__(pc)
 
 
-    def get_partitioned_data(self, low_speed_disable={'training': True, 'testing': False}, v_cutoff=5):
+    def get_partitioned_data(self, low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=5):
         '''
         The data strucutre is different for RNN and non-RNN decoder
         Therefore each decoder subclass has its own get_partitioned_data method
@@ -77,7 +77,7 @@ class NaiveBayes(Decoder):
         X = self.pc.get_scv(self.t_window, self.t_step) # t_step is None unless specified
         y = self.pc.binned_pos
 
-        if low_speed_disable['training'] is True:
+        if low_speed_cutoff['training'] is True:
             train_X = X[:, np.where(self.pc.v_smoothed[self.train_idx]>v_cutoff)[0]]
             train_y = y[np.where(self.pc.v_smoothed[self.train_idx]>v_cutoff)[0]]
             valid_X = X[:, np.where(self.pc.v_smoothed[self.valid_idx]>v_cutoff)[0]]
@@ -86,7 +86,7 @@ class NaiveBayes(Decoder):
             train_X, train_y = X[:, self.train_idx], y[self.train_idx]
             valid_X, valid_y = X[:, self.valid_idx], y[self.valid_idx]
 
-        if low_speed_disable['testing'] is True:
+        if low_speed_cutoff['testing'] is True:
             test_X = X[:, np.where(self.pc.v_smoothed[self.test_idx]>v_cutoff)[0]]
             test_y = y[np.where(self.pc.v_smoothed[self.test_idx]>v_cutoff)[0]]
         else:
