@@ -85,7 +85,7 @@ class place_field(object):
         self.ts  =  self.ts[np.logical_and(self.ts>recording_start_time, self.ts<recording_end_time)]
         self.t_start = self.ts[0]
         self.t_end   = self.ts[-1]
-        self._ts_restore, self._pos_restore = ts, pos
+        self._ts_restore, self._pos_restore = self.ts, self.pos
 
 
     def load_log(self, logfile=None, session_id=0, v_cutoff=5, maze_range=[[-100,100], [-100,100]], bin_size=4, sync=True):

@@ -89,7 +89,7 @@ class NaiveBayes(Decoder):
         Therefore each decoder subclass has its own get_partitioned_data method
         In low_speed periods, data should be removed from train and valid:
         '''
-        assert(pc.ts.shape[0] == pc.pos.shape[0])
+        assert(self.pc.ts.shape[0] == self.pc.pos.shape[0])
         X = self.pc.get_scv(self.t_window) # t_step is None unless specified
         y = self.pc.pos
 
