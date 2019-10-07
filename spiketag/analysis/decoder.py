@@ -27,6 +27,13 @@ class Decoder(object):
         Connect to a place-cells object that contains behavior, neural data and co-analysis
         '''
         self.pc = pc
+        if self.t_step is not None:
+            self.pc(t_step=self.t_step)
+
+    def resample(self, t_window, t_step):
+        self.t_window = t_window
+        self.t_step   = t_step
+        self.connect_to(self.pc)     
 
     def _percent_to_time(self, percent):
         len_frame = len(self.pc.ts)
@@ -52,9 +59,6 @@ class Decoder(object):
                                    self._percent_to_time(valid_range[1]))
         self.test_idx  = np.arange(self._percent_to_time(testing_range[0]),
                                    self._percent_to_time(testing_range[1]))
-
-    def get_scv(self):
-        self.scv, self.ts, self.pos = self.pc.get_scv(t_window=self.t_window, t_step=self.t_step)
 
     def evaluate(self, y_predict, y_true, multioutput=True):
         if multioutput is True:
@@ -85,7 +89,8 @@ class NaiveBayes(Decoder):
         Therefore each decoder subclass has its own get_partitioned_data method
         In low_speed periods, data should be removed from train and valid:
         '''
-        X = self.pc.get_scv(self.t_window, self.t_step) # t_step is None unless specified
+        assert(pc.ts.shape[0] == pc.pos.shape[0])
+        X = self.pc.get_scv(self.t_window) # t_step is None unless specified
         y = self.pc.pos
 
         if low_speed_cutoff['training'] is True:
