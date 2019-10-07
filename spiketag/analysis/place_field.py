@@ -23,13 +23,57 @@ def info_sparcity(Fr, P):
 
 
 class place_field(object):
-    """getting the place fields from subspaces"""
-    def __init__(self, logfile=None, session_id=0, v_cutoff=5, maze_range=[[-100,100], [-100,100]], bin_size=4, sync=True):
-        super(place_field, self).__init__()
+    '''
+    place cells class contains `ts` `pos` `scv` for analysis
+    load_log for behavior
+    load_spktag for spike data
+    get_fields for computing the representaions using spike and behavior data
+    '''
+    def __init__(self, pos, t_step):
+        '''
+        resample the trajectory with new time interval
+        reinitiallize with a new t_step (dt)
+        '''
+        ts = np.arange(0, pos.shape[0]*t_step, t_step)
+        self.ts, self.pos = ts, pos
+
+    def __call__(self, t_step):
+        '''
+        resample the trajectory with new time interval
+        reinitiallize with a new t_step (dt)
+        '''
+        fs = self.fs 
+        new_fs = 1/t_step
+        self.ts, self.pos = self.interp_pos(self.ts, self.pos, N=fs/new_fs)
+
+    @property
+    def fs(self):
+        self._fs = 1/(self.ts[1]-self.ts[0])
+        return self._fs
+
+    def interp_pos(self, t, pos, N=1):
+        '''
+        convert irregularly sampled pos into regularly sampled pos
+        N is the dilution sampling factor. N=2 means half of the resampled pos
+        example:
+        >>> new_fs = 200.
+        >>> pc.ts, pc.pos = pc.interp_pos(ts, pos, N=fs/new_fs)
+        '''
+        dt = np.mean(np.diff(t))
+        x, y = interp1d(t, pos[:,0], fill_value="extrapolate"), interp1d(t, pos[:,1], fill_value="extrapolate")
+        new_t = np.arange(0.0, dt*len(t), dt*N)
+        new_pos = np.hstack((x(new_t).reshape(-1,1), y(new_t).reshape(-1,1)))
+        return new_t, new_pos 
+
+
+    def load_log(self, logfile=None, session_id=0, v_cutoff=5, maze_range=[[-100,100], [-100,100]], bin_size=4, sync=True):
+        '''
+        """getting the place fields from a log"""
         # default mode:
         # 1: ts, pos, dt 
         # 2: v_smoothed, v_cutoff
         # 3: maze_range, bin_size 
+        '''
         if logfile is None:
             pass
              
@@ -50,24 +94,8 @@ class place_field(object):
             # self.occupation_map(bin_size)
             self.initialize(bin_size=bin_size, v_cutoff=v_cutoff, maze_range=maze_range)
 
-
         ### place fields parameters ###
         self.n_fields = 0
-
-
-    def interp_pos(self, t, pos, N=1):
-        '''
-        convert irregularly sampled pos into regularly sampled pos
-        N is the dilution sampling factor. N=2 means half of the resampled pos
-        example:
-        >>> new_fs = 200.
-        >>> pc.ts, pc.pos = pc.interp_pos(ts, pos, N=fs/new_fs)
-        '''
-        dt = np.mean(np.diff(t))
-        x, y = interp1d(t, pos[:,0], fill_value="extrapolate"), interp1d(t, pos[:,1], fill_value="extrapolate")
-        new_t = np.arange(0.0, dt*len(t), dt*N)
-        new_pos = np.hstack((x(new_t).reshape(-1,1), y(new_t).reshape(-1,1)))
-        return new_t, new_pos 
 
 
     def align_with_recording(self, recording_start_time, recording_end_time, replay_offset=0):
