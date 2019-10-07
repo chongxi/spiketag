@@ -1,4 +1,4 @@
-from .core import bayesian_decoding, argmax_2d_tensor
+from .core import bayesian_decoding, argmax_2d_tensor, smooth
 import numpy as np
 from sklearn.metrics import r2_score
 
@@ -86,7 +86,7 @@ class NaiveBayes(Decoder):
         In low_speed periods, data should be removed from train and valid:
         '''
         X = self.pc.get_scv(self.t_window, self.t_step) # t_step is None unless specified
-        y = self.pc.binned_pos
+        y = self.pc.pos
 
         if low_speed_cutoff['training'] is True:
             train_X = X[:, np.where(self.pc.v_smoothed[self.train_idx]>v_cutoff)[0]]
@@ -117,5 +117,6 @@ class NaiveBayes(Decoder):
 
     def predict(self, X):
         post_2d = bayesian_decoding(self.fr, X, delta_t=self.t_window)
-        y = argmax_2d_tensor(post_2d)
+        binned_pos = argmax_2d_tensor(post_2d)
+        y = smooth(self.pc.binned_pos_2_real_pos(binned_pos), 5)
         return y
