@@ -36,6 +36,7 @@ class place_field(object):
         '''
         ts = np.arange(0, pos.shape[0]*t_step, t_step)
         self.ts, self.pos = ts, pos
+        self._ts_restore, self._pos_restore = ts, pos
 
     def __call__(self, t_step):
         '''
@@ -45,6 +46,9 @@ class place_field(object):
         fs = self.fs 
         new_fs = 1/t_step
         self.ts, self.pos = self.interp_pos(self.ts, self.pos, N=fs/new_fs)
+
+    def restore(self):
+        self.ts, self.pos = self._ts_restore, self._pos_restore
 
     @property
     def fs(self):
@@ -64,6 +68,24 @@ class place_field(object):
         new_t = np.arange(0.0, dt*len(t), dt*N)
         new_pos = np.hstack((x(new_t).reshape(-1,1), y(new_t).reshape(-1,1)))
         return new_t, new_pos 
+
+
+    def align_with_recording(self, recording_start_time, recording_end_time, replay_offset=0):
+        '''
+        ts before alignment   |--------------------|
+        behavior  start:      |
+        behavior    end:                           |
+        recording start:         |------------
+        recording   end:          ------------|
+        replay_offset  :             |
+        ts after alignment           |------------| 
+        '''
+        self.ts += replay_offset   # 0 if the ephys is not offset by replaying through neural signal generator
+        self.pos = self.pos[np.logical_and(self.ts>recording_start_time, self.ts<recording_end_time)]
+        self.ts  =  self.ts[np.logical_and(self.ts>recording_start_time, self.ts<recording_end_time)]
+        self.t_start = self.ts[0]
+        self.t_end   = self.ts[-1]
+        self._ts_restore, self._pos_restore = ts, pos
 
 
     def load_log(self, logfile=None, session_id=0, v_cutoff=5, maze_range=[[-100,100], [-100,100]], bin_size=4, sync=True):
@@ -96,23 +118,6 @@ class place_field(object):
 
         ### place fields parameters ###
         self.n_fields = 0
-
-
-    def align_with_recording(self, recording_start_time, recording_end_time, replay_offset=0):
-        '''
-        ts before alignment   |--------------------|
-        behavior  start:      |
-        behavior    end:                           |
-        recording start:         |------------
-        recording   end:          ------------|
-        replay_offset  :             |
-        ts after alignment           |------------| 
-        '''
-        self.ts += replay_offset   # 0 if the ephys is not offset by replaying through neural signal generator
-        self.pos = self.pos[np.logical_and(self.ts>recording_start_time, self.ts<recording_end_time)]
-        self.ts  =  self.ts[np.logical_and(self.ts>recording_start_time, self.ts<recording_end_time)]
-        self.t_start = self.ts[0]
-        self.t_end   = self.ts[-1]
 
 
     def initialize(self, bin_size, v_cutoff, maze_range=None):
@@ -394,21 +399,21 @@ class place_field(object):
             self.field_fig = self.plot_fields();
 
 
-    def get_scv(self, t_window, t_step=None):
+    def get_scv(self, t_window):
         '''
         The offline binner to calculate the spike count vector (scv)
         run `pc.load_spktag(spktag_file)` first
         t_window is the window to count spikes
         t_step defines the sliding window size
         '''
-        if t_step is None:
-            scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=self.ts)
-            # scv = scv[self.sorted_fields_id]
-            return scv
-        else:
-            new_ts = np.arange(self.t_start, self.t_end, t_step)
-            scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=new_ts)
-            # scv = scv[self.sorted_fields_id]
-            x, y = interp1d(self.ts, self.pos[:,0], fill_value="extrapolate"), interp1d(self.ts, self.pos[:,1], fill_value="extrapolate")
-            new_pos = np.hstack((x(new_ts).reshape(-1,1), y(new_ts).reshape(-1,1))) 
-            return scv, new_ts, new_pos
+        # if t_step is None:
+        scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=self.ts)
+        # scv = scv[self.sorted_fields_id]
+        return scv
+        # else:
+        #     new_ts = np.arange(self.t_start, self.t_end, t_step)
+        #     scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=new_ts)
+        #     # scv = scv[self.sorted_fields_id]
+        #     x, y = interp1d(self.ts, self.pos[:,0], fill_value="extrapolate"), interp1d(self.ts, self.pos[:,1], fill_value="extrapolate")
+        #     new_pos = np.hstack((x(new_ts).reshape(-1,1), y(new_ts).reshape(-1,1))) 
+        #     return scv, new_ts, new_pos
