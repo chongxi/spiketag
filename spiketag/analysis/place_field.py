@@ -107,6 +107,9 @@ class place_field(object):
     def maze_original(self):
         return self._maze_original
 
+    def binned_pos_2_real_pos(self, binned_pos):
+        pos = binned_pos*self.bin_size + self.maze_original
+        return pos
 
     def get_speed(self, smooth_window=59, std=6, v_cutoff=5):
         '''
