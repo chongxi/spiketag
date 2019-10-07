@@ -6,10 +6,7 @@ from sklearn.metrics import r2_score
 
 class Decoder(object):
     """Base class for the decoders for place prediction"""
-    def __init__(self, pc):
-        self.pc = pc
-
-    def __call__(self, t_window, t_step=None):
+    def __init__(self, t_window, t_step=None):
         '''
         t_window is the bin_size
         t_step   is the step_size (if None then use pc.ts as natrual sliding window)
@@ -23,6 +20,13 @@ class Decoder(object):
         '''
         self.t_window = t_window
         self.t_step   = t_step
+
+    def connect_to(self, pc):
+        '''
+        This decoder is specialized for position decoding
+        Connect to a place-cells object that contains behavior, neural data and co-analysis
+        '''
+        self.pc = pc
 
     def _percent_to_time(self, percent):
         len_frame = len(self.pc.ts)
@@ -48,10 +52,6 @@ class Decoder(object):
                                    self._percent_to_time(valid_range[1]))
         self.test_idx  = np.arange(self._percent_to_time(testing_range[0]),
                                    self._percent_to_time(testing_range[1]))
-        
-        # self.train_set=np.arange(int(training_range[0]*num_examples)+bins_before,int(training_range[1]*num_examples)-bins_after)
-        # self.valid_set=np.arange(int(valid_range[0]*num_examples)+bins_before,int(valid_range[1]*num_examples)-bins_after)
-        # self.test_set=np.arange(int(testing_range[0]*num_examples)+bins_before,int(testing_range[1]*num_examples)-bins_after)
 
     def get_scv(self):
         self.scv, self.ts, self.pos = self.pc.get_scv(t_window=self.t_window, t_step=self.t_step)
@@ -75,8 +75,8 @@ class NaiveBayes(Decoder):
     >>> nbdec.fit()
     >>> predicted_y = nbdec.predict(test_X[:, pc.v_smoothed>25])
     """
-    def __init__(self, pc):
-        super(NaiveBayes, self).__init__(pc)
+    def __init__(self, t_window, t_step=None):
+        super(NaiveBayes, self).__init__(t_window, t_step)
 
 
     def get_partitioned_data(self, low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=5):
