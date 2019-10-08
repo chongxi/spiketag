@@ -10,7 +10,7 @@ warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
 
-def spk_time_to_scv(spk_time, ts, delta_t=250e-3, sublist=None):
+def spk_time_to_scv(spk_time, ts, t_window=250e-3, sublist=None):
     if sublist is None:
         spk_time_list=list(spk_time.values())
     else:
@@ -20,14 +20,17 @@ def spk_time_to_scv(spk_time, ts, delta_t=250e-3, sublist=None):
 
 
 @njit(cache=True, parallel=True, fastmath=True)
-def scv_from_spk_time_list(spk_time_list, ts, delta_t=250e-3):
+def scv_from_spk_time_list(spk_time_list, ts, t_window=250e-3):
+    '''
+    extract spike count vector from a list of spike trains
+    '''
     N = len(spk_time_list)
     T = ts.shape[0]
-    suv = np.zeros((N,T))
-    for j in prange(T):    
-        for i in prange(N):
-            suv[i, j] = np.sum(np.logical_and(spk_time_list[i] >  ts[j]-delta_t, 
-                                              spk_time_list[i] <= ts[j]))
+    suv = np.zeros((T,N))
+    for i in prange(T):
+        for j in prange(N):    
+            suv[i, j] = np.sum(np.logical_and(spk_time_list[j] >= ts[i]-t_window, 
+                                              spk_time_list[j] <  ts[i]))
     return suv
 
 
