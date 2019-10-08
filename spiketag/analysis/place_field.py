@@ -38,6 +38,7 @@ class place_field(object):
         self.ts, self.pos = ts, pos
         self._ts_restore, self._pos_restore = ts, pos
 
+
     def __call__(self, t_step):
         '''
         resample the trajectory with new time interval
@@ -46,6 +47,8 @@ class place_field(object):
         fs = self.fs 
         new_fs = 1/t_step
         self.ts, self.pos = self.interp_pos(self.ts, self.pos, N=fs/new_fs)
+        self.get_speed(smooth_window=59, std=6, v_cutoff=self.v_cutoff)
+
 
     def restore(self):
         self.ts, self.pos = self._ts_restore, self._pos_restore
@@ -122,6 +125,7 @@ class place_field(object):
 
     def initialize(self, bin_size, v_cutoff, maze_range=None):
         self.dt = self.ts[1] - self.ts[0]
+        self.v_cutoff = v_cutoff
         self.get_maze_range(maze_range)
         self.get_speed(smooth_window=60, std=15, v_cutoff=v_cutoff) 
         self.occupation_map(bin_size)
@@ -155,7 +159,6 @@ class place_field(object):
 
         self.v = np.hstack((0.01, v))
         self.v_smoothed = np.hstack((0.01, v_smoothed))
-        self.v_cutoff   = v_cutoff
         self.low_speed_idx = np.where(self.v_smoothed < self.v_cutoff)[0]
         '''
         # check speed:
