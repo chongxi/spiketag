@@ -79,7 +79,7 @@ def comet(pos, fs, pos_compare=None, start=1, stop=None, length=300, interval=1,
 
 
 
-def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None, length=300, interval=1, markersize=25, blit=True, player=False, dpi=100, **kwargs):
+def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None, length=300, interval=1, markersize=27, blit=True, player=False, dpi=100, **kwargs):
     '''
     ani = comet2(pos=pos, pos_compare=pos[300:, :], start=300, stop=pos.shape[0], length=300, interval=1, 
                  blit=True)
@@ -97,7 +97,7 @@ def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None
     ax[1] = fig.add_subplot(gs[2, 0])
 
     range_min, range_max = pos.min(axis=0), pos.max(axis=0)
-    margin = (range_min[0]+range_max[0])/2*0.2
+    margin = (range_min[0]+range_max[0])/2*0.25
     space  = (range_max[0]-range_min[0])//10
     ax[0].set_xlim((range_min[0]-margin, range_max[0]+margin))
     ax[0].set_ylim((range_min[1]-margin, range_max[1]+margin))
@@ -105,9 +105,11 @@ def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None
     ax[0].yaxis.set_major_locator(ticker.MultipleLocator(space))
     
     ax[1].set_ylim([mua_count.min(), mua_count.max()])
-    ax[1].set_ylabel('#total spikes/frame(20ms)')
+    ax[1].axhline(np.median(mua_count), ls='-.', c='m')
+    ax[1].set_ylabel('#total spikes/frame')
 
-    time_text    = ax[0].text(.01, .96, '', transform=ax[0].transAxes)
+    time_text = ax[0].text(.01, .96, '', transform=ax[0].transAxes)
+    time_text.set_alpha(.7)
 
     point1, = ax[0].plot([],[], marker="o", color="blue", ms=markersize, alpha=.5)
     line1,  = ax[0].plot([], [], lw=2, label='pos1')
@@ -134,7 +136,7 @@ def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None
 
 
     def update(i):
-        time_text.set_text("time: {0:.3f} sec".format(i/fs)) # resolution 0.033 sec for 30 fps
+        time_text.set_text("time: {0:.3f} sec; frame:{1}".format(i/fs, i)) # resolution 0.033 sec for 30 fps
         if i-length<0:
             a = 0
             ax[1].set_xlim([0, length])
