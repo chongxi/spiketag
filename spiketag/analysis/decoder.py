@@ -46,7 +46,7 @@ class Decoder(object):
 
     def partition(self, training_range=[0.0, 0.5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0],
                         low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=None):
-        
+  
         self.train_time = [self.pc.ts[self._percent_to_time(training_range[0])], 
                            self.pc.ts[self._percent_to_time(training_range[1])]]
         self.valid_time = [self.pc.ts[self._percent_to_time(valid_range[0])], 
@@ -55,11 +55,11 @@ class Decoder(object):
                            self.pc.ts[self._percent_to_time(testing_range[1])]]
 
         self.train_idx = np.arange(self._percent_to_time(training_range[0]),
-                                   self._percent_to_time(training_range[1]))
+                                   self._percent_to_time(training_range[1])+1)
         self.valid_idx = np.arange(self._percent_to_time(valid_range[0]),
-                                   self._percent_to_time(valid_range[1]))
+                                   self._percent_to_time(valid_range[1])+1)
         self.test_idx  = np.arange(self._percent_to_time(testing_range[0]),
-                                   self._percent_to_time(testing_range[1]))
+                                   self._percent_to_time(testing_range[1])+1)
 
         if v_cutoff is None:
             v_cutoff = self.pc.v_cutoff
