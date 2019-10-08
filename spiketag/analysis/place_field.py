@@ -407,7 +407,7 @@ class place_field(object):
         t_step defines the sliding window size
         '''
         # if t_step is None:
-        scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=self.ts)
+        scv = spk_time_to_scv(self.spk_time_dict, t_window=t_window, ts=self.ts)
         # scv = scv[self.sorted_fields_id]
         return scv
         # else:
