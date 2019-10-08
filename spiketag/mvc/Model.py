@@ -27,7 +27,7 @@ class MainModel(object):
                  clu_method='hdbscan', fall_off_size=18, n_jobs=24,
                  time_segs=None,
                  playground_log=None, session_id=0, 
-                 pc=None, bin_size=4, v_cutoff=5, behavior_start_time=0.,
+                 pc=None, bin_size=4, v_cutoff=5, replay_offset=0.,
                  sort_movment_only=False):
 
         # raw recording param
@@ -60,21 +60,16 @@ class MainModel(object):
         # TODO1: fix this
         if playground_log is not None:
             self.pc = place_field(logfile=playground_log, session_id=session_id, v_cutoff=v_cutoff)
-            self.pc.ts += behavior_start_time # after correction, pc.ts is using ephys time time frame
-            self.pc.pos = self.pc.pos[np.logical_and(self._time_segs[0][0]<pc.ts, pc.ts<self._time_segs[0][1])]
-            self.pc.ts  = self.pc.ts[np.logical_and(self._time_segs[0][0]<pc.ts, pc.ts<self._time_segs[0][1])]
-            self.ts, self.pos = self.pc.ts, self.pc.pos
-            self.v_smoothed, self.v = self.pc.v_smoothed, self.pc.v
-            self.v_still_idx = self.pc.v_still_idx
+            start, end = self._time_segs[0]
+            self.pc.align_with_recording(start, end, replay_offset)
             if sort_movment_only:
                 self.time_still = self.ts[self.v_still_idx] 
 
         # TODO2: test this
         elif pc is not None:
             self.pc = pc
-            self.pc.ts += behavior_start_time  # behavior start time relative to the time 0 of ephys
-            self.pc.pos = self.pc.pos[np.logical_and(self._time_segs[0][0]<pc.ts, pc.ts<self._time_segs[0][1])]
-            self.pc.ts  = self.pc.ts[np.logical_and(self._time_segs[0][0]<pc.ts, pc.ts<self._time_segs[0][1])]
+            start, end = self._time_segs[0]
+            self.pc.align_with_recording(start, end, replay_offset)
             self.pc.initialize(bin_size=bin_size, v_cutoff=v_cutoff)
             if sort_movment_only:
                 self.time_still = self.pc.ts[self.pc.v_still_idx]
