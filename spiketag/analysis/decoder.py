@@ -73,11 +73,11 @@ class Decoder(object):
 class NaiveBayes(Decoder):
     """NaiveBayes Decoder for place prediction
     >>> nbdec = NaiveBayes(pc)
-    >>> nbdec(t_window=delta_t, t_step=np.diff(pc.ts).mean())
+    >>> nbdec(t_window=200e-3, t_step=1/30.)
     >>> nbdec.partition(training_range=[0.0, .5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0])
-    >>> (train_X, train_y), (valid_X, valid_y), (test_X, test_y) = nbdec.get_partitioned_data()
-    >>> nbdec.fit()
-    >>> predicted_y = nbdec.predict(test_X[:, pc.v_smoothed>25])
+    >>> (train_X, train_y), (valid_X, valid_y), (test_X, test_y) = nbdec.get_data()
+    >>> nbdec.fit(train_X, train_y)
+    >>> predicted_y = nbdec.predict(test_X)
     """
     def __init__(self, t_window, t_step=None):
         super(NaiveBayes, self).__init__(t_window, t_step)
@@ -125,7 +125,7 @@ class NaiveBayes(Decoder):
 
 
     def predict(self, X):
-        post_2d = bayesian_decoding(self.fr, X, delta_t=self.t_window)
+        post_2d = bayesian_decoding(self.fr, X, t_window=self.t_window)
         binned_pos = argmax_2d_tensor(post_2d)
         y = smooth(self.pc.binned_pos_2_real_pos(binned_pos), 5)
         return y
