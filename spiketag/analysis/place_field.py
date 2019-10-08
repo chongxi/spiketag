@@ -46,8 +46,8 @@ class place_field(object):
         '''
         fs = self.fs 
         new_fs = 1/t_step
-        self.ts, self.pos = self.interp_pos(self.ts, self.pos, N=fs/new_fs)
-        self.get_speed(smooth_window=59, std=6, v_cutoff=self.v_cutoff)
+        self.ts, self.pos = self.interp_pos(self.ts, self.pos, t_step)
+        self.get_speed()
 
 
     def restore(self):
@@ -58,7 +58,7 @@ class place_field(object):
         self._fs = 1/(self.ts[1]-self.ts[0])
         return self._fs
 
-    def interp_pos(self, t, pos, N=1):
+    def interp_pos(self, t, pos, new_dt):
         '''
         convert irregularly sampled pos into regularly sampled pos
         N is the dilution sampling factor. N=2 means half of the resampled pos
@@ -66,9 +66,9 @@ class place_field(object):
         >>> new_fs = 200.
         >>> pc.ts, pc.pos = pc.interp_pos(ts, pos, N=fs/new_fs)
         '''
-        dt = np.mean(np.diff(t))
+        dt = t[1] - t[0]
         x, y = interp1d(t, pos[:,0], fill_value="extrapolate"), interp1d(t, pos[:,1], fill_value="extrapolate")
-        new_t = np.arange(0.0, dt*len(t), dt*N)
+        new_t = np.arange(t[0], t[-1], new_dt)
         new_pos = np.hstack((x(new_t).reshape(-1,1), y(new_t).reshape(-1,1)))
         return new_t, new_pos 
 
@@ -108,7 +108,6 @@ class place_field(object):
             self.log = logger(self.logfile, sync=sync)
             self.ts, self.pos = self.log.to_trajectory(session_id)
             self.pos[:,1] = -self.pos[:,1]
-            
 
             # self.v_smoothed, self.v = self.log.get_speed(self.ts, self.pos, smooth_window=60, std=15)
             # self.v_cutoff = v_cutoff
@@ -127,7 +126,7 @@ class place_field(object):
         self.dt = self.ts[1] - self.ts[0]
         self.v_cutoff = v_cutoff
         self.get_maze_range(maze_range)
-        self.get_speed(smooth_window=60, std=15, v_cutoff=v_cutoff) 
+        self.get_speed() 
         self.occupation_map(bin_size)
         self.binned_pos = smooth((self.pos-self.maze_original)//self.bin_size, 3)
 
@@ -148,17 +147,13 @@ class place_field(object):
         pos = binned_pos*self.bin_size + self.maze_original
         return pos
 
-    def get_speed(self, smooth_window=59, std=6, v_cutoff=5):
+    def get_speed(self):
         '''
         self.ts, self.pos is required
         '''
-        v = np.linalg.norm(np.diff(self.pos, axis=0), axis=1)/np.diff(self.ts)
-        w = signal.gaussian(smooth_window, std) # window size 59 frame (roughly 1 sec), std = 6 frame
-        w /= sum(w)
-        v_smoothed = np.convolve(v, w, mode='same')
-
-        self.v = np.hstack((0.01, v))
-        self.v_smoothed = np.hstack((0.01, v_smoothed))
+        self.v = np.linalg.norm(np.diff(self.pos, axis=0), axis=1)/np.diff(self.ts)
+        self.v = np.hstack((self.v[0], self.v))
+        self.v_smoothed = smooth(self.v.reshape(-1,1), int(np.round(self.fs))).ravel()
         self.low_speed_idx = np.where(self.v_smoothed < self.v_cutoff)[0]
         '''
         # check speed:
@@ -170,12 +165,12 @@ class place_field(object):
         '''
         # return v_smoothed, v
 
-    def plot_speed(self, start, stop, thres=5):
+    def plot_speed(self, start, stop, v_cutoff=5):
         fig, ax = plt.subplots(1,1, figsize=(18,8))
         period = np.logical_and(self.ts>start, self.ts<stop)
         plt.plot(self.ts[period], self.v[period], alpha=.7)
         plt.plot(self.ts[period], self.v_smoothed[period], lw=3)
-        ax.axhline(thres, c='m', ls='-.')
+        ax.axhline(v_cutoff, c='m', ls='-.')
         sns.despine()
         return fig
         
