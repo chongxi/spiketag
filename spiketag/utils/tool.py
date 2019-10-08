@@ -4,7 +4,8 @@ import matplotlib.ticker as ticker
 import matplotlib.animation as animation
 import mpl_toolkits.axes_grid1
 import matplotlib.widgets
-
+import seaborn as sns
+sns.set_style("darkgrid", {"axes.facecolor": ".85"})
 
 
 def comet(pos, fs, pos_compare=None, start=1, stop=None, length=300, interval=1, markersize=25, blit=True, player=False, dpi=200, **kwargs):
