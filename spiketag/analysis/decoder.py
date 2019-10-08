@@ -83,13 +83,17 @@ class NaiveBayes(Decoder):
         super(NaiveBayes, self).__init__(t_window, t_step)
 
 
-    def get_partitioned_data(self, low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=5):
+    def get_data(self, low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=None):
         '''
+        Connect to pc first and then set the partition parameter. After these two we can get data
         The data strucutre is different for RNN and non-RNN decoder
         Therefore each decoder subclass has its own get_partitioned_data method
         In low_speed periods, data should be removed from train and valid:
         '''
         assert(self.pc.ts.shape[0] == self.pc.pos.shape[0])
+
+        if v_cutoff is None:
+            v_cutoff = self.pc.v_cutoff
         X = self.pc.get_scv(self.t_window) # t_step is None unless specified
         y = self.pc.pos
 
