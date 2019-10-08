@@ -44,7 +44,8 @@ class Decoder(object):
             totime = len_frame - 1
         return totime
 
-    def partition(self, training_range=[0.0, 0.5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0]):
+    def partition(self, training_range=[0.0, 0.5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0],
+                        low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=None):
         
         self.train_time = [self.pc.ts[self._percent_to_time(training_range[0])], 
                            self.pc.ts[self._percent_to_time(training_range[1])]]
@@ -59,6 +60,35 @@ class Decoder(object):
                                    self._percent_to_time(valid_range[1]))
         self.test_idx  = np.arange(self._percent_to_time(testing_range[0]),
                                    self._percent_to_time(testing_range[1]))
+
+        if v_cutoff is None:
+            v_cutoff = self.pc.v_cutoff
+
+        if low_speed_cutoff['training'] is True:
+            self.train_idx = np.where(self.pc.v_smoothed[self.train_idx]>v_cutoff)[0]
+            self.valid_idx = np.where(self.pc.v_smoothed[self.valid_idx]>v_cutoff)[0]
+
+        if low_speed_cutoff['testing'] is True:
+            self.test_idx = np.where(self.pc.v_smoothed[self.test_idx]>v_cutoff)[0]
+
+
+    def get_data(self):
+        '''
+        Connect to pc first and then set the partition parameter. After these two we can get data
+        The data strucutre is different for RNN and non-RNN decoder
+        Therefore each decoder subclass has its own get_partitioned_data method
+        In low_speed periods, data should be removed from train and valid:
+        '''
+        assert(self.pc.ts.shape[0] == self.pc.pos.shape[0])
+
+        X = self.pc.get_scv(self.t_window) # t_step is None unless specified
+        y = self.pc.pos
+
+        train_X, train_y = X[self.train_idx], y[self.train_idx]
+        valid_X, valid_y = X[self.valid_idx], y[self.valid_idx]
+        test_X,  test_y  = X[self.test_idx], y[self.test_idx]
+        return (train_X, train_y), (valid_X, valid_y), (test_X, test_y) 
+
 
     def evaluate(self, y_predict, y_true, multioutput=True):
         if multioutput is True:
@@ -81,38 +111,6 @@ class NaiveBayes(Decoder):
     """
     def __init__(self, t_window, t_step=None):
         super(NaiveBayes, self).__init__(t_window, t_step)
-
-
-    def get_data(self, low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=None):
-        '''
-        Connect to pc first and then set the partition parameter. After these two we can get data
-        The data strucutre is different for RNN and non-RNN decoder
-        Therefore each decoder subclass has its own get_partitioned_data method
-        In low_speed periods, data should be removed from train and valid:
-        '''
-        assert(self.pc.ts.shape[0] == self.pc.pos.shape[0])
-
-        if v_cutoff is None:
-            v_cutoff = self.pc.v_cutoff
-        X = self.pc.get_scv(self.t_window) # t_step is None unless specified
-        y = self.pc.pos
-
-        if low_speed_cutoff['training'] is True:
-            train_X = X[np.where(self.pc.v_smoothed[self.train_idx]>v_cutoff)[0]]
-            train_y = y[np.where(self.pc.v_smoothed[self.train_idx]>v_cutoff)[0]]
-            valid_X = X[np.where(self.pc.v_smoothed[self.valid_idx]>v_cutoff)[0]]
-            valid_y = y[np.where(self.pc.v_smoothed[self.valid_idx]>v_cutoff)[0]]
-        else:
-            train_X, train_y = X[self.train_idx], y[self.train_idx]
-            valid_X, valid_y = X[self.valid_idx], y[self.valid_idx]
-
-        if low_speed_cutoff['testing'] is True:
-            test_X = X[np.where(self.pc.v_smoothed[self.test_idx]>v_cutoff)[0]]
-            test_y = y[np.where(self.pc.v_smoothed[self.test_idx]>v_cutoff)[0]]
-        else:
-            test_X, test_y = X[self.test_idx], y[self.test_idx]
-        return (train_X, train_y), (valid_X, valid_y), (test_X, test_y) 
-
         
     def fit(self, X=None, y=None):
         '''
