@@ -96,11 +96,21 @@ class Decoder(object):
 
     def evaluate(self, y_predict, y_true, multioutput=True):
         if multioutput is True:
-            score = r2_score(y_true, y_predict, multioutput='raw_values')
+            self.score = r2_score(y_true, y_predict, multioutput='raw_values')
         else:
-            score = r2_score(y_true, y_predict)
-        return score
+            self.score = r2_score(y_true, y_predict)
+        print('r2 score: {}\n'.format(self.score))
+        return self.score
 
+
+    def auto_pipeline(self, smooth_sec=2):
+        (X_train, y_train), (X_valid, y_valid), (self.X_test, self.y_test) = self.get_data()
+        self.fit(X_train, y_train)
+        self.predicted_y = self.predict(self.X_test)
+        self.smooth_factor  = int(smooth_sec/self.pc.t_step) # 2 second by default
+        self.sm_predicted_y = smooth(self.predicted_y, self.smooth_factor)
+        score = self.evaluate(self.sm_predicted_y, self.y_test)
+        return score
 
 
 
