@@ -35,6 +35,7 @@ class place_field(object):
         reinitiallize with a new t_step (dt)
         '''
         ts = np.arange(0, pos.shape[0]*t_step, t_step)
+        self.t_step = t_step
         self.ts, self.pos = ts, pos
         self._ts_restore, self._pos_restore = ts, pos
 
@@ -46,7 +47,8 @@ class place_field(object):
         '''
         fs = self.fs 
         new_fs = 1/t_step
-        self.ts, self.pos = self.interp_pos(self.ts, self.pos, t_step)
+        self.t_step = t_step
+        self.ts, self.pos = self.interp_pos(self.ts, self.pos, self.t_step)
         self.get_speed()
 
 
