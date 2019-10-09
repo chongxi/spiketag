@@ -71,6 +71,10 @@ class Decoder(object):
         if low_speed_cutoff['testing'] is True:
             self.test_idx = np.where(self.pc.v_smoothed[self.test_idx]>v_cutoff)[0]
 
+        print('{0} training samples\n{1} validation samples\n{2} testing samples'.format(self.train_idx.shape[0],
+                                                                       self.valid_idx.shape[0],
+                                                                       self.test_idx.shape[0]))
+
 
     def get_data(self):
         '''
@@ -96,6 +100,7 @@ class Decoder(object):
         else:
             score = r2_score(y_true, y_predict)
         return score
+
 
 
 
