@@ -6,7 +6,7 @@ from sklearn.metrics import r2_score
 
 class Decoder(object):
     """Base class for the decoders for place prediction"""
-    def __init__(self, t_window, t_step=None):
+    def __init__(self, t_window, t_step=None, verbose=True):
         '''
         t_window is the bin_size
         t_step   is the step_size (if None then use pc.ts as natrual sliding window)
@@ -20,6 +20,7 @@ class Decoder(object):
         '''
         self.t_window = t_window
         self.t_step   = t_step
+        self.verbose  = verbose
 
     def connect_to(self, pc):
         '''
@@ -71,9 +72,10 @@ class Decoder(object):
         if low_speed_cutoff['testing'] is True:
             self.test_idx = np.where(self.pc.v_smoothed[self.test_idx]>v_cutoff)[0]
 
-        print('{0} training samples\n{1} validation samples\n{2} testing samples'.format(self.train_idx.shape[0],
-                                                                       self.valid_idx.shape[0],
-                                                                       self.test_idx.shape[0]))
+        if self.verbose:
+            print('{0} training samples\n{1} validation samples\n{2} testing samples'.format(self.train_idx.shape[0],
+                                                                           self.valid_idx.shape[0],
+                                                                           self.test_idx.shape[0]))
 
 
     def get_data(self):
@@ -99,7 +101,8 @@ class Decoder(object):
             self.score = r2_score(y_true, y_predict, multioutput='raw_values')
         else:
             self.score = r2_score(y_true, y_predict)
-        print('r2 score: {}\n'.format(self.score))
+        if self.verbose:
+            print('r2 score: {}\n'.format(self.score))
         return self.score
 
 
