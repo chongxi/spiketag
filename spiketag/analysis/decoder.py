@@ -107,6 +107,17 @@ class Decoder(object):
 
 
     def auto_pipeline(self, smooth_sec=2):
+        '''
+        example for evaluate the funciton of acc[partition]:
+        >>> dec = NaiveBayes(t_window=500e-3, t_step=60e-3)
+        >>> dec.connect_to(pc)
+        >>> r_scores = []
+        >>> partition_range = np.arange(0.1, 1, 0.05)
+        >>> for i in partition_range:
+        >>>     dec.partition(training_range=[0, i], valid_range=[0.5, 0.6], testing_range=[i, 1],
+        >>>                   low_speed_cutoff={'training': True, 'testing': True})
+        >>>     r_scores.append(dec.auto_pipeline(2))
+        '''
         (X_train, y_train), (X_valid, y_valid), (self.X_test, self.y_test) = self.get_data()
         self.fit(X_train, y_train)
         self.predicted_y = self.predict(self.X_test)
