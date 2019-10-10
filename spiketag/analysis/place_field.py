@@ -373,7 +373,7 @@ class place_field(object):
                 pcm = ax.pcolormesh(self.X, self.Y, self.fields[field_id], cmap=cmap);
                 ax.set_xticks([])
                 ax.set_yticks([])
-                ax.set_aspect('auto')
+                ax.set_aspect(self.maze_ratio)
                 if marker:
                     ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 
                                                               'mo', markersize=markersize, alpha=alpha)
@@ -391,7 +391,7 @@ class place_field(object):
                 if marker:
                     ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 
                                                               'mo', markersize=markersize, alpha=alpha)
-                ax.set_aspect('auto')
+                ax.set_aspect(self.maze_ratio)
             plt.grid('off')
             plt.show();
 
