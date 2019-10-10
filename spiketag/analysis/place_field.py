@@ -267,11 +267,9 @@ class place_field(object):
             firing_map_smoothed[neuron_id] = signal.convolve2d(firing_map, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
             firing_map_smoothed[firing_map_smoothed==0] = 1e-25
 
-        self.FR_smoothed = firing_map_smoothed
         self.fields = firing_map_smoothed
         self.n_fields = self.fields.shape[0]
         self.n_units  = self.n_fields
-        return firing_map_smoothed
 
 
     def get_field(self, spk_time_dict, neuron_id, start=None, end=None):
@@ -310,13 +308,9 @@ class place_field(object):
         '''
         self.n_fields = len(spk_time_dict.keys())
         self.n_units  = self.n_fields
-        self.fields = {}
-        self.fields_matrix = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
-
-        self.metric = {}
-        self.metric['spatial_bit_spike'] = np.zeros((self.n_fields,))
-        self.metric['spatial_bit_smoothed_spike'] = np.zeros((self.n_fields,))
-        self.metric['spatial_sparcity'] = np.zeros((self.n_fields,))
+        # self.fields = {}
+        # self.fields_matrix = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
+        self.fields = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
 
         self.firing_poshd = {}
 
@@ -325,23 +319,30 @@ class place_field(object):
             self.get_field(spk_time_dict, i, start, end)
             self.fields[i] = self.FR_smoothed
             self.firing_poshd[i] = self.firing_pos
-            self.fields_matrix[i] = self.FR_smoothed
+            self.fields[i] = self.FR_smoothed
             ### metrics for place fields
-            self.metric['spatial_bit_spike'][i] = info_bits(self.FR, self.P) 
-            self.metric['spatial_bit_smoothed_spike'][i] = info_bits(self.FR_smoothed, self.P)
-            self.metric['spatial_sparcity'][i] = info_sparcity(self.FR, self.P)
 
-        self.fields_matrix[self.fields_matrix==0] = 1e-25
+
+        self.fields[self.fields==0] = 1e-25
 
         if rank is True:
             self.rank_fields('spatial_bit_smoothed_spike')
 
 
-    def rank_fields(self, metric):
+    def rank_fields(self, metric_name):
         '''
-        metric: spatial_bit_spike, spatial_bit_smoothed_spike, spatial_sparcity
+        metric_name: spatial_bit_spike, spatial_bit_smoothed_spike, spatial_sparcity
         '''
-        self.sorted_fields_id = np.argsort(self.metric[metric])[::-1]
+        self.metric = {}
+        self.metric['spatial_bit_spike'] = np.zeros((self.n_fields,))
+        self.metric['spatial_bit_smoothed_spike'] = np.zeros((self.n_fields,))
+        self.metric['spatial_sparcity'] = np.zeros((self.n_fields,))
+
+        for neuron_id in range(self.fields.shape[0]):
+            self.metric['spatial_bit_spike'][neuron_id] = info_bits(self.fields[neuron_id], self.P) 
+            self.metric['spatial_bit_smoothed_spike'][neuron_id] = info_bits(self.fields[neuron_id], self.P)
+            self.metric['spatial_sparcity'][neuron_id] = info_sparcity(self.fields[neuron_id], self.P)
+        self.sorted_fields_id = np.argsort(self.metric[metric_name])[::-1]
 
 
     def plot_fields(self, N=12, size=3, cmap='hot', marker=False, markersize=1, alpha=0.8, order=True):
