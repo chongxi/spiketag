@@ -345,29 +345,43 @@ class place_field(object):
         self.sorted_fields_id = np.argsort(self.metric[metric_name])[::-1]
 
 
-    def plot_fields(self, N=12, size=3, cmap='hot', marker=False, markersize=1, alpha=0.8, order=True):
+    def plot_fields(self, idx=None, N=12, size=3, cmap='hot', marker=False, markersize=1, alpha=0.8, order=True):
         '''
         order: if True will plot with ranked fields according to the metric 
         '''
-        nrow = self.n_fields/N + 1
-        ncol = N
-        fig = plt.figure(figsize=(ncol*size, nrow*size));
-        # plt.tight_layout();
-        plt.subplots_adjust(wspace=None, hspace=None);
+        if idx is None: # plot all fields
+            nrow = self.n_fields/N + 1
+            ncol = N
+            fig = plt.figure(figsize=(ncol*size, nrow*size));
+            # plt.tight_layout();
+            plt.subplots_adjust(wspace=None, hspace=None);
+            for i in range(self.n_fields):
+                ax = fig.add_subplot(nrow, ncol, i+1);
+                if order:
+                    field_id = self.sorted_fields_id[i]
+                else:
+                    field_id = i
+                pcm = ax.pcolormesh(self.X, self.Y, self.fields[field_id], cmap=cmap);
+                if marker:
+                    ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 
+                                                              'mo', markersize=markersize, alpha=alpha)
+            plt.grid('off')
+            plt.show();
 
-        for i in range(self.n_fields):
-            ax = fig.add_subplot(nrow, ncol, i+1);
-            if order:
-                field_id = self.sorted_fields_id[i]
-            else:
-                field_id = i
-            pcm = ax.pcolormesh(self.X, self.Y, self.fields[field_id], cmap=cmap);
-            if marker:
-                ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 
-                                                          'mo', markersize=markersize, alpha=alpha)
+        else:
+            nrow = len(idx)/N + 1
+            ncol = N
+            fig = plt.figure(figsize=(ncol*size, nrow*size));
+            plt.subplots_adjust(wspace=None, hspace=None);
+            for i, field_id in enumerate(idx):
+                ax = fig.add_subplot(nrow, ncol, i+1);
+                pcm = ax.pcolormesh(self.X, self.Y, self.fields[field_id], cmap=cmap);
+                if marker:
+                    ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 
+                                                              'mo', markersize=markersize, alpha=alpha)
+            plt.grid('off')
+            plt.show();
 
-        plt.grid('off')
-        plt.show();
         return fig
 
 
