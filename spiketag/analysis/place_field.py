@@ -253,6 +253,7 @@ class place_field(object):
         firing heat map constructed from spike count vector (scv) and position
         '''
         # assert(scv.shape[1]==self.pos.shape[0])
+        scv = scv.T.copy()
         n_neurons, total_bin = scv.shape
         valid_bin = np.array(np.array(section)*total_bin, dtype=np.int)
         firing_map_smoothed = np.zeros((n_neurons, *self.map_binned_size))
