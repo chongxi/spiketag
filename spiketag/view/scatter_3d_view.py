@@ -325,3 +325,20 @@ class scatter_3d_view(scene.SceneCanvas):
             self.view.events.mouse_wheel.connect(self.view.camera.viewbox_mouse_event)
             self._control_transparency = not self._control_transparency
         self.key_option = 0
+
+
+    def cluster(self, ndim, method='dpgmm', max_n_clusters = 80, max_iter=300, refresh=True):
+        from sklearn.mixture import BayesianGaussianMixture as DPGMM
+        dpgmm = DPGMM(
+            n_components=max_n_clusters, covariance_type='full', weight_concentration_prior=1e-3,
+            weight_concentration_prior_type='dirichlet_process', init_params="kmeans",
+            max_iter=max_iter, random_state=0, verbose=1, verbose_interval=10) # init can be "kmeans" or "random"
+        dpgmm.fit(self.fet[:,:ndim])
+        label = dpgmm.predict(self.fet[:,:ndim])
+        self.clu.membership = label
+        self.clu.__construct__()
+        self.clu.emit('cluster')
+
+        if refresh is True:
+            self.set_data(self.fet, self.clu)
+        return label
