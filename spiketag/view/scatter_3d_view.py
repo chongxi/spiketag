@@ -310,6 +310,30 @@ class scatter_3d_view(scene.SceneCanvas):
             if e.text == 'e':
                 self.toggle_noise_clu()
 
+        if e.text == 'c':
+            if self.mode != 'clustering':
+                self.mode = 'clustering'
+                self.n_clu = ''
+
+        if self.mode == 'clustering':
+            if e.text.isdigit():
+                self.n_clu += e.text
+            elif e.text == 'g':
+                try:
+                    self.n_clu = int(self.n_clu)
+                    self.cluster(dim=range(0, self.fet.shape[1]), max_n_clusters=self.n_clu)
+                except:
+                    pass
+                self.mode = ''
+                self.n_clu = ''
+            elif e.text == 'c':
+                try:
+                    self.n_clu = int(self.n_clu)
+                    self.cluster(dim=self.dimension, max_n_clusters=self.n_clu)
+                except:
+                    pass
+                self.mode = ''
+                self.n_clu = ''
 
 
 
@@ -327,14 +351,17 @@ class scatter_3d_view(scene.SceneCanvas):
         self.key_option = 0
 
 
-    def cluster(self, ndim, method='dpgmm', max_n_clusters = 80, max_iter=300, refresh=True):
+    def cluster(self, dim, method='dpgmm', max_n_clusters = 80, max_iter=300, refresh=True):
+        '''
+        dim is the dim index for clustering
+        '''
         from sklearn.mixture import BayesianGaussianMixture as DPGMM
         dpgmm = DPGMM(
             n_components=max_n_clusters, covariance_type='full', weight_concentration_prior=1e-3,
             weight_concentration_prior_type='dirichlet_process', init_params="kmeans",
             max_iter=max_iter, random_state=0, verbose=1, verbose_interval=10) # init can be "kmeans" or "random"
-        dpgmm.fit(self.fet[:,:ndim])
-        label = dpgmm.predict(self.fet[:,:ndim])
+        dpgmm.fit(self.fet[:,dim])
+        label = dpgmm.predict(self.fet[:,dim])
         self.clu.membership = label
         self.clu.__construct__()
         self.clu.emit('cluster')
