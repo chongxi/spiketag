@@ -148,11 +148,9 @@ class NaiveBayes(Decoder):
         Therefore the X and y is None for the consistency of the decoder API
         '''
         self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], rank=False)
-        self.fr = self.pc.fields_matrix
-
 
     def predict(self, X):
-        post_2d = bayesian_decoding(self.fr, X, t_window=self.t_window)
+        post_2d = bayesian_decoding(self.fields, X, t_window=self.t_window)
         binned_pos = argmax_2d_tensor(post_2d)
         y = smooth(self.pc.binned_pos_2_real_pos(binned_pos), 5)
         return y
