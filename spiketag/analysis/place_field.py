@@ -147,7 +147,7 @@ class place_field(object):
 
     @property
     def maze_length(self):
-        return np.diff(pc.maze_range, axis=1)
+        return np.diff(pc.maze_range, axis=1).ravel()
 
     @property
     def maze_ratio(self):
