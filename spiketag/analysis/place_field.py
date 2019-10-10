@@ -248,7 +248,7 @@ class place_field(object):
         return self.FR_smoothed
 
 
-    def firing_map_from_scv(self, scv, section=[0,1]):
+    def firing_map_from_scv(self, scv, t_step, section=[0,1]):
         '''
         firing heat map constructed from spike count vector (scv) and position
         '''
@@ -260,12 +260,17 @@ class place_field(object):
             firing_pos = firing_pos_from_scv(scv, self.pos, neuron_id, valid_bin)
             firing_map, x_edges, y_edges = np.histogram2d(x=firing_pos[:,0], y=firing_pos[:,1], 
                                                           bins=self.nbins, range=self.maze_range)
-            firing_map = firing_map.T/self.O/self.dt
+            firing_map = firing_map.T/self.O/t_step
             firing_map[np.isnan(firing_map)] = 0
             firing_map[np.isinf(firing_map)] = 0
             firing_map_smoothed[neuron_id] = signal.convolve2d(firing_map, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
             firing_map_smoothed[firing_map_smoothed==0] = 1e-25
-        return firing_map_smoothed        
+
+        self.FR_smoothed = firing_map_smoothed
+        self.fields = firing_map_smoothed
+        self.n_fields = self.fields.shape[0]
+        self.n_units  = self.n_fields
+        return firing_map_smoothed
 
 
     def get_field(self, spk_time_dict, neuron_id, start=None, end=None):
