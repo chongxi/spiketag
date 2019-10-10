@@ -145,6 +145,15 @@ class place_field(object):
     def maze_original(self):
         return self._maze_original
 
+    @property
+    def maze_length(self):
+        return np.diff(pc.maze_range, axis=1)
+
+    @property
+    def maze_ratio(self):
+        return self.maze_length[0]/self.maze_length[1]
+    
+
     def binned_pos_2_real_pos(self, binned_pos):
         pos = binned_pos*self.bin_size + self.maze_original
         return pos
@@ -362,6 +371,9 @@ class place_field(object):
                 else:
                     field_id = i
                 pcm = ax.pcolormesh(self.X, self.Y, self.fields[field_id], cmap=cmap);
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_aspect('auto')
                 if marker:
                     ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 
                                                               'mo', markersize=markersize, alpha=alpha)
@@ -379,6 +391,7 @@ class place_field(object):
                 if marker:
                     ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 
                                                               'mo', markersize=markersize, alpha=alpha)
+                ax.set_aspect('auto')
             plt.grid('off')
             plt.show();
 
