@@ -130,7 +130,7 @@ class place_field(object):
         self.get_maze_range(maze_range)
         self.get_speed() 
         self.occupation_map(bin_size)
-        self.binned_pos = smooth((self.pos-self.maze_original)//self.bin_size, 3)
+        # self.binned_pos = (self.pos-self.maze_original)//self.bin_size
 
 
     def get_maze_range(self, maze_range=None):
@@ -152,7 +152,10 @@ class place_field(object):
     @property
     def maze_ratio(self):
         return self.maze_length[0]/self.maze_length[1]
-    
+
+    @property
+    def binned_pos(self):
+        return (self.pos-self.maze_original)//self.bin_size
 
     def binned_pos_2_real_pos(self, binned_pos):
         pos = binned_pos*self.bin_size + self.maze_original
@@ -311,17 +314,20 @@ class place_field(object):
         return f,ax
 
 
-    def get_fields(self, spk_time_dict, start=None, end=None, rank=True):
+    def get_fields(self, spk_time_dict, start=None, end=None, v_cutoff=None, rank=True):
         '''
         spk_time_dict is dictionary start from 1: {1: ... 2: ... 3: ...}
         '''
         self.n_fields = len(spk_time_dict.keys())
         self.n_units  = self.n_fields
-        # self.fields = {}
-        # self.fields_matrix = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
         self.fields = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
-
         self.firing_poshd = {}
+
+        if v_cutoff is None:
+            self.get_speed()
+        else:
+            self.v_cutoff = v_cutoff
+            self.get_speed()
 
         for i in spk_time_dict.keys():
             ### get place fields from neuron i
