@@ -32,7 +32,7 @@ class controller(object):
     Third stage:  (sorting for spike model including transformer, vq and labels):
     >> ctrl = controller(fpga=True, **kwargs)     #1. load pre-recorded files
     >> ctrl.show()                                #2. sorting (label the `done` state)
-    >> ctrl.done()                                #3. FPGA transformer (y=a(Px+b)) and vq parameters (vqs and labels)
+    >> ctrl.compile()                             #3. FPGA transformer (y=a(Px+b)) and vq parameters (vqs and labels)
     '''
     def __init__(self, fpga=False, *args, **kwargs):
 
@@ -590,15 +590,14 @@ class controller(object):
 
         # step 2: change labels such that each group has a different range that no overlapping
         base_label = 0  # start from zero
-        for _grpNo, _labels in self.vq['labels'].items():
+        for _grpNo, _labels in tqdm(self.vq['labels'].items(), 'generating id for units'):
             _labels += base_label
             _labels[_labels==base_label] = 0
             if _labels.max() != 0:
                 base_label = _labels.max() # base_label gets up each group by its #units
 
-
         # step 3: set FPGA vq
-        for grpNo in self.vq['points'].keys():
+        for grpNo in tqdm(self.vq['points'].keys(), desc='compile to fpga'):
             x = self.vq['points'][grpNo]
             y = self.vq['labels'][grpNo]
             self.fpga.vq[grpNo]    = x
@@ -613,7 +612,9 @@ class controller(object):
                 self.set_transformer(group_id=grp_id)
                 self.fpga.label[grp_id] = np.zeros((500,))
 
-    def done(self, vq_method='proportional'):
+    def compile(self, vq_method='proportional'):
         self.reset_vq()
         self.set_vq(vq_method)
         self.fpga.n_units = self.unit_done
+        print('FPGA is compiled')
+        print('{} units are ready for real-time spike assignment'.format(self.fpga.n_units))
