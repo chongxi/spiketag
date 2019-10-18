@@ -217,11 +217,11 @@ class MainModel(object):
         if method == 'knn':
             self.construct_kdtree(group_id, global_ids)
             d = []
-            for _kd in self.kd.iterkeys():
+            for _kd, _ in self.kd.items():
                 tmp = _kd.query(X, k)[0]
                 d.append(tmp.mean(axis=1))
             d = np.vstack(np.asarray(d))
-            labels = np.asarray(self.kd.values())[np.argmin(d, axis=0)]
+            labels = np.asarray(list(self.kd.values()))[np.argmin(d, axis=0)]
         return labels
 
 

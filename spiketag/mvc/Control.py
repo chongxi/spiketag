@@ -405,11 +405,11 @@ class controller(object):
     # 1. Get its knn in each other clusters (which require KDTree for each cluster)
     # 2. Get the mean distance of these knn points in each KDTree (Cluster)
     # 3. Assign the point to the closet cluster
-    def dismiss(self, cluNo=0, k=30):
+    def dismiss(self, cluNo=0, k=15):
         # get the features of targeted cluNo
         #  X = self.fet[self.clu[cluNo]]
         # classification on these features
-            lables_X = self.model.predict(self.current_group, self.clu[cluNo], method='knn', k=10)
+            lables_X = self.model.predict(self.current_group, self.clu[cluNo], method='knn', k=15)
         # reconstruct current cluster membership
             self.clu.membership[self.clu[cluNo]] = lables_X
             if self.clu.membership.min()>0:
