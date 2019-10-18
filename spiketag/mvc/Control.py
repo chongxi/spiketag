@@ -392,12 +392,12 @@ class controller(object):
         '''
         trim a source cluster
         '''
-        pts = k*50
+        pts = k*30
         source = self.fet[self.clu[source_clu_id]]
         KT = KDTree(source)
         dis, _ = KT.query(source, 10, dualtree=True) # use 10 pts to calculate average distance
         distance = dis[:, 1:].mean(axis=1) # the first column is the distance to each point itself, which is 0
-        low_density_idx = self.clu.local2global({3:np.argsort(distance)[::-1][:pts]})
+        low_density_idx = self.clu.local2global({source_clu_id:np.argsort(distance)[::-1][:pts]})
         self.clu.select(low_density_idx)
 
     # cluNo is a noisy cluster, usually 0, assign it's member to other clusters
