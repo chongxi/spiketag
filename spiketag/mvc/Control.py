@@ -113,6 +113,10 @@ class controller(object):
             self.dismiss(source_id)
         
         @self.view.spkview.event.connect
+        def on_build_vq():
+            self.build_vq()
+
+        @self.view.spkview.event.connect
         def on_clip(idx):
             idx = np.array(idx)
             print('delete {} spikes'.format(idx.shape))
@@ -514,11 +518,14 @@ class controller(object):
         _fetview.set_data(_fet)
         _fetview.show()
 
-    def build_vq(self, grp_id, n_dim=4, n_vq=None, show=True, method='proportional'):
+    def build_vq(self, grp_id=None, n_dim=4, n_vq=None, show=True, method='proportional'):
         import warnings
         warnings.filterwarnings('ignore')
         # get the vq and vq labels
         from sklearn.cluster import MiniBatchKMeans
+
+        if grp_id is None:
+            grp_id = self.current_group
 
         vq = []
         if n_vq is None:

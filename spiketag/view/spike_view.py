@@ -667,6 +667,9 @@ class spike_view(View):
             self._source_id = self.cluster_mouse_on
             self.event.emit('dismiss', source_id=self._source_id)
 
+        if e.text == 'b':
+            self.event.emit('build_vq')
+
         if e.text == 's':
             if not self.is_spk_empty:
                 target_clu_No = max(self.clu.index_id) + 1
