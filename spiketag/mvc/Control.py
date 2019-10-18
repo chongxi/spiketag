@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.neighbors import KDTree
+from tqdm import tqdm
 from .Model import MainModel
 from ..analysis import spk_time_to_scv 
 from .View import MainView
@@ -538,7 +539,8 @@ class controller(object):
             err = n_vq.sum() - self._vq_npts
             n_vq[-1] -= err
             assert(n_vq.sum()==500)
-        for _clu_id in self.model.clu[grp_id].index_id:
+        tqdm_info = 'building vq for group {}'.format(grp_id)
+        for _clu_id in tqdm(self.model.clu[grp_id].index_id, desc=tqdm_info):
             km = MiniBatchKMeans(n_vq[_clu_id])
             X = self.model.fet[grp_id][self.model.clu[grp_id].index[_clu_id]][:,:n_dim]
             km.fit(X)
