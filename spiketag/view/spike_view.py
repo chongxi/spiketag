@@ -662,6 +662,10 @@ class spike_view(View):
             self._source_id = self.cluster_mouse_on
             self.event.emit('trim', source_id=self._source_id, k=self._magnet_const)
             self._magnet_const += 1
+        
+        if e.text == 'd':
+            self._source_id = self.cluster_mouse_on
+            self.event.emit('dismiss', source_id=self._source_id)
 
         if e.text == 's':
             if not self.is_spk_empty:

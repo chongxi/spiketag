@@ -107,7 +107,11 @@ class controller(object):
         @self.view.spkview.event.connect
         def on_trim(source_id, k):
             self.trim(source_id, k)
-
+            
+        @self.view.spkview.event.connect
+        def on_dismiss(source_id):
+            self.dismiss(source_id)
+        
         @self.view.spkview.event.connect
         def on_clip(idx):
             idx = np.array(idx)
@@ -416,17 +420,6 @@ class controller(object):
                 self.clu.membership -= 1
             self.clu.__construct__()
             self.update_view()
-
-
-    # cluNo is a good cluster, absorb its member from other clusters
-    def absorb(self, cluNo=0):
-        # TODO: 
-        pass
-
-
-    #### Analysis ####
-    # def load_logfile(self, logfile, session_id=0, v_cutoff=5):
-    #     self.pc = place_field(logfile=logfile, session_id=session_id, v_cutoff=v_cutoff)
 
 
     def get_fields(self, group_id=-1, kernlen=21, std=3):
