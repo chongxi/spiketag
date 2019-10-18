@@ -14,6 +14,25 @@ from playground.view import maze_view
 
 
 class controller(object):
+    '''
+    First stage:  (channel map in the prb file)
+    >> from spiketag.fpga import xike_config
+    >> fpga = xike_config(probe=prb)
+
+    Second stage: (ch_ref and thres)
+    >> ctrl = controller(fpga=True, **kwargs)     #1. load pre-recorded files
+    >> th = ctrl.model.mua.get_threshold(beta=5.5)/float(2**13)
+    >> ctrl.fpga.thres[:] = th
+    >> plt.plot(th, '-o')
+    >> ctrl.fpga.ch_ref[0:88] = 44.
+    >> ctrl.fpga.ch_ref[88:156] = 137.
+    >> ctrl.fpga.ch_ref[156:160] = 160.
+
+    Third stage:  (sorting for spike model including transformer, vq and labels):
+    >> ctrl = controller(fpga=True, **kwargs)     #1. load pre-recorded files
+    >> ctrl.show()                                #2. sorting (label the `done` state)
+    >> ctrl.done()                                #3. FPGA transformer (y=a(Px+b)) and vq parameters (vqs and labels)
+    '''
     def __init__(self, fpga=False, *args, **kwargs):
 
         self.model = MainModel(*args, **kwargs)
