@@ -105,6 +105,10 @@ class controller(object):
             self.transfer(sink_id, source_id, k)
 
         @self.view.spkview.event.connect
+        def on_trim(source_id, k):
+            self.trim(source_id, k)
+
+        @self.view.spkview.event.connect
         def on_clip(idx):
             idx = np.array(idx)
             print('delete {} spikes'.format(idx.shape))
@@ -128,7 +132,6 @@ class controller(object):
             idx = np.where(self.model.spk[self.current_group][:,8,:].min(axis=1)>thres)[0]
             print('delete {} spikes'.format(idx.shape))
             self.delete_spk(spk_idx=idx)
-
 
         @self.view.traceview.event.connect
         def on_view_trace():
@@ -384,6 +387,18 @@ class controller(object):
         # source = np.delete(source, nn_ids, axis=0)
         # return source, sink
         # self.model.fet[self.current_group]
+
+    def trim(self, source_clu_id, k):
+        '''
+        trim a source cluster
+        '''
+        pts = k*50
+        source = self.fet[self.clu[source_clu_id]]
+        KT = KDTree(source)
+        dis, _ = KT.query(source, 10, dualtree=True) # use 10 pts to calculate average distance
+        distance = dis[:, 1:].mean(axis=1) # the first column is the distance to each point itself, which is 0
+        low_density_idx = self.clu.local2global({3:np.argsort(distance)[::-1][:pts]})
+        self.clu.select(low_density_idx)
 
     # cluNo is a noisy cluster, usually 0, assign it's member to other clusters
     # using knn classifier: for each grey points:

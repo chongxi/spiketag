@@ -658,6 +658,11 @@ class spike_view(View):
             self._magnet_const += 1
             self._bursting_time_threshold = 0.4
 
+        if e.text == 't':
+            self._source_id = self.cluster_mouse_on
+            self.event.emit('trim', source_id=self._source_id, k=self._magnet_const)
+            self._magnet_const += 1
+
         if e.text == 's':
             if not self.is_spk_empty:
                 target_clu_No = max(self.clu.index_id) + 1
