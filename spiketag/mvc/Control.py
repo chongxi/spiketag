@@ -545,7 +545,7 @@ class controller(object):
 
     def set_vq(self, vq_method='proportional'):
         # step 1: set FPGA transfomer and build vq 
-        for grp_id in range(self.prb.n_group):
+        for grp_id in range(self.prb.n_group):  # set_vq condition for a group: at least 500 spikes and in a `done` state
             if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu_manager.state_list[grp_id]==3:
                 self.set_transformer(group_id=grp_id)
                 self.build_vq(grp_id=grp_id, show=False, method=vq_method)
