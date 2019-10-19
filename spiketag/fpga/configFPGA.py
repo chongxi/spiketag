@@ -129,7 +129,7 @@ class xike_config(object):
 
     @property
     def configured_groups(self):
-        return self.transformer_status
+        return np.where(self.transformer_status)[0]
     
     def reset_transformer(self):
         for grpNo in range(self.ngrp):

@@ -59,7 +59,7 @@ class controller(object):
             # initialize FPGA channel grouping
             # both ch_hash and ch_grpNo are configured
             # every channel has a `ch_hash` and a `ch_grpNo` 
-            self.fpga = xike_config(probe=self.prb)
+            self.fpga = xike_config(probe=self.prb)  # this will automatically download the prb map into the FPGA
             
             
         @self.view.prb.connect
