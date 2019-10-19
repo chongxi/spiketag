@@ -20,7 +20,7 @@ class scatter_3d_view(scene.SceneCanvas):
         self._transparency = 0.7
         self._control_transparency = False
         self._control_picker = False
-        self._size = 3
+        self._size = 5
         self._highlight_color = np.array([1,0,0,1]).astype('float32')
         self.color = np.array([])
         self._cache_mask_ = np.array([])
@@ -131,7 +131,7 @@ class scatter_3d_view(scene.SceneCanvas):
         # TODO: add functionality to change :3 to input specific 3 dims
         if self.dimension is None:
             self.dimension = [0,1,2]
-        self.scatter.set_data(self.fet[:, self.dimension], size=self._size, edge_color=self.color, face_color=self.color)
+        self.scatter.set_data(self.fet[:, self.dimension], symbol='o', size=self._size, edge_color=self.color, face_color=self.color)
 
         self.dimension_text.text = str(self.dimension) 
         self.dimension_text.pos  = np.array([35,10])
