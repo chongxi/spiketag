@@ -11,6 +11,7 @@ from ..base.SPK import _transform
 from ..fpga import xike_config
 from ..analysis.place_field import place_field
 from ..view import scatter_3d_view
+from ..utils.conf import info 
 from playground.view import maze_view
 
 
@@ -539,8 +540,8 @@ class controller(object):
             err = n_vq.sum() - self._vq_npts
             n_vq[-1] -= err
             assert(n_vq.sum()==500)
-        tqdm_info = 'building vq for group {}'.format(grp_id)
-        for _clu_id in tqdm(self.model.clu[grp_id].index_id, desc=tqdm_info):
+
+        for _clu_id in tqdm(self.model.clu[grp_id].index_id):
             km = MiniBatchKMeans(n_vq[_clu_id])
             X = self.model.fet[grp_id][self.model.clu[grp_id].index[_clu_id]][:,:n_dim]
             km.fit(X)
@@ -549,8 +550,7 @@ class controller(object):
         self.vq['points'][grp_id] = np.vstack(vq)
         self.vq['labels'][grp_id] = self._predict(grp_id, np.vstack(vq), n_dim)
         self.vq['scores'][grp_id] = self._validate_vq(grp_id, n_dim)
-        print('group {}: accuracy:{}'.format(grp_id, self.vq['scores'][grp_id]))
-
+        info('group {}: accuracy:{}'.format(grp_id, self.vq['scores'][grp_id]))
         assert(self.vq['labels'][grp_id].max() == self.model.clu[grp_id].nclu - 1)
 
         if show:
@@ -590,7 +590,7 @@ class controller(object):
 
         # step 2: change labels such that each group has a different range that no overlapping
         base_label = 0  # start from zero
-        for _grpNo, _labels in tqdm(self.vq['labels'].items(), 'generating id for units'):
+        for _grpNo, _labels in self.vq['labels'].items():
             _labels += base_label
             _labels[_labels==base_label] = 0
             if _labels.max() != 0:
