@@ -126,6 +126,10 @@ class xike_config(object):
         for i in range(self.probe.n_group):
             self._transformer_status[i] = self.scale[i] != 0
         return self._transformer_status
+
+    @property
+    def configured_groups(self):
+        return self.transformer_status
     
     def reset_transformer(self):
         for grpNo in range(self.ngrp):
