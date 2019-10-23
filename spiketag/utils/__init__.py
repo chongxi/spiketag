@@ -7,6 +7,24 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
+def order_label(vec):
+    '''
+    order label as 0->N for any vector
+    '''
+    _vec = vec.copy()
+    _uniq = np.unique(_vec) 
+    for i in np.argsort(_uniq):
+        _vec[_vec==_uniq[i]] = i 
+    return _vec
+
+
+def shift_label(vec, const):
+    '''
+    except 0, every element add a constant
+    '''
+    return np.array([_v + const if _v!=0 else _v for _v in vec])
+
+
 def fs2t(N, fs):
     dt = 1./fs
     t = np.arange(0, N*dt, dt)

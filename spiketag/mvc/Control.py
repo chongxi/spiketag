@@ -5,7 +5,7 @@ from .Model import MainModel
 from ..analysis import spk_time_to_scv 
 from .View import MainView
 from ..base import CLU
-from ..utils import warning, conf
+from ..utils import warning, conf, order_label, shift_label
 from ..utils.utils import Timer
 from ..base.SPK import _transform
 from ..fpga import xike_config
@@ -34,6 +34,12 @@ class controller(object):
     >> ctrl = controller(fpga=True, **kwargs)     #1. load pre-recorded files
     >> ctrl.show()                                #2. sorting (label the `done` state)
     >> ctrl.compile()                             #3. FPGA transformer (y=a(Px+b)) and vq parameters (vqs and labels)
+
+    To rebuild a single group (maybe during experiment):
+    >> ctrl.build_vq(grp_id, fpga=True)
+
+    To download a spike-based stimulation trigger:
+    >> ctrl.fpga.target_unit = 77 # neuron with label 77 generate TTL spike train for optogenetics/other transcient stimulation 
     '''
     def __init__(self, fpga=False, *args, **kwargs):
 
@@ -51,6 +57,7 @@ class controller(object):
         self.vq = {}
         self.vq['points'] = {}
         self.vq['labels'] = {}
+        self.vq['fpga_labels'] = {}
         self.vq['scores'] = {}
         self._vq_npts = 500  # size of codebook to download to FPGA, there are many codebooks
 
@@ -563,21 +570,36 @@ class controller(object):
         
         if fpga:
             self.fpga.vq[grp_id] = self.vq['points'][grp_id]
-            self._update_labels()
-            for grpNo in tqdm(self.vq['labels'].keys(), desc='compile to fpga'):
-                self.fpga.label[grpNo] = self.vq['labels'][grpNo]
+            self._update_FPGA_labels()
+            for grpNo in tqdm(self.vq['fpga_labels'].keys(), desc='compile to fpga'):
+                self.fpga.label[grpNo] = self.vq['fpga_labels'][grpNo]
+            if self._check_FPGA_labels():
+                print('{} units are ready for real-time spike assignment'.format(self.fpga.n_units))
+            else:
+                info('check vq and labels, something went wrong') 
+                
 
 
-    def _update_labels(self):
+    def _update_FPGA_labels(self):
         '''
         This update the global labels after each time the vq['labels'] is updated by any group
+        The purpose is to order the labels of neurons in a non-overlapping manner except `0` cluster for each group (noise cluster)
         '''
         base_label = 0  # start from zero
         for _grpNo, _labels in self.vq['labels'].items():
-            _labels += base_label
-            _labels[_labels==base_label] = 0
+            _labels = order_label(_labels)
+            _labels = shift_label(_labels, base_label)
+            self.vq['fpga_labels'][_grpNo] = _labels
             if _labels.max() != 0:
                 base_label = _labels.max() # base_label gets up each group by its #unit
+
+    def _check_FPGA_labels(self):
+        '''
+        This assert that labels in FPGA is not overlapping and it is up to the fpga.n_units
+        '''
+        _fpga_labels = np.array([self.fpga.label[i] for i in self.fpga.configured_groups]).ravel()
+        _noverlap_labels = np.arange(self.fpga.n_units+1)
+        return np.array_equal(np.unique(_fpga_labels), _noverlap_labels)
 
         
     def _validate_vq(self, grp_id, n_dim=4):
@@ -607,12 +629,12 @@ class controller(object):
                 pass
 
         # step 2: change labels such that each group has a different range that no overlapping
-        self._update_labels()
+        self._update_FPGA_labels()
 
         # step 3: set FPGA vq
         for grpNo in tqdm(self.vq['points'].keys(), desc='compile to fpga'):
             x = self.vq['points'][grpNo]
-            y = self.vq['labels'][grpNo]
+            y = self.vq['fpga_labels'][grpNo]
             self.fpga.vq[grpNo]    = x
             self.fpga.label[grpNo] = y
             # print('group {} vq configured with shape {}'.format(grpNo, x.shape))
@@ -630,4 +652,7 @@ class controller(object):
         self.set_vq(vq_method)
         self.fpga.n_units = self.unit_done
         print('FPGA is compiled')
-        print('{} units are ready for real-time spike assignment'.format(self.fpga.n_units))
+        if self._check_FPGA_labels():
+            print('{} units are ready for real-time spike assignment'.format(self.fpga.n_units))
+        else:
+            info('check vq and labels, something went wrong') 
