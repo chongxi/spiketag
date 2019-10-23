@@ -520,7 +520,7 @@ class controller(object):
         _fetview.set_data(_fet)
         _fetview.show()
 
-    def build_vq(self, grp_id=None, n_dim=4, n_vq=None, show=True, method='proportional'):
+    def build_vq(self, grp_id=None, n_dim=4, n_vq=None, show=True, method='proportional', fpga=False):
         import warnings
         warnings.filterwarnings('ignore')
         # get the vq and vq labels
@@ -560,6 +560,24 @@ class controller(object):
                                   self.vq['labels'][grp_id])
             self.vq_view.transparency = 0.9
             self.vq_view.show()
+        
+        if fpga:
+            self.fpga.vq[grp_id] = self.vq['points'][grp_id]
+            self._update_labels()
+            for grpNo in tqdm(self.vq['labels'].keys(), desc='compile to fpga'):
+                self.fpga.label[grpNo] = self.vq['labels'][grpNo]
+
+
+    def _update_labels(self):
+        '''
+        This update the global labels after each time the vq['labels'] is updated by any group
+        '''
+        base_label = 0  # start from zero
+        for _grpNo, _labels in self.vq['labels'].items():
+            _labels += base_label
+            _labels[_labels==base_label] = 0
+            if _labels.max() != 0:
+                base_label = _labels.max() # base_label gets up each group by its #unit
 
         
     def _validate_vq(self, grp_id, n_dim=4):
@@ -589,12 +607,7 @@ class controller(object):
                 pass
 
         # step 2: change labels such that each group has a different range that no overlapping
-        base_label = 0  # start from zero
-        for _grpNo, _labels in self.vq['labels'].items():
-            _labels += base_label
-            _labels[_labels==base_label] = 0
-            if _labels.max() != 0:
-                base_label = _labels.max() # base_label gets up each group by its #units
+        self._update_labels()
 
         # step 3: set FPGA vq
         for grpNo in tqdm(self.vq['points'].keys(), desc='compile to fpga'):
