@@ -75,22 +75,6 @@ class xike_config(object):
         self.vq    =    vq_hash(nCh=self.ngrp,  base_address=self.ngrp * (self.p_dim + 1 + self.spklen*self.ch_span))
         self.label = label_hash(nCh=self.ngrp,  base_address=self.ngrp * (self.p_dim + 1 + self.spklen*self.ch_span + self.n_vq))
 
-    def set_channel_params_to_fpga(self):
-        assert(self.n_ch == self.probe.n_ch)  # very important!
-        for ch in range(self.probe.n_ch):
-            ## it is possible that the probe.ch_hash is less than 40 groups (e.g. only 128 channels used)
-            self.ch_hash[ch] = self.probe.ch_hash(ch)
-            try:
-                self.ch_grpNo[ch] = self.probe.ch2g[ch]
-            except:
-                self.ch_grpNo[ch] = 100            
-
-    def set_channel_ref(self, ch_ref):
-        self.ch_ref[:] = ch_ref
-
-    def set_threshold(self, threshold):
-        self.thres[:] = threshold
-
     '''
     ------------------------------------------------------------------------------------
     property interface with mem_reg_16 in the FPGA ([4:0] address for 32 slots)
@@ -119,8 +103,25 @@ class xike_config(object):
 
     '''
     ------------------------------------------------------------------------------------
+    methods for batch configuration 
     ------------------------------------------------------------------------------------
     '''
+
+    def set_channel_params_to_fpga(self):
+        assert(self.n_ch == self.probe.n_ch)  # very important!
+        for ch in range(self.probe.n_ch):
+            ## it is possible that the probe.ch_hash is less than 40 groups (e.g. only 128 channels used)
+            self.ch_hash[ch] = self.probe.ch_hash(ch)
+            try:
+                self.ch_grpNo[ch] = self.probe.ch2g[ch]
+            except:
+                self.ch_grpNo[ch] = 100            
+
+    def set_channel_ref(self, ch_ref):
+        self.ch_ref[:] = ch_ref
+
+    def set_threshold(self, threshold):
+        self.thres[:] = threshold
 
     def _config_FPGA_probe(self, prb):
         self.probe = prb
@@ -163,9 +164,3 @@ class xike_config(object):
     @property
     def configured_groups(self):
         return np.where(self.transformer_status)[0]
-
-
-    '''
-    ------------------------------------------------------------------------------------
-    ------------------------------------------------------------------------------------
-    '''
