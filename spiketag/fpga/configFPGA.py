@@ -91,6 +91,12 @@ class xike_config(object):
     def set_threshold(self, threshold):
         self.thres[:] = threshold
 
+    '''
+    ------------------------------------------------------------------------------------
+    property interface with mem_reg_16 in the FPGA ([4:0] address for 32 slots)
+    ------------------------------------------------------------------------------------
+    '''
+
     @property
     def n_units(self):
         self._n_units = read_mem_16(0)
@@ -99,6 +105,22 @@ class xike_config(object):
     @n_units.setter
     def n_units(self, val):
         write_mem_16(0, val)
+
+    @property
+    def target_unit(self):
+        return read_mem_16(8)
+    
+    @target_unit.setter
+    def target_unit(self, target_unit_id):
+        if target_unit_id > self._n_units:
+            print('cannot be bigger than {} configured units'.format(self.n_units))
+        else:
+            write_mem_16(8, target_unit_id)
+
+    '''
+    ------------------------------------------------------------------------------------
+    ------------------------------------------------------------------------------------
+    '''
 
     def _config_FPGA_probe(self, prb):
         self.probe = prb
