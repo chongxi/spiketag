@@ -142,6 +142,17 @@ class xike_config(object):
     def _config_FPGA_vq_knn(self, grpNo, vq, label):
         self.vq[grpNo]    = vq
         self.label[grpNo] = label
+    
+    def reset_transformer(self):
+        for grpNo in range(self.ngrp):
+            self.scale[grpNo] = 0
+
+    '''
+    ------------------------------------------------------------------------------------
+    property interface with `MODEL RAM` [15:0] address in the FPGA 
+    5 sections: (scale, shift, pca, vq and label)
+    ------------------------------------------------------------------------------------
+    '''
 
     @property
     def transformer_status(self):
@@ -152,11 +163,9 @@ class xike_config(object):
     @property
     def configured_groups(self):
         return np.where(self.transformer_status)[0]
-    
-    def reset_transformer(self):
-        for grpNo in range(self.ngrp):
-            self.scale[grpNo] = 0
 
-# if __name__ == "__main__":
-   # config(offset_value = 32, thres_value = -500)
 
+    '''
+    ------------------------------------------------------------------------------------
+    ------------------------------------------------------------------------------------
+    '''
