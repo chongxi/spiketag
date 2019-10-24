@@ -300,12 +300,12 @@ class controller(object):
         return gmm
 
 
-    def dpgmm_cluster(self, max_n_clusters = 30, max_iter=300):
+    def dpgmm_cluster(self, max_n_clusters = 30, max_iter=300, verbose=False):
         from sklearn.mixture import BayesianGaussianMixture as DPGMM
         dpgmm = DPGMM(
             n_components=max_n_clusters, covariance_type='full', weight_concentration_prior=1e-3,
             weight_concentration_prior_type='dirichlet_process', init_params="kmeans",
-            max_iter=max_iter, random_state=0, verbose=1, verbose_interval=10) # init can be "kmeans" or "random"
+            max_iter=max_iter, random_state=0, verbose=verbose, verbose_interval=10) # init can be "kmeans" or "random"
         dpgmm.fit(self.fet)
         label = dpgmm.predict(self.fet)
         self.clu.membership = label
