@@ -85,16 +85,16 @@ class controller(object):
 
 
         @self.view.clu_view.clu_manager.connect
+        def on_vq2fpga():
+            self.build_vq(self.current_group, fpga=True)
+
+        @self.view.clu_view.clu_manager.connect
         def on_select(group_id):
             self.view.prb_view.select(group_id)
 
         @self.view.clu_view.clu_manager.connect
         def on_backend(method, **params):
             self.recluster(method=method, **params)
-
-        @self.view.clu_view.clu_manager.connect
-        def on_vq2fpga():
-            self.build_vq(self.current_group, fpga=True)
 
         @self.view.spkview.event.connect
         def on_show(content):
