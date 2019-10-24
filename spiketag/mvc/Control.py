@@ -67,6 +67,8 @@ class controller(object):
             # both ch_hash and ch_grpNo are configured
             # every channel has a `ch_hash` and a `ch_grpNo` 
             self.fpga = xike_config(probe=self.prb)  # this will automatically download the prb map into the FPGA
+        else:
+            self.fpga = None
             
             
         @self.view.prb.connect
@@ -90,6 +92,9 @@ class controller(object):
         def on_backend(method, **params):
             self.recluster(method=method, **params)
 
+        @self.view.clu_view.clu_manager.connect
+        def on_vq2fpga():
+            self.build_vq(self.current_group, fpga=True)
 
         @self.view.spkview.event.connect
         def on_show(content):
@@ -568,7 +573,7 @@ class controller(object):
             self.vq_view.transparency = 0.9
             self.vq_view.show()
         
-        if fpga:
+        if fpga and self.fpga is not None:
             self.fpga.vq[grp_id] = self.vq['points'][grp_id]
             self._update_FPGA_labels()
             for grpNo in tqdm(self.vq['fpga_labels'].keys(), desc='compile to fpga'):

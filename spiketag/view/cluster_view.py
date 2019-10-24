@@ -96,6 +96,8 @@ class cluster_view(scene.SceneCanvas):
             self.moveto(self.previous_group)
         if e.text == 'd':
             self.set_cluster_done(self.current_group)
+        if e.key.name == 'v':
+            self.clu_manager.emit('vq2fpga')
         if e.text == 'u':
             self.set_cluster_undone(self.current_group)
         if e.text == 'o':
