@@ -337,25 +337,6 @@ class controller(object):
         else:
             self.model.sort(clu_method=clu_method)            
 
-
-    def run_bg_clustering(self, method='parallel'):
-        if method == 'parallel':
-            self.bg_cluster = DPGMM_IPY(cpu_No=self.prb.n_group) 
-            for group_id in range(self.prb.n_group):
-                self.bg_cluster.set_data(group_id, {'data':self.model.fet[group_id]}) 
-            self.bg_cluster.run_all(nclu_max=7)
-        if method == 'sequential':
-            pass
-            #TODO
-
-    def bg_dpgmm(self, max_n_clusters=8):
-        self.bg_cluster = DPGMM_IPY(cpu_No=self.prb.n_group) 
-        cpu_id = self.bg_cluster.cpu_available.min()
-        self.bg_cluster[cpu_id]['data'] = self.model.fet[self.current_group]
-        self.bg_cluster[cpu_id].execute('label = dpgmm({})'.format(max_n_clusters))
-        # labels = self.bg_cluster[cpu_id]['label']
-        # self.clu.fill(labels)
-
     def show(self, group_id=None):
         if group_id is None:
             self.update_view()
