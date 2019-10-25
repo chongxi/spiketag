@@ -23,21 +23,23 @@ class Binner(EventEmitter):
 
     https://github.com/chongxi/spiketag/issues/47
     """
-    def __init__(self, bin_size, n_id, n_bin):
+    def __init__(self, bin_size, n_id, n_bin, sampling_rate=25000):
         super(Binner, self).__init__()
         self.bin_size = bin_size
         self.N = n_id
         self.B = n_bin
         self.count_vec = self.new_empty_bin
         self.nbins = 1 # self.nbins-1 is the index of the last bin
-        
+        self.fs = sampling_rate
+        self.dt = 1/self.fs*1e3   # each frame is 0.04ms, which is the resolution of timestamp
+
     def input(self, bmi_output, type='individual_spike'):
         '''
         each bmi_output is a spike with its timestamp and spike id
         each time a bmi_output arrive, this function is triggered
         when nbins grows, the binner emits the `decode` event with its `_output`
         '''
-        current_bin = (bmi_output.timestamp*40)//(self.bin_size*1e3) # each frame is 40us, devicded by [bin_size] 1e3us
+        current_bin = (bmi_output.timestamp*self.dt)//(self.bin_size) # devicded by [bin_size] 
         if current_bin == self.nbins-1:   # state integrate
             self.count_vec[bmi_output.spk_id, self.nbins-1] += 1
         elif current_bin > self.nbins-1:   # first condition for the output to decoder

@@ -20,9 +20,9 @@ class bmi_stream(object):
         self.timestamp, self.grp_id, self.fet0, self.fet1, self.fet2, self.fet3, self.spk_id = self.output
 
 
-class bmi_recv(object):
+class BMI(object):
     """
-    bmi_recv 
+    BMI 
     1. receive bmi output from FPGA through a pcie channel, save to a file
     2. parse the bmi output, filter the bmi output
     3. send the output to the decoder
@@ -43,7 +43,7 @@ class bmi_recv(object):
         self.r32 = io.open('/dev/xillybus_fet_clf_32', 'rb')
         # self.r32_buf = io.BufferedReader(r32)
         self.fd = os.open(self.fetfile, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
-        self._size = 7*4  # 6 samples, 4 bytes/sample
+        self._size = 7*4  # 7 samples, 4 bytes/sample
         self.bmi_buf = None
 
 
@@ -74,14 +74,18 @@ class bmi_recv(object):
             # bmi_output = struct.unpack('<7i', self.buf)
             bmi_output = bmi_stream(self.buf)
             # bmi filter
-            if (bmi_output.timestamp > 500) and (bmi_output.grp_id in self.group_idx):
+            if bmi_output.spk_id > 0:
                 filled=True
                 return bmi_output
+
 
     def BMI_core_func(self, gui_queue):
         '''
         A daemon process dedicated on reading data from PCIE and update
         the shared memory with other processors: shared_arr 
+
+        This process func starts when self.start()
+                          it ends with self.stop()
         '''
         
         while True:
@@ -94,9 +98,9 @@ class bmi_recv(object):
                 ##### real-time decoder
                 # 1. binner
                 # print(bmi_output.timestamp, bmi_output.grp_id)
-                self.binner.input(bmi_output, type='individual_spike') 
-                # print(bmi_output)
-                # nbin = timestamp//self.time 
+                self.binner.input(bmi_output) 
+                # print(bmi_output.output)
+                # 2. gui queue (optional)
                 ##### queue for visualization on GUI
                 gui_queue.put(bmi_output.output)
 
