@@ -6,6 +6,7 @@ import struct
 import socket
 import numpy as np
 import torch as torch
+from spiketag.fpga import xike_config
 from torch.multiprocessing import Process, Pipe, SimpleQueue 
 from ..utils.utils import EventEmitter, Timer
 from ..realtime import Binner 
@@ -28,11 +29,10 @@ class BMI(object):
     3. send the output to the decoder
     4. put the output into the queue for gui to display
     """
-    def __init__(self, prb, fetfile):
+    def __init__(self, prb, fetfile='./fet.bin'):
         self.prb = prb
         self.ngrp = prb.n_group
         self.group_idx = np.array(list(self.prb.grp_dict.keys()))
-        print('{} groups on probe: {}'.format(self.ngrp, self.group_idx))
         self.fetfile = fetfile
         self.init()
 
@@ -46,12 +46,21 @@ class BMI(object):
         self._size = 7*4  # 7 samples, 4 bytes/sample
         self.bmi_buf = None
 
+        self.fpga = xike_config(self.prb)
+        print('{} groups on probe: {}'.format(self.ngrp, self.group_idx))
+        print('{} groups is configured in the FPGA: {}'.format(len(self.fpga.configured_groups), 
+                                                               self.fpga.configured_groups))
 
-    def set_binner(self, bin_size, n_id, n_bin):
-        self.binner = Binner(bin_size, n_id, n_bin)    # binner initialization (space and time)
-        @self.binner.connect
-        def on_decode():
-            print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)        
+
+    def set_binner(self, bin_size, B):
+        '''
+        set bin size, N neurons and B bins for the binner
+        '''
+        N = self.fpga.n_units + 1
+        self.binner = Binner(bin_size, N, B)    # binner initialization (space and time)
+        # @self.binner.connect
+        # def on_decode():
+        #     print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)        
 
     # def shared_mem_init(self):
     #     n_spike_count_vector = len(self.prb.grp_dict.keys())
@@ -102,15 +111,21 @@ class BMI(object):
                 # print(bmi_output.output)
                 # 2. gui queue (optional)
                 ##### queue for visualization on GUI
-                gui_queue.put(bmi_output.output)
+                if self.gui_queue is not None:
+                    self.gui_queue.put(bmi_output.output)
 
                 ##### file for visualization
 
                 # ----- This section should cost < 100us -----
 
 
-    def start(self):
-        self.gui_queue = SimpleQueue()
+    def start(self, gui_queue=False):
+        if not self.binner:
+            print('set binner first')
+        if gui_queue:
+            self.gui_queue = SimpleQueue()
+        else:
+            self.gui_queue = None
         self.fpga_process = Process(target=self.BMI_core_func, name='fpga', args=(self.gui_queue,)) #, args=(self.pipe_jovian_side,)
         self.fpga_process.daemon = True
         self.fpga_process.start()  
@@ -119,4 +134,5 @@ class BMI(object):
     def stop(self):
         self.fpga_process.terminate()
         self.fpga_process.join()
+        self.gui_queue = None
 
