@@ -253,7 +253,7 @@ class probe(BaseProbe):
         prb.shanks[0].ch_group
 
     '''
-    def __init__(self, fs=25000., nch=160, group_len=4, prb_type=None, grp_No=None, shank_no=None, prbfile=None):
+    def __init__(self, prbfile=None, fs=25000., nch=160, group_len=4, prb_type=None, grp_No=None, shank_no=None):
         super(probe, self).__init__()
         if shank_no is not None:
             self.shanks = {}
