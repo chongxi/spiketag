@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QApplication
 from spiketag.view.grid_scatter3d import grid_scatter3d
 from spiketag.fpga import xike_config
 from spiketag.base import probe
-from spiketag.realtime import bmi_recv
+from spiketag.realtime import BMI
 from spiketag.fpga import read_mem_16
 
 
@@ -39,7 +39,7 @@ class BMI_GUI(QWidget):
         print('---init FPGA BMI---')
         print('---download probe file into FPGA---')
         try:
-            self.fpga = bmi_recv(prb, fet_file)
+            self.fpga = BMI(prb, fet_file)
             self.fpga_setting = xike_config(prb)
             print('---success---')
         except Exception as e:
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     prb = probe(prbfile='./dusty.json')
     gui = BMI_GUI(prb=prb, fet_file='./fet.bin')
     gui.show()
-    n_id = read_mem_16(0)
+    n_id = read_mem_16(0) + 1
     print(n_id)
     gui.fpga.set_binner(bin_size=33.33, n_id=n_id, n_bin=1)
     # fpga.thres[:] = -300.
