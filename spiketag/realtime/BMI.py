@@ -47,9 +47,11 @@ class BMI(object):
         self.bmi_buf = None
 
         self.fpga = xike_config(self.prb)
-        print('{} groups on probe: {}'.format(self.ngrp, self.group_idx))
+        print('{} groups on probe'.format(self.ngrp))
         print('{} groups is configured in the FPGA: {}'.format(len(self.fpga.configured_groups), 
                                                                self.fpga.configured_groups))
+        print('{} neurons are configured'.format(self.fpga.n_units+1))
+        print('---BMI initiation succeed---')
 
 
     def set_binner(self, bin_size, B):
@@ -58,9 +60,9 @@ class BMI(object):
         '''
         N = self.fpga.n_units + 1
         self.binner = Binner(bin_size, N, B)    # binner initialization (space and time)
-        # @self.binner.connect
-        # def on_decode():
-        #     print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)        
+        @self.binner.connect
+        def on_decode():
+            print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)        
 
     # def shared_mem_init(self):
     #     n_spike_count_vector = len(self.prb.grp_dict.keys())
