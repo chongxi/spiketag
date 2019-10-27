@@ -13,7 +13,7 @@ For py37 developer
 4. go to spiketag: python setup.py develop
 
 
-Make sure CUDA 10.0 is installed (nvcc --version) and nvidia driver is loaded correctly (nvidia-smi)
+Make sure CUDA 10.1 is installed (nvcc --version) and nvidia driver is loaded correctly (nvidia-smi)
 
 5. conda install pytorch torchvision -c pytorch
 
