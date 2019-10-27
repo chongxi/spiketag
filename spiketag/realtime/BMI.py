@@ -54,21 +54,33 @@ class BMI(object):
         print('---BMI initiation succeed---')
 
 
-    def set_binner(self, bin_size, B):
+    def set_binner(self, bin_size, B_bins):
         '''
         set bin size, N neurons and B bins for the binner
         '''
         N = self.fpga.n_units + 1
-        self.binner = Binner(bin_size, N, B)    # binner initialization (space and time)
+        self.binner = Binner(bin_size, N, B)    # binner initialization (space and time)        
         @self.binner.connect
-        def on_decode():
-            print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)        
-
+        def on_decode(X):
+            # print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)
+            print(self.binner.nbins, np.sum(X))
+     
     # def shared_mem_init(self):
     #     n_spike_count_vector = len(self.prb.grp_dict.keys())
     #     # trigger task using frame counter
     #     self.spike_count_vector = torch.zeros(n_spike_count_vector,)
     #     self.spike_count_vector.share_memory_()
+
+    def set_decoder(self, dec):
+        self.dec = dec
+        self.dec(t_step=self.binner.bin_size, t_window=self.binner.bin_size*self.binner.B)
+        self.dec.partition(training_range=[0.0, 1.0], valid_range=[0.5, 0.6], testing_range=[0.0, 1.0])
+        (train_X, train_y), (valid_X, valid_y), (test_X, test_y) = self.dec.get_data()
+        self.dec.fit(train_X, train_y)
+        @self.binner.connect
+        def on_decode(X):
+            print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)
+            print(self.dec.predict(X))
 
 
     def read_bmi(self):

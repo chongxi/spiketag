@@ -48,13 +48,13 @@ class Binner(EventEmitter):
             self.count_vec[bmi_output.spk_id, self.nbins-1] += 1
             # second condition for the output to decoder
             if self.count_vec.shape[1]>self.B:
-                self.emit('decode')
+                self.emit('decode', X=self.output)
 
     @property
     def output(self):
         # first row is the noise
         # last column is the just added, output the last three before the last column
-        self._output = self.count_vec[1:self.N, -self.B-1:-1] 
+        self._output = self.count_vec[1:, -self.B-1:-1] 
         return self._output
 
     @property
