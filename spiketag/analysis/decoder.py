@@ -154,7 +154,9 @@ class NaiveBayes(Decoder):
         self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], rank=False)
 
     def predict(self, X):
+        if len(X.shape) == 1:
+            X = X.reshape(1,-1)
         post_2d = bayesian_decoding(self.pc.fields, X, t_window=self.t_window)
         binned_pos = argmax_2d_tensor(post_2d)
-        y = smooth(self.pc.binned_pos_2_real_pos(binned_pos), 5)
+        y = self.pc.binned_pos_2_real_pos(binned_pos)
         return y
