@@ -17,6 +17,10 @@ class Decoder(object):
 
         During certain neural state, such as MUA burst (ripple), a small step size is required 
         (e.g. t_window:20ms, t_step:5ms is used by Pfeiffer and Foster 2013 for trajectory events) 
+
+        dec.partition(training_range, valid_range, testing_range, low_speed_cutoff) 
+        serves the cross-validation
+        https://github.com/chongxi/spiketag/issues/50
         '''
         self.t_window = t_window
         self.t_step   = t_step
