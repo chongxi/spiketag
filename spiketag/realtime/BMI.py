@@ -76,7 +76,6 @@ class BMI(object):
     def set_decoder(self, dec, dec_result_file=None):
         print('Training decoder for the bmi')
         self.dec = dec
-        self.dec_time = 0
         self.dec.resample(t_step=self.binner.bin_size, t_window=self.binner.bin_size*self.binner.B)
         self.dec.partition(training_range=[0.0, 1.0], valid_range=[0.5, 0.6], testing_range=[0.0, 1.0])
         score = self.dec.auto_pipeline(smooth_sec=2) # 2 seconds smooth for scoring
@@ -91,8 +90,7 @@ class BMI(object):
             if dec.name == 'NaiveBayes':
                 X = np.sum(X, axis=0)
             y = self.dec.predict(X)
-            self.dec_time += self.binner.bin_size
-            print('pos:{0}, time:{1:.5f}'.format(y, self.dec_time))
+            print('pos:{0}, time:{1:.5f}'.format(y, self.binner.current_time))
             os.write(self.dec_result, y)
         print('---3. BMI Decoder initiation succeed---\n')
         

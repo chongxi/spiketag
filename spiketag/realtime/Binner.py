@@ -39,10 +39,12 @@ class Binner(EventEmitter):
         each time a bmi_output arrive, this function is triggered
         when nbins grows, the binner emits the `decode` event with its `_output`
         '''
-        current_bin = (bmi_output.timestamp*self.dt)//(self.bin_size) # devicded by [bin_size] 
-        if current_bin == self.nbins-1:   # state integrate
+        self.current_time = bmi_output.timestamp*self.dt
+        self.current_bin = self.current_time//self.bin_size # devicded by [bin_size] 
+        
+        if self.current_bin == self.nbins-1:   # state integrate
             self.count_vec[self.nbins-1, bmi_output.spk_id] += 1
-        elif current_bin > self.nbins-1:   # first condition for the output to decoder
+        elif self.current_bin > self.nbins-1:   # first condition for the output to decoder
             self.nbins += 1
             self.count_vec = np.vstack((self.count_vec, self.new_empty_bin))
             self.count_vec[self.nbins-1, bmi_output.spk_id] += 1
