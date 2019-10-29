@@ -35,7 +35,7 @@ class Decoder(object):
         if self.t_step is not None:
             self.pc(t_step=self.t_step)
 
-    def resample(self, t_window, t_step):
+    def resample(self, t_step, t_window):
         self.t_window = t_window
         self.t_step   = t_step
         self.connect_to(self.pc)     
@@ -81,7 +81,6 @@ class Decoder(object):
                                                                            self.valid_idx.shape[0],
                                                                            self.test_idx.shape[0]))
 
-
     def get_data(self):
         '''
         Connect to pc first and then set the partition parameter. After these two we can get data
@@ -99,7 +98,6 @@ class Decoder(object):
         test_X,  test_y  = X[self.test_idx], y[self.test_idx]
         return (train_X, train_y), (valid_X, valid_y), (test_X, test_y) 
 
-
     def evaluate(self, y_predict, y_true, multioutput=True):
         if multioutput is True:
             self.score = r2_score(y_true, y_predict, multioutput='raw_values')
@@ -108,7 +106,6 @@ class Decoder(object):
         if self.verbose:
             print('r2 score: {}\n'.format(self.score))
         return self.score
-
 
     def auto_pipeline(self, smooth_sec=2):
         '''
@@ -132,9 +129,8 @@ class Decoder(object):
 
 
 
-
 class NaiveBayes(Decoder):
-    """NaiveBayes Decoder for place prediction
+    """NaiveBayes Decoder for position prediction (input X, output y) where y is the position
     >>> nbdec = NaiveBayes(pc)
     >>> nbdec(t_window=200e-3, t_step=1/30.)
     >>> nbdec.partition(training_range=[0.0, .5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0])
@@ -160,5 +156,5 @@ class NaiveBayes(Decoder):
             X = X.reshape(1,-1)
         post_2d = bayesian_decoding(self.fields, X, t_window=self.t_window)
         binned_pos = argmax_2d_tensor(post_2d)
-        pos = binned_pos*self.spatial_bin_size + self.spatial_origin
+        y = binned_pos*self.spatial_bin_size + self.spatial_origin
         return y

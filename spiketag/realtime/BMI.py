@@ -50,8 +50,8 @@ class BMI(object):
         print('{} groups on probe'.format(self.ngrp))
         print('{} groups is configured in the FPGA: {}'.format(len(self.fpga.configured_groups), 
                                                                self.fpga.configured_groups))
-        print('{} neurons are configured'.format(self.fpga.n_units+1))
-        print('---BMI initiation succeed---')
+        print('{} neurons are configured in the FPGA'.format(self.fpga.n_units+1))
+        print('---1. BMI spike-model initiation succeed---\n')
 
 
     def set_binner(self, bin_size, B_bins):
@@ -59,11 +59,13 @@ class BMI(object):
         set bin size, N neurons and B bins for the binner
         '''
         N_units = self.fpga.n_units + 1
-        self.binner = Binner(bin_size, N_units, B_bins)    # binner initialization (space and time)        
-        @self.binner.connect
-        def on_decode(X):
-            # print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)
-            print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
+        self.binner = Binner(bin_size, N_units, B_bins)    # binner initialization (space and time)      
+        print('BMI binner: {} bins {} units, each bin is {} seconds'.format(N_units, B_bins, bin_size))  
+        print('---2. BMI binner initiation succeed---\n')
+        # @self.binner.connect
+        # def on_decode(X):
+        #     # print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)
+        #     print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
      
     # def shared_mem_init(self):
     #     n_spike_count_vector = len(self.prb.grp_dict.keys())
@@ -72,15 +74,21 @@ class BMI(object):
     #     self.spike_count_vector.share_memory_()
 
     def set_decoder(self, dec):
+        print('Training decoder for the bmi')
         self.dec = dec
-        self.dec(t_step=self.binner.bin_size, t_window=self.binner.bin_size*self.binner.B)
+        self.dec.resample(t_step=self.binner.bin_size, t_window=self.binner.bin_size*self.binner.B)
         self.dec.partition(training_range=[0.0, 1.0], valid_range=[0.5, 0.6], testing_range=[0.0, 1.0])
         score = self.dec.auto_pipeline(smooth_sec=2) # 2 seconds smooth for scoring
+
+        print('connecting decoder to the bmi for real-time control')
         @self.binner.connect
         def on_decode(X):
-            # print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)
-            print(self.dec.predict(X))
-
+            # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
+            rt_scv = np.sum(X, axis=0)
+            # print(rt_scv.shape)
+            print(self.dec.predict(rt_scv))
+        print('---3. BMI Decoder initiation succeed---\n')
+        
 
     def read_bmi(self):
         '''
