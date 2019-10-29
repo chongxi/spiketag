@@ -31,7 +31,7 @@ class Binner(EventEmitter):
         self.count_vec = self.new_empty_bin
         self.nbins = 1 # self.nbins-1 is the index of the last bin
         self.fs = sampling_rate
-        self.dt = 1/self.fs*1e3   # each frame is 0.04ms, which is the resolution of timestamp
+        self.dt = 1/self.fs   # each frame is 1/25000:40us, which is the resolution of timestamp
 
     def input(self, bmi_output, type='individual_spike'):
         '''
