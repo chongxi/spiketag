@@ -7,12 +7,12 @@ from spiketag.view import scatter_3d_view
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QThread, QEventLoop
 from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog, QWidget, QSplitter, QComboBox, QTextBrowser, QSlider, QPushButton, QTableWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication
 from spiketag.view.grid_scatter3d import grid_scatter3d
 from spiketag.base import probe
 from spiketag.realtime import BMI
-
+from spiketag.analysis import *
+from spiketag.analysis.decoder import NaiveBayes
 
 
 class BMI_GUI(QWidget):
@@ -122,9 +122,25 @@ class BMI_GUI(QWidget):
 
 
 if __name__ == '__main__':
+    # 1. prb, gui and bmi and binner
     app = QApplication(sys.argv) 
     prb = probe(prbfile='./dusty.json')
     gui = BMI_GUI(prb=prb, fet_file='./fet.bin')
-    gui.bmi.set_binner(bin_size=33.33, B=1)
+    bin_size, B_bins = 25e-3, 10
+    gui.bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
+
+    # 2. decoder
+    pos = np.fromfile('./sorting/dusty_pos.bin').reshape(-1,2)
+    pc = place_field(pos=pos, t_step=33.333e-3)
+    replay_offset = 2.004
+    start = 320
+    end   = 2500
+    pc.align_with_recording(start, end, replay_offset)
+    pc.initialize(bin_size=4, v_cutoff=25)
+    pc.load_spktag('./sorting/spktag/test_allspikes', show=True)
+    dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
+    dec.connect_to(pc)
+    gui.bmi.set_decoder(dec, dec_result_file='./decoded_pos.bin')
+
     gui.show()
     sys.exit(app.exec_())
