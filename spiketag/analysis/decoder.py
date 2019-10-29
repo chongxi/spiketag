@@ -140,6 +140,7 @@ class NaiveBayes(Decoder):
     """
     def __init__(self, t_window, t_step=None):
         super(NaiveBayes, self).__init__(t_window, t_step)
+        self.name = 'NaiveBayes'
         
     def fit(self, X=None, y=None):
         '''
