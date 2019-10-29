@@ -90,7 +90,7 @@ class BMI(object):
             if dec.name == 'NaiveBayes':
                 X = np.sum(X, axis=0)
             y = self.dec.predict(X)
-            print('pos:{0}, time:{1:.5f}'.format(y, self.binner.current_time))
+            print('pos:{0}, time:{1:.5f} secs'.format(y, self.binner.current_time))
             os.write(self.dec_result, y)
         print('---3. BMI Decoder initiation succeed---\n')
         
