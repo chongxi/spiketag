@@ -186,4 +186,4 @@ class SPKTAG(object):
         self.spk_time_dict = self.get_spk_time_dict()
         self.spk_time_array = np.array(list(self.spk_time_dict.values()))
         self.n_units = len(self.spk_time_dict)
-        print('{} neurons extracted'.format(self.n_units))
+        print('loading from spktag {}: {} neurons extracted'.format(filename, self.n_units))
