@@ -63,7 +63,7 @@ class BMI(object):
         @self.binner.connect
         def on_decode(X):
             # print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)
-            print(self.binner.nbins, self.binner.count_vec.shape, np.sum(X))
+            print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
      
     # def shared_mem_init(self):
     #     n_spike_count_vector = len(self.prb.grp_dict.keys())
