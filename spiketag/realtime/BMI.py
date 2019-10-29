@@ -58,12 +58,12 @@ class BMI(object):
         '''
         set bin size, N neurons and B bins for the binner
         '''
-        N = self.fpga.n_units + 1
-        self.binner = Binner(bin_size, N, B)    # binner initialization (space and time)        
+        N_units = self.fpga.n_units + 1
+        self.binner = Binner(bin_size, N_units, B_bins)    # binner initialization (space and time)        
         @self.binner.connect
         def on_decode(X):
             # print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)
-            print(self.binner.nbins, np.sum(X))
+            print(self.binner.nbins, self.binner.count_vec.shape, np.sum(X))
      
     # def shared_mem_init(self):
     #     n_spike_count_vector = len(self.prb.grp_dict.keys())
@@ -75,11 +75,10 @@ class BMI(object):
         self.dec = dec
         self.dec(t_step=self.binner.bin_size, t_window=self.binner.bin_size*self.binner.B)
         self.dec.partition(training_range=[0.0, 1.0], valid_range=[0.5, 0.6], testing_range=[0.0, 1.0])
-        (train_X, train_y), (valid_X, valid_y), (test_X, test_y) = self.dec.get_data()
-        self.dec.fit(train_X, train_y)
+        score = self.dec.auto_pipeline(smooth_sec=2) # 2 seconds smooth for scoring
         @self.binner.connect
         def on_decode(X):
-            print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)
+            # print(self.binner.nbins, np.sum(self.binner.output), self.binner.count_vec.shape)
             print(self.dec.predict(X))
 
 
