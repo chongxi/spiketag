@@ -32,6 +32,7 @@ class Binner(EventEmitter):
         self.nbins = 1 # self.nbins-1 is the index of the last bin
         self.fs = sampling_rate
         self.dt = 1/self.fs   # each frame is 1/25000:40us, which is the resolution of timestamp
+        self.last_bin = 0
 
     def input(self, bmi_output, type='individual_spike'):
         '''
@@ -40,25 +41,26 @@ class Binner(EventEmitter):
         when nbins grows, the binner emits the `decode` event with its `_output`
         '''
         self.current_time = bmi_output.timestamp*self.dt
-        self.current_bin = self.current_time//self.bin_size # devicded by [bin_size] 
-        
-        if self.current_bin == self.nbins-1:   # state integrate
-            self.count_vec[self.nbins-1, bmi_output.spk_id] += 1
-        elif self.current_bin > self.nbins-1:   # first condition for the output to decoder
-            self.nbins += 1
-            self.count_vec = np.vstack((self.count_vec, self.new_empty_bin))
-            self.count_vec[self.nbins-1, bmi_output.spk_id] += 1
-            # second condition for the output to decoder
-            if self.count_vec.shape[0]>self.B:
-                self.emit('decode', X=self.output)
+        self.current_bin = int(self.current_time//self.bin_size) # devided by [bin_size], current_bin is abosolute bin
+
+        if self.current_bin < self.B:                                                 # within B, no new bin
+            self.count_vec[self.current_bin, bmi_output.spk_id] += 1                  # update according to current_bin
+        elif self.current_bin >= self.B and self.current_bin==self.last_bin:          # current_bin 
+            self.count_vec[-1, bmi_output.spk_id] += 1
+        elif self.current_bin >= self.B and self.current_bin>self.last_bin:           # key: current_bin>last_bin means a input to decoder is completed 
+            self.emit('decode', X=self.output)                                        # output count_vec for decoding
+            self.count_vec = np.vstack((self.count_vec[1:], np.zeros((1, self.N))))   # roll and append new bin (last row)
+            self.count_vec[-1, bmi_output.spk_id] += 1                                # update the newly appended bin (last row)
+
+        print(self.count_vec.shape, self.current_bin, self.last_bin)
+        self.last_bin = self.current_bin
 
     @property
     def output(self):
         # first column (unit) is the noise
-        # last row (bin) is the just added, output the last three before the last row
-        self._output = self.count_vec[-self.B-1:-1, 1:] 
+        self._output = self.count_vec[:, 1:] 
         return self._output
 
     @property
     def new_empty_bin(self):
-        return np.zeros((1,self.N))
+        return np.zeros((self.B, self.N))
