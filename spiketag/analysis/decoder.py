@@ -1,4 +1,4 @@
-from .core import bayesian_decoding, argmax_2d_tensor, smooth
+from .core import bayesian_decoding, bayesian_decoding_rt, argmax_2d_tensor, smooth
 import numpy as np
 from sklearn.metrics import r2_score
 
@@ -156,6 +156,14 @@ class NaiveBayes(Decoder):
         if len(X.shape) == 1:
             X = X.reshape(1,-1)
         post_2d = bayesian_decoding(self.fields, X, t_window=self.t_window)
+        binned_pos = argmax_2d_tensor(post_2d)
+        y = binned_pos*self.spatial_bin_size + self.spatial_origin
+        return y
+
+    def predict_rt(self, X):
+        if len(X.shape) == 1:
+            X = X.reshape(1,-1)
+        post_2d = bayesian_decoding_rt(self.fields, X, t_window=self.t_window)
         binned_pos = argmax_2d_tensor(post_2d)
         y = binned_pos*self.spatial_bin_size + self.spatial_origin
         return y
