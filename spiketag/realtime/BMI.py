@@ -81,19 +81,18 @@ class BMI(object):
         score = self.dec.auto_pipeline(smooth_sec=2) # 2 seconds smooth for scoring
 
         if dec_result_file is not None:
-           self.dec_result =  os.open(dec_result_file, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
+           self.dec_result = os.open(dec_result_file, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
 
         print('connecting decoder to the bmi for real-time control')
         @self.binner.connect
         def on_decode(X):
             # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
-            if dec.name == 'NaiveBayes':
-                X = np.sum(X, axis=0)
-            y = self.dec.predict(X)
-            print('pos:{0}, time:{1:.5f} secs'.format(y, self.binner.current_time))
-            if self.binner.current_time>2550:
-                self.stop()
-            os.write(self.dec_result, y)
+            with Timer('decoding', verbose=True):
+                if dec.name == 'NaiveBayes':
+                    X = np.sum(X, axis=0)
+                y = self.dec.predict(X)
+                print('pos:{0}, time:{1:.5f} secs'.format(y, self.binner.current_time))
+                os.write(self.dec_result, np.hstack((self.binner.last_bin, y)))
         print('---3. BMI Decoder initiation succeed---\n')
         
 
@@ -104,16 +103,16 @@ class BMI(object):
         each bmi_output is a compressed spike: 
         (timestamp, grp_id, fet0, fet1, fet2, fet3, spk_id)
         '''
-        filled = False
-        while not filled:
-            self.buf = self.r32.read(self._size)
-            os.write(self.fd, self.buf)
-            # bmi_output = struct.unpack('<7i', self.buf)
-            bmi_output = bmi_stream(self.buf)
-            # bmi filter
-            if bmi_output.spk_id > 0:
-                filled=True
-                return bmi_output
+        # filled = False
+        # while not filled:
+        self.buf = self.r32.read(self._size)
+        os.write(self.fd, self.buf)
+        # bmi_output = struct.unpack('<7i', self.buf)
+        bmi_output = bmi_stream(self.buf)
+        # bmi filter
+        # if bmi_output.spk_id > 0:
+            # filled=True
+        return bmi_output
 
 
     def BMI_core_func(self, gui_queue):

@@ -28,7 +28,7 @@ class Binner(EventEmitter):
         self.bin_size = bin_size
         self.N = n_id
         self.B = n_bin
-        self.count_vec = self.new_empty_bin
+        self.count_vec = np.zeros((self.B, self.N))
         self.nbins = 1 # self.nbins-1 is the index of the last bin
         self.fs = sampling_rate
         self.dt = 1/self.fs   # each frame is 1/25000:40us, which is the resolution of timestamp
@@ -52,7 +52,7 @@ class Binner(EventEmitter):
             self.count_vec = np.vstack((self.count_vec[1:], np.zeros((1, self.N))))   # roll and append new bin (last row)
             self.count_vec[-1, bmi_output.spk_id] += 1                                # update the newly appended bin (last row)
 
-        print(self.count_vec.shape, self.current_bin, self.last_bin)
+        # print(self.count_vec.shape, self.current_bin, self.last_bin)
         self.last_bin = self.current_bin
 
     @property
@@ -60,7 +60,3 @@ class Binner(EventEmitter):
         # first column (unit) is the noise
         self._output = self.count_vec[:, 1:] 
         return self._output
-
-    @property
-    def new_empty_bin(self):
-        return np.zeros((self.B, self.N))
