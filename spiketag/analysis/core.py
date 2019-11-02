@@ -65,21 +65,35 @@ def bayesian_decoding(Fr, suv, t_window=100e-3):
     return both true (x,y) and log_posterior map
 
     Usage:
-    1. for all suv
-    true_xy, post_2d = bayesian_decoding(Fr=Fr, suv=suv, t_window=100e-3)
-
-    2. for specific suv
-    true_xy, post_2d = bayesian_decoding(Fr=Fr, suv=suv[100:101], t_window=100e-3)
+    post_2d = bayesian_decoding(Fr=Fr, suv=suv, t_window=100e-3)
     '''
 
-    true_xy = np.zeros((suv.shape[0],2))
-    post_xy = np.zeros((suv.shape[0],2))
     post_2d = np.zeros((suv.shape[0], Fr.shape[1], Fr.shape[2]))
     possion_matrix = t_window*Fr.sum(axis=0)
     log_fr = np.log(Fr) # make sure Fr[Fr==0] = 1e-12
     for i in prange(suv.shape[0]): # i is time point
         suv_weighted_log_fr = licomb_Matrix(suv[i].ravel(), log_fr)
         post_2d[i] = np.exp(suv_weighted_log_fr - possion_matrix)
+    return post_2d
+
+
+@njit(cache=True)
+def bayesian_decoding_rt(Fr, suv, t_window=100e-3):
+    '''
+    fast version of below labmda expression
+    log_posterior = lambda x,y,i: np.nansum(np.log(Fr[:,x,y]) * suv[:,i]) - 100e-3*Fr[:,x,y].sum(axis=0)
+
+    return both true (x,y) and log_posterior map
+
+    Usage:
+    post_2d = bayesian_decoding_rt(Fr=Fr, suv=suv, t_window=100e-3)
+    '''
+
+    post_2d = np.zeros((Fr.shape[1], Fr.shape[2]))
+    possion_matrix = t_window*Fr.sum(axis=0)
+    log_fr = np.log(Fr) # make sure Fr[Fr==0] = 1e-12
+    suv_weighted_log_fr = licomb_Matrix(suv.ravel(), log_fr)
+    post_2d = np.exp(suv_weighted_log_fr - possion_matrix)
     return post_2d
 
 
