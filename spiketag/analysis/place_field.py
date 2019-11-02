@@ -29,13 +29,16 @@ class place_field(object):
     load_spktag for spike data
     get_fields for computing the representaions using spike and behavior data
     '''
-    def __init__(self, pos, t_step):
+    def __init__(self, pos, ts=None, t_step=None, v_cutoff=None):
         '''
         resample the trajectory with new time interval
         reinitiallize with a new t_step (dt)
         '''
-        ts = np.arange(0, pos.shape[0]*t_step, t_step)
-        self.t_step = t_step
+        if ts is None:
+            ts = np.arange(0, pos.shape[0]*t_step, t_step)
+            self.t_step = t_step
+        if v_cutoff is not None:
+            self.v_cutoff = v_cutoff
         self.ts, self.pos = ts, pos
         self._ts_restore, self._pos_restore = ts, pos
         self.spk_time_array, self.spk_time_dict = None, None
