@@ -305,7 +305,7 @@ class place_field(object):
         self._get_field(spk_times)
 
 
-    def plot_field(self, trajectory=False, cmap='gray', marker=True, alpha=0.5, markersize=5):
+    def plot_field(self, trajectory=False, cmap='viridis', marker=True, alpha=0.5, markersize=5, markercolor='m'):
         f, ax = plt.subplots(1,1,figsize=(13,10));
         pcm = ax.pcolormesh(self.X, self.Y, self.FR_smoothed, cmap=cmap);
         plt.colorbar(pcm, ax=ax, label='Hz');
@@ -314,7 +314,8 @@ class place_field(object):
             ax.plot(self.pos[0,0], self.pos[0,1], 'ro');
             ax.plot(self.pos[-1,0],self.pos[-1,1], 'ko');
         if marker:
-            ax.plot(self.firing_pos[:,0], self.firing_pos[:,1], 'mo', alpha=alpha, markersize=markersize);
+            ax.plot(self.firing_pos[:,0], self.firing_pos[:,1], 'o', 
+                    c=markercolor, alpha=alpha, markersize=markersize);
         return f,ax
 
 
