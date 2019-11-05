@@ -667,6 +667,9 @@ class spike_view(View):
             self._source_id = self.cluster_mouse_on
             self.event.emit('dismiss', source_id=self._source_id)
 
+        if e.text == 'v':
+            self.event.emit('reorder')
+
         if e.text == 'b':
             self.event.emit('build_vq')
 

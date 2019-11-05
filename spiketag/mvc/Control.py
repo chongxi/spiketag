@@ -131,6 +131,10 @@ class controller(object):
             self.build_vq()
 
         @self.view.spkview.event.connect
+        def on_reorder():
+            self.field_reorder()
+
+        @self.view.spkview.event.connect
         def on_clip(idx):
             idx = np.array(idx)
             print('delete {} spikes'.format(idx.shape))

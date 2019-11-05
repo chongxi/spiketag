@@ -357,7 +357,7 @@ class place_field(object):
             self.rank_fields(metric_name='spatial_bit_smoothed_spike')
 
 
-    def plot_fields(self, idx=None, N=12, size=3, cmap='hot', marker=False, markersize=1, alpha=0.8, order=True):
+    def plot_fields(self, idx=None, N=12, size=3, cmap='viridis', marker=False, markersize=1, alpha=0.8, order=False):
         '''
         order: if True will plot with ranked fields according to the metric 
         '''
