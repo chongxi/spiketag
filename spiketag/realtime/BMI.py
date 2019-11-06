@@ -23,28 +23,37 @@ class bmi_stream(object):
 
 class BMI(object):
     """
-    BMI 
+    BMI: https://github.com/chongxi/spiketag/issues/58
     1. receive bmi output from FPGA through a pcie channel, save to a file
-    2. parse the bmi output, filter the bmi output
-    3. send the output to the decoder
+    2. parse the bmi output (timestamp, group_id, fet[:4], spike_id)
+    3. send the output to the binner, which will emit event to trigger decoder each time a new bin is completely filled
     4. put the output into the queue for gui to display
+
+    A) configure mode:
+    >>> bmi = BMI(prb)
+    in this case, `bmi.fpga` is used to configure FPGA model parameters
+
+    B) real-time spike inference mode:
+    >>> bmi = BMI(prb, fetfile)
+    in this case, not only `bmi.fpga` can be used to configure FPGA, but also these parameters 
+    should be read out to configure higher-level containers such as a BMI GUI
+   
+    C) Additional to the spike inference, the inferred spikes can be fed into `binner` and then to a decoder
+    >>> bmi.set_binner(bin_size, B_bins) 
+    >>> bmi.set_decoder(dec, dec_result_file='./decoded_pos.bin')
+
+    D) Start bmi with or without a `gui_queue` for visualization
+    >>> bmi.start(gui_queue=True)
+    >>> bmi.stop() 
+
+    E) Read out the content in the bmi.gui_queue for visualization
+    >>> bmi.gui_queue.get()
     """
-    def __init__(self, prb, fetfile='./fet.bin'):
+
+    def __init__(self, prb, fetfile=None):
         self.prb = prb
         self.ngrp = prb.n_group
         self.group_idx = np.array(list(self.prb.grp_dict.keys()))
-        self.fetfile = fetfile
-        self.init()
-
-    def close(self):
-        self.r32.close()
-
-    def init(self):
-        self.r32 = io.open('/dev/xillybus_fet_clf_32', 'rb')
-        # self.r32_buf = io.BufferedReader(r32)
-        self.fd = os.open(self.fetfile, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
-        self._size = 7*4  # 7 samples, 4 bytes/sample
-        self.bmi_buf = None
 
         self.fpga = xike_config(self.prb)
         print('{} groups on probe'.format(self.ngrp))
@@ -53,6 +62,20 @@ class BMI(object):
         print('{} neurons are configured in the FPGA'.format(self.fpga.n_units+1))
         print('---1. BMI spike-model initiation succeed---\n')
 
+        if fetfile is not None:
+            self.init_bmi_packet_channel()
+            self.fetfile = fetfile
+            self.fd = os.open(self.fetfile, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
+            print('spike-id and feature is saved to {}\n'.format(self.fetfile)) 
+
+    def close(self):
+        self.r32.close()
+
+    def init_bmi_packet_channel(self):
+        self.r32 = io.open('/dev/xillybus_fet_clf_32', 'rb')
+        self._size = 7*4  # 7 samples, 4 bytes/sample
+        self.bmi_buf = None
+        print('spike-id packet channel is opened\n')
 
     def set_binner(self, bin_size, B_bins):
         '''
