@@ -180,6 +180,13 @@ class probe_view(scene.SceneCanvas):
                 self.update()
                 self.prb.emit('select', group_id=group_id, chs=self.prb[group_id])
 
+    def highlight(self, group_idx):
+        self.electrode_pads_color = np.repeat(np.array([1., 1., 1., 1.]).reshape(1,-1), self.electrode_pos.shape[0], axis=0)
+        self.electrode_pads.set_data(self.electrode_pos, symbol='square', face_color=self.electrode_pads_color, size=self.font_size)
+        for group_id in group_idx:
+            if hasattr(self.prb, 'grp_dict'):
+                self.electrode_pads_color[self.grp_idx[group_id]] = np.array(4*[1,1,0,1]).reshape(4,-1)
+                self.electrode_pads.set_data(self.electrode_pos, symbol='square', face_color=self.electrode_pads_color, size=self.font_size)
 
     def set_scv(self, scv, upper_bound_sc=1000):
         '''
@@ -231,8 +238,7 @@ class probe_view(scene.SceneCanvas):
         if keys.CONTROL in e.modifiers and e.is_dragging:
             if self.key_option in ['1','2']:
                 mask = self.electrode_id[self._picker.pick(self.electrode_pos)]
-                print(mask)
-                # self.highlight(mask)
+                # print(mask)
 
         else:
             if e.button == 1:
