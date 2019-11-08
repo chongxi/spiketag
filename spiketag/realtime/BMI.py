@@ -106,16 +106,17 @@ class BMI(object):
         if dec_result_file is not None:
            self.dec_result = os.open(dec_result_file, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
 
-        print('connecting decoder to the bmi for real-time control')
-        @self.binner.connect
-        def on_decode(X):
-            # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
-            with Timer('decoding', verbose=True):
-                if dec.name == 'NaiveBayes':
-                    X = np.sum(X, axis=0)
-                y = self.dec.predict(X)
-                print('pos:{0}, time:{1:.5f} secs'.format(y, self.binner.current_time))
-                os.write(self.dec_result, np.hstack((self.binner.last_bin, y)))
+        ### key code (move this part anywhere needed, e.g. connect to playground)
+        # print('connecting decoder to the bmi for real-time control')
+        # @self.binner.connect
+        # def on_decode(X):
+        #     # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
+        #     with Timer('decoding', verbose=True):
+        #         if dec.name == 'NaiveBayes':
+        #             X = np.sum(X, axis=0)
+        #         y = self.dec.predict(X)
+        #         print('pos:{0}, time:{1:.5f} secs'.format(y, self.binner.current_time))
+        #         os.write(self.dec_result, np.hstack((self.binner.last_bin, y)))
         print('---3. BMI Decoder initiation succeed---\n')
         
 
