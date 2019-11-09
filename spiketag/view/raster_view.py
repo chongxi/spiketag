@@ -1,11 +1,12 @@
 import numpy as np
+from ..base import CLU
 from .color_scheme import palette
 from .scatter_2d_view import scatter_2d_view
 
 class raster_view(scatter_2d_view):
 
     def __init__(self, fs=25e3, time_tick=1):
-        super(raster_view, self).__init__(symbol='|', marker_size=5., edge_width=1e-3)
+        super(raster_view, self).__init__(symbol='|', marker_size=6., edge_width=1e-3)
         super(raster_view, self).attach_xaxis()
 
         self._time_tick = time_tick 
@@ -15,22 +16,12 @@ class raster_view(scatter_2d_view):
     ###              public method 
     ### ----------------------------------------------
 
-    def set_data(self, clu=None, spk_times=None):
-        self._spike_time = spk_times 
-        self._clu = clu
-        
-        @self._clu.connect
-        def on_select_clu(*args, **kwargs):
-            self._draw(self._clu.select_clus, delimit=False)
-
-        @self._clu.connect
-        def on_select(*args, **kwargs):
-            self.highlight(self._clu.selectlist)
-        
-        @self._clu.connect
-        def on_cluster(*args, **kwargs):
-            self._clu.select_clu(self._clu.index_id)
-        
+    def set_data(self, spkid_matrix):
+        '''
+        spkid_matrix: n*2 matrix, n spikes, first column is #sample, second column is the spike id
+        '''
+        self._spike_time = spkid_matrix[:,0] 
+        self._clu = CLU(spkid_matrix[:,1])
         self._draw(self._clu.index_id)
 
 
@@ -89,8 +80,8 @@ class raster_view(scatter_2d_view):
        
         poses = None
         colors = None
-        span = 5. / len(self._clu.index_id)
- 
+        span = 10. / len(self._clu.index_id)
+
         for clu in clus:
             times = self._spike_time[self._clu.index[clu]]
             x, y = times / self.binsize, np.full(times.shape, clu * span)
