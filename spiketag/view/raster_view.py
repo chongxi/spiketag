@@ -2,15 +2,37 @@ import numpy as np
 from ..base import CLU
 from .color_scheme import palette
 from .scatter_2d_view import scatter_2d_view
+from vispy import scene, app, visuals
+from numba import njit, prange
+
+
+@njit(cache=True, parallel=True, fastmath=True)
+def get_population_firing_count(spike_times, fs, t_window=5e-3):
+    '''
+    calculate population_firing_rate
+    '''
+    _spk_times = spike_times/fs
+    ts  = np.arange(_spk_times[0], _spk_times[-1], t_window) 
+    firing_count = np.zeros_like(ts)
+    for i in prange(ts.shape[0]):
+        firing_count[i] = np.sum(np.logical_and(_spk_times >= ts[i]-t_window,
+                                                _spk_times <  ts[i]))
+    pfr = np.zeros((ts.shape[0], 2), np.float32)
+    pfr[:, 0] = ts
+    pfr[:, 1] = firing_count
+    return pfr 
+
 
 class raster_view(scatter_2d_view):
 
-    def __init__(self, fs=25e3, time_tick=1):
-        super(raster_view, self).__init__(symbol='|', marker_size=6., edge_width=1e-3)
+    def __init__(self, fs=25e3, time_tick=1, population_firing_count_ON=True):
+        super(raster_view, self).__init__(symbol='|', marker_size=6., edge_width=1e-3, second_view=population_firing_count_ON)
         super(raster_view, self).attach_xaxis()
-
         self._time_tick = time_tick 
         self._fs = fs
+        self._second_view = population_firing_count_ON
+        if self._second_view:
+            self.attach_yaxis()
 
     ### ----------------------------------------------
     ###              public method 
@@ -22,7 +44,29 @@ class raster_view(scatter_2d_view):
         '''
         self._spike_time = spkid_matrix[:,0] 
         self._clu = CLU(spkid_matrix[:,1])
-        self._draw(self._clu.index_id)
+
+        if self._second_view:
+            self._pfr = get_population_firing_count(self._spike_time, self._fs)
+            self._draw(self._clu.index_id, self._pfr)
+        else:
+            self._draw(self._clu.index_id)
+
+
+    def attach_yaxis(self, axis_color=(0,1,1,0.8)):
+        '''
+            Provide y axis for the population rate
+        '''
+        fg = axis_color
+        # text show amplitude
+        self.amp_text = scene.Text("", pos=(0, 0), italic=False, bold=False, anchor_x='left', anchor_y='center',
+                                       color=axis_color, font_size=10, parent=self._view2)
+        self.amp_text.pos  = (0, 20)
+
+        # x axis shows time and can be moved horizontally for clipping
+        self._yaxis = scene.AxisWidget(orientation='left', text_color=fg, axis_color=fg, tick_color=fg)
+        self._yaxis.stretch = (0, 1)
+        self._grid.add_widget(self._yaxis, row=10, col=0, row_span=3)
+        self._yaxis.link_view(self._view2)
 
 
     @property
@@ -76,7 +120,7 @@ class raster_view(scatter_2d_view):
     ###              private method 
     ### ----------------------------------------------
 
-    def _draw(self, clus, delimit=True):
+    def _draw(self, clus, pfr=None, delimit=True):
        
         poses = None
         colors = None
@@ -96,3 +140,19 @@ class raster_view(scatter_2d_view):
                 colors = np.concatenate((colors, color))
         
         super(raster_view, self).set_data(pos=poses, colors=colors, delimit=delimit)
+
+        if self._second_view:
+            # pfr is population firing rate
+            self._line.set_data(pfr, symbol='o', color='w', edge_color='w',
+                                     marker_size=5, face_color=(0.2, 0.2, 1))
+            self._view2.camera.set_range()
+
+
+    def on_key_press(self, e):
+        '''
+            r:       reset the camera
+        '''
+        if e.text == 'r':
+            self._view.camera.set_range()
+            if self._second_view:
+                self._view2.camera.set_range()

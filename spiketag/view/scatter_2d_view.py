@@ -1,9 +1,11 @@
 import numpy as np
-from vispy import scene, app
+from vispy import scene, app, visuals
 from vispy.util import keys
 from .trace_view import Cross
 from ..utils.utils import Picker
+from ..utils.cameras import XSyncCamera
 from ..utils import EventEmitter
+
 
 class scatter_2d_view(scene.SceneCanvas):
     ''' Basic scatter 2d view, any view need markers can extend this view.
@@ -19,17 +21,26 @@ class scatter_2d_view(scene.SceneCanvas):
         edge_width : float
             the edge width of symbol outline in pixels
     '''
-    def __init__(self, symbol='o', marker_size=2., edge_width=1., show=False):
+    def __init__(self, symbol='o', marker_size=2., edge_width=1., show=False, second_view=False):
         scene.SceneCanvas.__init__(self, keys=None)
 
         self.unfreeze()
 
         self._grid = self.central_widget.add_grid(bgcolor='k', border_color='k', margin=10)       
-        self._view = self._grid.add_view(row=0, col=0, border_color='k')
+        self._view = self._grid.add_view(row=0, col=0, row_span=7, border_color='k')
         self._view.camera = 'panzoom'
 
         self._scatter = scene.visuals.Markers()
         self._view.add(self._scatter)
+
+        if second_view:
+            self._view2 = self._grid.add_view(row=10, col=0, row_span=3, border_color='k')
+            self._view2.camera = 'panzoom'
+            self._line = scene.visuals.LinePlot()
+            self._view2.add(self._line)
+            x_sync_cam = XSyncCamera()
+            self._view.camera.link(x_sync_cam)
+            self._view2.camera.link(x_sync_cam)
         
         self._symbol = symbol
         self._edge_width = edge_width
@@ -83,14 +94,14 @@ class scatter_2d_view(scene.SceneCanvas):
         '''
         fg = axis_color
         # text show amplitude
-        self.amp_text = scene.Text("", pos=(0, 0), italic=False, bold=True, anchor_x='left', anchor_y='center',
+        self.amp_text = scene.Text("", pos=(0, 0), italic=False, bold=False, anchor_x='left', anchor_y='center',
                                        color=axis_color, font_size=13, parent=self._view)
         self.amp_text.pos  = (0, 12)
 
         # x axis shows time and can be moved horizontally for clipping
         self._xaxis = scene.AxisWidget(orientation='bottom', text_color=fg, axis_color=fg, tick_color=fg)
         self._xaxis.stretch = (0.9, 0.1)
-        self._grid.add_widget(self._xaxis, row=1, col=0)
+        self._grid.add_widget(self._xaxis, row=7, col=0, row_span=2)
         self._xaxis.link_view(self._view)
         self.x_axis_lock = True
 
