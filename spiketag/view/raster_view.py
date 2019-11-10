@@ -1,5 +1,5 @@
 import numpy as np
-from ..base import CLU
+from ..base.CLU import CLU
 from .color_scheme import palette
 from .scatter_2d_view import scatter_2d_view
 from vispy import scene, app, visuals
@@ -44,7 +44,7 @@ class raster_view(scatter_2d_view):
         spkid_matrix: n*2 matrix, n spikes, first column is #sample, second column is the spike id
         '''
         self._spike_time = spkid_matrix[:,0] 
-        self._clu = CLU(spkid_matrix[:,1])
+        self._clu = CLU(spkid_matrix[:,1].astype(np.int64))
 
         if self._second_view:
             self._pfr = get_population_firing_count(self._spike_time, self._fs, self._t_window)
@@ -154,6 +154,19 @@ class raster_view(scatter_2d_view):
             r:       reset the camera
         '''
         if e.text == 'r':
-            self._view.camera.set_range()
-            if self._second_view:
-                self._view2.camera.set_range()
+            self.set_range()
+
+    def set_range(self):
+        self._view.camera.set_range()
+        if self._second_view:
+            self._view2.camera.set_range()
+
+
+    def load_raster(self, filename='./fet.bin'):
+        fet_packet = np.fromfile(filename, dtype=np.int32).reshape(-1,7)
+        spkid_packet = fet_packet[:, [0,-1]]
+        spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0) 
+        # print(spkid_packet.shape)
+        if spkid_packet.shape[0]>100:
+            self.set_data(spkid_packet)
+            self.set_range()
