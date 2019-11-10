@@ -12,11 +12,11 @@ def get_population_firing_count(spike_times, fs, t_window=5e-3):
     calculate population_firing_rate
     '''
     _spk_times = spike_times/fs
-    ts  = np.arange(_spk_times[0], _spk_times[-1], t_window) 
+    ts  = np.arange(_spk_times[0]+t_window/2, _spk_times[-1]-t_window/2, t_window) 
     firing_count = np.zeros_like(ts)
     for i in prange(ts.shape[0]):
-        firing_count[i] = np.sum(np.logical_and(_spk_times >= ts[i]-t_window,
-                                                _spk_times <  ts[i]))
+        firing_count[i] = np.sum(np.logical_and(_spk_times >= ts[i]-t_window/2,
+                                                _spk_times <  ts[i]+t_window/2))
     pfr = np.zeros((ts.shape[0], 2), np.float32)
     pfr[:, 0] = ts
     pfr[:, 1] = firing_count
@@ -25,7 +25,7 @@ def get_population_firing_count(spike_times, fs, t_window=5e-3):
 
 class raster_view(scatter_2d_view):
 
-    def __init__(self, fs=25e3, time_tick=1, population_firing_count_ON=True):
+    def __init__(self, fs=25e3, time_tick=1, population_firing_count_ON=True, t_window=5e-3):
         super(raster_view, self).__init__(symbol='|', marker_size=6., edge_width=1e-3, second_view=population_firing_count_ON)
         super(raster_view, self).attach_xaxis()
         self._time_tick = time_tick 
@@ -33,6 +33,7 @@ class raster_view(scatter_2d_view):
         self._second_view = population_firing_count_ON
         if self._second_view:
             self.attach_yaxis()
+            self._t_window = t_window
 
     ### ----------------------------------------------
     ###              public method 
@@ -46,7 +47,7 @@ class raster_view(scatter_2d_view):
         self._clu = CLU(spkid_matrix[:,1])
 
         if self._second_view:
-            self._pfr = get_population_firing_count(self._spike_time, self._fs)
+            self._pfr = get_population_firing_count(self._spike_time, self._fs, self._t_window)
             self._draw(self._clu.index_id, self._pfr)
         else:
             self._draw(self._clu.index_id)
