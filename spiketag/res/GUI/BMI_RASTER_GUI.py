@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog, QWidget, QSplitte
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication
 from ...realtime import BMI
+from ...utils import Timer
 
 
 class BMI_RASTER_GUI(QWidget):
@@ -63,7 +64,8 @@ class BMI_RASTER_GUI(QWidget):
         self.view_timer.stop()
 
     def view_update(self):
-        self.rsview.update_fromfile('./fet.bin', last_N=8000)
+        with Timer('update', verbose=False):
+            self.rsview.update_fromfile('./fet.bin', last_N=8000)
 
     # def keyPressEvent(self, e):
     #     print("event",e)
@@ -82,8 +84,8 @@ if __name__ == '__main__':
     app = QApplication(sys.argv) 
     prb = probe(prbfile='./dusty/dusty.json')
     gui = BMI_RASTER_GUI(prb=prb, fet_file='./fet.bin')
-    bin_size, B_bins = 25e-3, 10
-    gui.bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
+    # bin_size, B_bins = 25e-3, 10
+    # gui.bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
 
     # 2. decoder
     # pos = np.fromfile('./sorting/dusty_pos.bin').reshape(-1,2)
