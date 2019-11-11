@@ -25,12 +25,13 @@ def get_population_firing_count(spike_times, fs, t_window=5e-3):
 
 class raster_view(scatter_2d_view):
 
-    def __init__(self, fs=25e3, n_units=80, time_tick=1, population_firing_count_ON=True, t_window=5e-3):
+    def __init__(self, fs=25e3, n_units=80, time_tick=1, population_firing_count_ON=True, t_window=5e-3, view_window=10):
         super(raster_view, self).__init__(symbol='|', marker_size=6., edge_width=1e-3, second_view=population_firing_count_ON)
         super(raster_view, self).attach_xaxis()
         self._time_tick = time_tick 
         self._fs = fs
         self._n_units = n_units
+        self._view_window = view_window
         self._second_view = population_firing_count_ON
         if self._second_view:
             self.attach_yaxis()
@@ -176,7 +177,7 @@ class raster_view(scatter_2d_view):
         self.set_range()
 
 
-    def update_fromfile(self, filename='./fet.bin', last_N=8000, view_window=10):
+    def update_fromfile(self, filename='./fet.bin', last_N=8000):
         '''
         filename:    the file that contains BMI feature-spike packet
         last_N:      only set_data for the last_N spikes in the file
@@ -193,7 +194,7 @@ class raster_view(scatter_2d_view):
                 spkid_packet = fet_packet[:, [0,-1]]
                 spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0)                 
             self.set_data(spkid_packet)
-            xmin = (spkid_packet[-1, 0]-view_window*self._fs)/self._fs
+            xmin = (spkid_packet[-1, 0]-self._view_window*self._fs)/self._fs
             xmax = spkid_packet[-1, 0]/self._fs
             self._view.camera.set_range(x=(xmin, xmax),  y=self._y_bound)
             self._view2.camera.set_range(x=(xmin, xmax), y=(0,self._pfr.max()+2))

@@ -11,7 +11,11 @@ from ...realtime import BMI
 
 
 class BMI_RASTER_GUI(QWidget):
-    def __init__(self, prb=None, fet_file='./fet.bin', t_window=5e-3):
+    def __init__(self, prb=None, fet_file='./fet.bin', t_window=5e-3, view_window=10):
+        '''
+        t_window is used for estimating population firing count
+        view_window decides how long we want to see in real-time
+        '''
         QWidget.__init__(self)
         self.view_timer = QtCore.QTimer(self)
         self.view_timer.timeout.connect(self.view_update)
@@ -29,7 +33,7 @@ class BMI_RASTER_GUI(QWidget):
         self.bmiBtn.setStyleSheet("background-color: darkgrey")
         self.bmiBtn.toggled.connect(self.bmi_process_toggle)     
 
-        self.rsview = raster_view(n_units=self.bmi.fpga.n_units+1, t_window=t_window)
+        self.rsview = raster_view(n_units=self.bmi.fpga.n_units+1, t_window=t_window, view_window=view_window)
 
         layout = QVBoxLayout()
         layout.addWidget(self.bmiBtn)
@@ -59,7 +63,7 @@ class BMI_RASTER_GUI(QWidget):
         self.view_timer.stop()
 
     def view_update(self):
-        self.rsview.update_fromfile('./fet.bin', last_N=8000, view_window=10)
+        self.rsview.update_fromfile('./fet.bin', last_N=8000)
 
     # def keyPressEvent(self, e):
     #     print("event",e)

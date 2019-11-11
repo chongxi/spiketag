@@ -292,6 +292,6 @@ def bmi(gui):
         '''
         from spiketag.res.GUI.BMI_RASTER_GUI import BMI_RASTER_GUI
         app = QApplication(sys.argv) 
-        gui = BMI_RASTER_GUI(fet_file='./fet.bin')
+        gui = BMI_RASTER_GUI(fet_file='./fet.bin', t_window=5e-3, view_window=5)
         gui.show()
         sys.exit(app.exec_())
