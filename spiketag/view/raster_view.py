@@ -25,11 +25,12 @@ def get_population_firing_count(spike_times, fs, t_window=5e-3):
 
 class raster_view(scatter_2d_view):
 
-    def __init__(self, fs=25e3, time_tick=1, population_firing_count_ON=True, t_window=5e-3):
+    def __init__(self, fs=25e3, n_units=80, time_tick=1, population_firing_count_ON=True, t_window=5e-3):
         super(raster_view, self).__init__(symbol='|', marker_size=6., edge_width=1e-3, second_view=population_firing_count_ON)
         super(raster_view, self).attach_xaxis()
         self._time_tick = time_tick 
         self._fs = fs
+        self._n_units = n_units
         self._second_view = population_firing_count_ON
         if self._second_view:
             self.attach_yaxis()
@@ -44,13 +45,14 @@ class raster_view(scatter_2d_view):
         spkid_matrix: n*2 matrix, n spikes, first column is #sample, second column is the spike id
         '''
         self._spike_time = spkid_matrix[:,0] 
-        self._clu = CLU(spkid_matrix[:,1].astype(np.int64))
+        self._spike_id   = spkid_matrix[:,1]
+        # self._clu = CLU(spkid_matrix[:,1].astype(np.int64))
 
         if self._second_view:
             self._pfr = get_population_firing_count(self._spike_time, self._fs, self._t_window)
-            self._draw(self._clu.index_id, self._pfr)
+            self._draw(self._pfr)
         else:
-            self._draw(self._clu.index_id)
+            self._draw()
 
 
     def attach_yaxis(self, axis_color=(0,1,1,0.8)):
@@ -115,23 +117,22 @@ class raster_view(scatter_2d_view):
         global_idx = self._clu.local2global(local_idx)
         self._clu.select(global_idx, caller=self.__module__)
 
-
  
     ### ----------------------------------------------
     ###              private method 
     ### ----------------------------------------------
 
-    def _draw(self, clus, pfr=None, delimit=True):
+    def _draw(self, pfr=None, delimit=True):
        
         poses = None
         colors = None
-        span = 10. / len(self._clu.index_id)
+        span = 10. / self._n_units #len(self._clu.index_id)
 
-        for clu in clus:
-            times = self._spike_time[self._clu.index[clu]]
-            x, y = times / self.binsize, np.full(times.shape, clu * span)
+        for spk_id in range(self._n_units):
+            times = self._spike_time[self._spike_id==spk_id]
+            x, y = times / self.binsize, np.full(times.shape, spk_id * span)
             pos = np.column_stack((x,y))
-            color = np.tile(np.hstack((palette[clu],1)),(pos.shape[0],1))
+            color = np.tile(np.hstack((palette[spk_id],1)),(pos.shape[0],1))
 
             if poses is None and colors is None:
                 poses = pos
@@ -146,7 +147,7 @@ class raster_view(scatter_2d_view):
             # pfr is population firing rate
             self._line.set_data(pfr, symbol='o', color='w', edge_color='w',
                                      marker_size=5, face_color=(0.2, 0.2, 1))
-            self._view2.camera.set_range()
+            # self._view2.camera.set_range()
 
 
     def on_key_press(self, e):
@@ -162,11 +163,38 @@ class raster_view(scatter_2d_view):
             self._view2.camera.set_range()
 
 
-    def load_raster(self, filename='./fet.bin'):
-        fet_packet = np.fromfile(filename, dtype=np.int32).reshape(-1,7)
-        print(fet_packet.shape)
-        if fet_packet.shape[0]>10001:
-            spkid_packet = fet_packet[-10000:, [0,-1]]
-            spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0) 
-            # print(spkid_packet.shape)
+    def fromfile(self, filename='./fet.bin'):
+        '''
+        load and interact with spike rasters
+        filename: the file that contains BMI feature-spike packet
+        '''
+        fet_packet = np.memmap(filename, dtype=np.int32).reshape(-1,7)
+        spkid_packet = fet_packet[:, [0,-1]]
+        spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0)
+        self.set_data(spkid_packet)
+        self.set_range()
+
+
+    def update_fromfile(self, filename='./fet.bin', last_N=8000, view_window=10):
+        '''
+        filename:    the file that contains BMI feature-spike packet
+        last_N:      only set_data for the last_N spikes in the file
+        view_window: x second for visualization
+        '''
+        try:
+            fet_packet = np.memmap(filename, dtype=np.int32).reshape(-1,7)
+            # print(fet_packet.shape)
+            N = last_N
+            if fet_packet.shape[0]>N:
+                spkid_packet = fet_packet[-N:, [0,-1]]
+                spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0) 
+            else:
+                spkid_packet = fet_packet[:, [0,-1]]
+                spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0)                 
             self.set_data(spkid_packet)
+            xmin = (spkid_packet[-1, 0]-view_window*self._fs)/self._fs
+            xmax = spkid_packet[-1, 0]/self._fs
+            self._view.camera.set_range(x=(xmin, xmax), y=(0,10))
+            self._view2.camera.set_range(x=(xmin, xmax), y=(0,50))
+        except:
+            pass
