@@ -197,6 +197,6 @@ class raster_view(scatter_2d_view):
             xmin = (spkid_packet[-1, 0]-self._view_window*self._fs)/self._fs
             xmax = spkid_packet[-1, 0]/self._fs
             self._view.camera.set_range(x=(xmin, xmax),  y=self._y_bound)
-            self._view2.camera.set_range(x=(xmin, xmax), y=(0,self._pfr.max()+2))
+            self._view2.camera.set_range(x=(xmin, xmax), y=(0, 3+int(self._pfr[:,1].max())))
         except:
             pass
