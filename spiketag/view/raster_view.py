@@ -126,7 +126,8 @@ class raster_view(scatter_2d_view):
        
         poses = None
         colors = None
-        span = 10. / self._n_units #len(self._clu.index_id)
+        self._y_bound = (0., 10.)
+        span = self._y_bound[1] / self._n_units #len(self._clu.index_id)
 
         for spk_id in range(self._n_units):
             times = self._spike_time[self._spike_id==spk_id]
@@ -194,7 +195,7 @@ class raster_view(scatter_2d_view):
             self.set_data(spkid_packet)
             xmin = (spkid_packet[-1, 0]-view_window*self._fs)/self._fs
             xmax = spkid_packet[-1, 0]/self._fs
-            self._view.camera.set_range(x=(xmin, xmax), y=(0,10))
-            self._view2.camera.set_range(x=(xmin, xmax), y=(0,50))
+            self._view.camera.set_range(x=(xmin, xmax),  y=self._y_bound)
+            self._view2.camera.set_range(x=(xmin, xmax), y=(0,self._pfr.max()+2))
         except:
             pass

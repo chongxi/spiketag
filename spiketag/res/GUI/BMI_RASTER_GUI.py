@@ -11,7 +11,7 @@ from ...realtime import BMI
 
 
 class BMI_RASTER_GUI(QWidget):
-    def __init__(self, prb=None, fet_file='./fet.bin'):
+    def __init__(self, prb=None, fet_file='./fet.bin', t_window=5e-3):
         QWidget.__init__(self)
         self.view_timer = QtCore.QTimer(self)
         self.view_timer.timeout.connect(self.view_update)
@@ -29,10 +29,7 @@ class BMI_RASTER_GUI(QWidget):
         self.bmiBtn.setStyleSheet("background-color: darkgrey")
         self.bmiBtn.toggled.connect(self.bmi_process_toggle)     
 
-        self.rsview = raster_view(t_window=25e-3)
-        # self.rsview.load_raster('./fet.bin')
-        # self.rsview = scatter_3d_view()
-        # self.rsview.set_data(np.random.randn(1000,4))
+        self.rsview = raster_view(n_units=self.bmi.fpga.n_units+1, t_window=t_window)
 
         layout = QVBoxLayout()
         layout.addWidget(self.bmiBtn)
