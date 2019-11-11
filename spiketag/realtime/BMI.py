@@ -50,12 +50,15 @@ class BMI(object):
     >>> bmi.gui_queue.get()
     """
 
-    def __init__(self, prb, fetfile=None):
-        self.prb = prb
-        self.ngrp = prb.n_group
-        self.group_idx = np.array(list(self.prb.grp_dict.keys()))
-
-        self.fpga = xike_config(self.prb)
+    def __init__(self, prb=None, fetfile=None):
+        if prb is not None:
+            self.prb = prb
+            self.ngrp = prb.n_group
+            # self.group_idx = np.array(list(self.prb.grp_dict.keys()))
+            self.fpga = xike_config(self.prb)
+        else:
+            self.ngrp = 40   # by default
+            self.fpga = xike_config()   # by default
         print('{} groups on probe'.format(self.ngrp))
         print('{} groups is configured in the FPGA: {}'.format(len(self.fpga.configured_groups), 
                                                                self.fpga.configured_groups))

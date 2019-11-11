@@ -1,6 +1,8 @@
+import sys
 import click
 import numpy as np
 import matplotlib.pyplot as plt
+from PyQt5.QtWidgets import QApplication
 
 
 @click.group()
@@ -279,3 +281,17 @@ def cp(notebookfile):
     import os
     url = 'https://raw.githubusercontent.com/chongxi/spiketag/master/notebooks/template'
     os.system('wget {}/{}.ipynb'.format(url, notebookfile))
+
+
+@main.command()
+def raster():
+    '''
+    `spiketag raster probefile`
+    '''
+    from spiketag.res.GUI.BMI_RASTER_GUI import BMI_RASTER_GUI
+    app = QApplication(sys.argv) 
+    gui = BMI_RASTER_GUI(fet_file='./fet.bin')
+    bin_size, B_bins = 25e-3, 10
+    gui.bmi.set_binner(bin_size=bin_size, B_bins=B_bins) 
+    gui.show()
+    sys.exit(app.exec_())
