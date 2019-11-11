@@ -11,7 +11,7 @@ from ...realtime import BMI
 
 
 class BMI_RASTER_GUI(QWidget):
-    def __init__(self, prb=None, fet_file=None):
+    def __init__(self, prb=None, fet_file='./fet.bin'):
         QWidget.__init__(self)
         self.view_timer = QtCore.QTimer(self)
         self.view_timer.timeout.connect(self.view_update)
@@ -64,8 +64,8 @@ class BMI_RASTER_GUI(QWidget):
     def view_update(self):
         self.rsview.update_fromfile('./fet.bin', last_N=8000, view_window=10)
 
-    def keyPressEvent(self, e):
-        print("event",e)
+    # def keyPressEvent(self, e):
+    #     print("event",e)
         # if e.key() == Qt.Key_F5:
         #     if self.view_timer.isActive():
         #         self.view_timer.stop()

@@ -284,14 +284,14 @@ def cp(notebookfile):
 
 
 @main.command()
-def raster():
-    '''
-    `spiketag raster probefile`
-    '''
-    from spiketag.res.GUI.BMI_RASTER_GUI import BMI_RASTER_GUI
-    app = QApplication(sys.argv) 
-    gui = BMI_RASTER_GUI(fet_file='./fet.bin')
-    # bin_size, B_bins = 25e-3, 10
-    # gui.bmi.set_binner(bin_size=bin_size, B_bins=B_bins) 
-    gui.show()
-    sys.exit(app.exec_())
+@click.argument('gui')
+def bmi(gui):
+    if gui == 'raster':
+        '''
+        >>> spiketag bmi raster
+        '''
+        from spiketag.res.GUI.BMI_RASTER_GUI import BMI_RASTER_GUI
+        app = QApplication(sys.argv) 
+        gui = BMI_RASTER_GUI(fet_file='./fet.bin')
+        gui.show()
+        sys.exit(app.exec_())
