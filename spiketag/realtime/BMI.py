@@ -71,6 +71,8 @@ class BMI(object):
             self.fd = os.open(self.fetfile, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
             print('spike-id and feature is saved to {}\n'.format(self.fetfile)) 
 
+        self.binner = None
+
     def close(self):
         self.r32.close()
 
@@ -161,7 +163,8 @@ class BMI(object):
                 ##### real-time decoder
                 # 1. binner
                 # print(bmi_output.timestamp, bmi_output.grp_id)
-                self.binner.input(bmi_output) 
+                if self.binner is not None:
+                    self.binner.input(bmi_output) 
                 # print(bmi_output.output)
                 # 2. gui queue (optional)
                 ##### queue for visualization on GUI
@@ -174,8 +177,6 @@ class BMI(object):
 
 
     def start(self, gui_queue=False):
-        if not self.binner:
-            print('set binner first')
         if gui_queue:
             self.gui_queue = SimpleQueue()
         else:

@@ -291,7 +291,7 @@ def raster():
     from spiketag.res.GUI.BMI_RASTER_GUI import BMI_RASTER_GUI
     app = QApplication(sys.argv) 
     gui = BMI_RASTER_GUI(fet_file='./fet.bin')
-    bin_size, B_bins = 25e-3, 10
-    gui.bmi.set_binner(bin_size=bin_size, B_bins=B_bins) 
+    # bin_size, B_bins = 25e-3, 10
+    # gui.bmi.set_binner(bin_size=bin_size, B_bins=B_bins) 
     gui.show()
     sys.exit(app.exec_())
