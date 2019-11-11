@@ -164,9 +164,9 @@ class raster_view(scatter_2d_view):
 
     def load_raster(self, filename='./fet.bin'):
         fet_packet = np.fromfile(filename, dtype=np.int32).reshape(-1,7)
-        spkid_packet = fet_packet[:, [0,-1]]
-        spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0) 
-        # print(spkid_packet.shape)
-        if spkid_packet.shape[0]>100:
+        print(fet_packet.shape)
+        if fet_packet.shape[0]>10001:
+            spkid_packet = fet_packet[-10000:, [0,-1]]
+            spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0) 
+            # print(spkid_packet.shape)
             self.set_data(spkid_packet)
-            self.set_range()
