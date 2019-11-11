@@ -25,7 +25,7 @@ def get_population_firing_count(spike_times, fs, t_window=5e-3):
 
 class raster_view(scatter_2d_view):
 
-    def __init__(self, fs=25e3, n_units=80, time_tick=1, population_firing_count_ON=True, t_window=5e-3, view_window=10):
+    def __init__(self, fs=25e3, n_units=None, time_tick=1, population_firing_count_ON=True, t_window=5e-3, view_window=10):
         super(raster_view, self).__init__(symbol='|', marker_size=6., edge_width=1e-3, second_view=population_firing_count_ON)
         super(raster_view, self).attach_xaxis()
         self._time_tick = time_tick 
@@ -47,6 +47,9 @@ class raster_view(scatter_2d_view):
         '''
         self._spike_time = spkid_matrix[:,0] 
         self._spike_id   = spkid_matrix[:,1]
+        if self._n_units is None: # if not given from user (user can read from fpga.n_units), will use what's there in the data
+            self._n_units = len(np.unique(self._spike_id)) + 1
+            print('load {} units'.format(self._n_units))
         # self._clu = CLU(spkid_matrix[:,1].astype(np.int64))
 
         if self._second_view:

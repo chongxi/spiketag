@@ -284,6 +284,22 @@ def cp(notebookfile):
 
 
 @main.command()
+def raster():
+    '''
+    >>> spiketag raster
+    '''
+    from spiketag.view import raster_view
+    rasview = raster_view()
+    try:
+        rasview.fromfile('./fet.bin')
+        rasview.show()
+        rasview.title='spike raster'
+        rasview.app.run()
+    except:
+        print('fail to load fet.bin, check whether has this file under current folder')
+
+
+@main.command()
 @click.argument('gui')
 def bmi(gui):
     if gui == 'raster':
