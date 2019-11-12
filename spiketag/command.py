@@ -27,7 +27,8 @@ def prb_check(prbfile, font_size=33):
 @click.option('--dtype', prompt='dtype', default='int16')
 @click.option('--nch', prompt='nch', default='160')
 @click.option('--fs', prompt='fs', default='25000')
-def bin_check(binfile, dtype, nch, fs):
+@click.option('--view', prompt='view', default='y')
+def bin_check(binfile, dtype, nch, fs, view):
     '''
     check prb by visualization
     '''
@@ -35,6 +36,10 @@ def bin_check(binfile, dtype, nch, fs):
     fs, nch = float(fs), int(nch)
     bf = bload(nCh=nch, fs=fs)
     bf.load(binfile, dtype=dtype)
+    if view == 'y':
+        from vispy import app
+        bf.show()
+        app.run()
 
 
 @main.command()
