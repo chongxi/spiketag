@@ -238,6 +238,14 @@ class bload(object):
 
 
     def convolve(self, kernel, scale=1, device='gpu'):
+        '''
+        >>> from spiketag.base import mua_kernel
+        >>> bf.convolve(kernel=mua_kernel)
+        if scale is needed:
+        >>> bf.convolve(kernel=mua_kernel, scale=float(2**13))
+        if there is no gpu:
+        >>> bf.convolve(kernel=mua_kernel, device='cpu')
+        '''
         from ..core import convolve
         data = self.data.numpy().reshape(-1, self._nCh)
         new_data = []
@@ -248,6 +256,10 @@ class bload(object):
 
 
     def deconvolve(self, kernel):
+        '''
+        >>> from spiketag.base import mua_kernel
+        >>> bf.deconvolve(kernel=mua_kernel)
+        '''
         if torch.get_num_threads() == 1:
             import os
             torch.set_num_threads(os.cpu_count())
