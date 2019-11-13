@@ -172,9 +172,6 @@ class bload(object):
 
     def reorder_by_chip(self, nchips=5):
         nch_perchip = self._nCh/nchips
-        # self.npmm = self.npmm.reshape(-1, nch_perchip, nchips)
-        # self.npmm = self.npmm.swapaxes(1,2)
-        # self.npmm = self.npmm.reshape(-1, self._nCh)
         self.data = self.data.reshape(-1,nch_perchip, nchips).transpose(1,2).reshape(-1, self._nCh)
         info('reordered with nchips={0} and nch_perchip={1}'.format(nchips,nch_perchip))
 
@@ -212,17 +209,6 @@ class bload(object):
             k += 1
         return base_line 
         
-
-
-
-    # def filter(self, band, ftype='low-pass', noise_level=0):
-    #     self.data = self.data.reshape(-1, self._nCh)
-    #     data = torch.zeros_like(self.data)
-    #     for ch in range(self._nCh):
-    #         data[:,ch] = self._filter(ch, band, ftype=ftype, noise_level=noise_level)
-    #     self.data = data
-
-
     def show(self, chs=None):
         if type(self.data) != np.ndarray:
             if chs is not None:
