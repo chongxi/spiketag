@@ -10,6 +10,7 @@ from ..view import wave_view
 import torch
 from scipy import signal
 import os.path as op
+from tqdm import tqdm
 
 
 def fs2t(N, fs):
@@ -236,24 +237,30 @@ class bload(object):
         self.wview.show()
 
 
-    def convolve(self, kernel):
+    def convolve(self, kernel, scale=1, device='gpu'):
+        from ..core import convolve
         data = self.data.numpy().reshape(-1, self._nCh)
         new_data = []
-        for datum in data.T:
-            new_data.append(np.convolve(datum, kernel))
+        for datum in tqdm(data.T):
+            new_data.append(convolve(datum, kernel, device=device, scale=scale, mode='same'))
+            # new_data.append(np.convolve(datum, kernel))
         self.data = np.vstack((new_data)).T
 
 
     def deconvolve(self, kernel):
+        if torch.get_num_threads() == 1:
+            import os
+            torch.set_num_threads(os.cpu_count())
         if type(self.data) != np.ndarray:
             self.data = self.data.numpy().reshape(-1, self._nCh)
         length = self.data.shape[0] - len(kernel) + 1
         new_data = np.zeros((length, self.data.shape[1]), dtype=np.float32)
         # print(new_data.shape)
-        for i in range(self.data.shape[1]):
-            print('deconvolve {}th channel'.format(i))
+        for i in tqdm(range(self.data.shape[1])):
+            # print('deconvolve {}th channel'.format(i))
             new_data[:, i] = _deconvolve(self.data[:,i], kernel)
         self.data = new_data
+        torch.set_num_threads(1)
 
 
     def normalize_columns(self, absmax=15000, dtype='int16'):
