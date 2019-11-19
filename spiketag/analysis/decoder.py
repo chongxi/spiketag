@@ -1,4 +1,4 @@
-from .core import bayesian_decoding, bayesian_decoding_rt, argmax_2d_tensor, smooth
+from .core import licomb_Matrix, bayesian_decoding, bayesian_decoding_rt, argmax_2d_tensor, smooth
 import numpy as np
 from sklearn.metrics import r2_score
 
@@ -153,6 +153,10 @@ class NaiveBayes(Decoder):
         self.fields = self.pc.fields
         self.spatial_bin_size, self.spatial_origin = self.pc.bin_size, self.pc.maze_original
 
+        # for real-time decoding on incoming bin from BMI   
+        self.possion_matrix = self.t_window*self.fields.sum(axis=0)
+        self.log_fr = np.log(self.fields) # make sure Fr[Fr==0] = 1e-12
+
     def predict(self, X):
         if len(X.shape) == 1:
             X = X.reshape(1,-1)
@@ -162,9 +166,8 @@ class NaiveBayes(Decoder):
         return y
 
     def predict_rt(self, X):
-        if len(X.shape) == 1:
-            X = X.reshape(1,-1)
-        post_2d = bayesian_decoding_rt(self.fields, X, t_window=self.t_window)
+        suv_weighted_log_fr = licomb_Matrix(X, self.log_fr)
+        post_2d = np.exp(suv_weighted_log_fr - self.possion_matrix)
         binned_pos = argmax_2d_tensor(post_2d)
         y = binned_pos*self.spatial_bin_size + self.spatial_origin
         return y
