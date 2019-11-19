@@ -131,12 +131,13 @@ class Decoder(object):
 
 class NaiveBayes(Decoder):
     """NaiveBayes Decoder for position prediction (input X, output y) where y is the position
-    >>> nbdec = NaiveBayes(pc)
-    >>> nbdec(t_window=200e-3, t_step=1/30.)
-    >>> nbdec.partition(training_range=[0.0, .5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0])
-    >>> (train_X, train_y), (valid_X, valid_y), (test_X, test_y) = nbdec.get_data()
-    >>> nbdec.fit(train_X, train_y)
-    >>> predicted_y = nbdec.predict(test_X)
+    >>> dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
+    >>> dec.connect_to(pc)
+    >>> dec.partition(training_range=[0.0, .5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0])
+    >>> (train_X, train_y), (valid_X, valid_y), (test_X, test_y) = dec.get_data()
+    >>> dec.fit(train_X, train_y)
+    >>> predicted_y = dec.predict(test_X)
+    >>> score = dec.evaluate(smooth(predicted_y, 60), test_y)
     """
     def __init__(self, t_window, t_step=None):
         super(NaiveBayes, self).__init__(t_window, t_step)
