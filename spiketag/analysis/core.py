@@ -161,3 +161,29 @@ def interp_nan(data):
     interpolated = np.interp(bad_indexes.nonzero()[0], good_indexes.nonzero()[0], good_data)
     data[bad_indexes] = interpolated
     return data
+
+
+def get_hd(trajectory, speed_threshold, offset_hd=180):
+    '''
+    calcualte head direction from a very short trajectory
+    input:
+    trajectory: (N,2) array
+    speed_threshold: a scalar to filter out the HDs for the final averaging
+    output:
+    hd:    scalar (inferred head direction of this trajectory)
+    speed: scalar (inferred speed of this trajectory)
+    '''
+    # 1. Calculate both hd and speed (both are vectors)
+    delta_pos = np.diff(trajectory, axis=0)
+    hd = np.arctan2(delta_pos[:,0], delta_pos[:,1])
+    speed = np.linalg.norm(delta_pos, axis=1)
+    # 2. filter out the bad points in the vector
+    valid_idx = np.where(np.logical_and(hd!=0, speed>speed_threshold))[0]
+    # 3. Calculate the mean value
+    hd = np.mean(hd[valid_idx])
+    speed = np.mean(speed[valid_idx])
+    # 4. Offset the head-direction 
+    # Tricky: (which screen animal is looking at?, is there a mirror imaging of the projector? etc)
+    hd = hd*180/np.pi    # radius to degrees
+    hd += offset_hd      # add the offset head direction
+    return hd, speed

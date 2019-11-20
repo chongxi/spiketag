@@ -1,4 +1,3 @@
-from playground.base import logger
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
@@ -105,6 +104,8 @@ class place_field(object):
         # 2: v_smoothed, v_cutoff
         # 3: maze_range, bin_size 
         '''
+        from playground.base import logger
+        
         if logfile is None:
             pass
              
