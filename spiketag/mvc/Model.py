@@ -109,16 +109,24 @@ class MainModel(object):
         # After first time
         else:
             self.spktag = SPKTAG(probe=self.probe)
-            info('load spktag file')
-            self.spktag.fromfile(spktag_filename)
-            self.gtimes = self.spktag.to_gtimes()
-            self.spk = self.spktag.tospk()
-            self.fet = self.spktag.tofet()
-            self.clu = self.spktag.toclu()
-            self.clu_manager = status_manager()
-            for _clu in self.clu.values():
-                self.clu_manager.append(_clu)
-            self.spktag.clu_manager = self.clu_manager
+            self.spktag.load(spktag_filename)
+            self.gtimes = self.spktag.gtimes
+            self.spk = self.spktag.spk
+            self.fet = self.spktag.fet
+            self.clu = self.spktag.clu
+            self.clu_manager = self.spktag.clu_manager
+            self.spk_time_dict = self.spktag.spk_time_dict
+            self.spk_time_array = self.spktag.spk_time_array
+            # info('load spktag file')
+            # self.spktag.fromfile(spktag_filename)
+            # self.gtimes = self.spktag.to_gtimes()
+            # self.spk = self.spktag.tospk()
+            # self.fet = self.spktag.tofet()
+            # self.clu = self.spktag.toclu()
+            # self.clu_manager = status_manager()
+            # for _clu in self.clu.values():
+            #     self.clu_manager.append(_clu)
+            # self.spktag.clu_manager = self.clu_manager
 
             info('load mua data for wave view')
             self.mua = MUA(probe        = self.probe,
@@ -286,3 +294,11 @@ class MainModel(object):
             self._nspk_per_clu.append(np.array(list(self.clu[grp_id].index_count.values())))    
         return self._nspk_per_clu    
     
+    @property
+    def nclus(self):
+        self._nclus = []
+        for i in range(self.ngrp):
+            n = self.clu[i].nclu
+            self._nclus.append(n)
+        self._nclus = np.array(self._nclus) - 1  # delete the noisy clu 0
+        return self._nclus
