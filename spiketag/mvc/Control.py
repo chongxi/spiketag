@@ -12,7 +12,7 @@ from ..fpga import xike_config
 from ..analysis.place_field import place_field
 from ..view import scatter_3d_view
 from ..utils.conf import info 
-from playground.view import maze_view
+
 
 
 class controller(object):
@@ -459,6 +459,7 @@ class controller(object):
 
 
     def replay(self, maze_folder, neuron_id, replay_speed=10, replay_start_time=0., mirror=True, spk_time=None):
+        from playground.view import maze_view
         self.nav_view = maze_view()
         self.nav_view.load_maze(maze_folder+'maze_2d.obj',
                                 maze_folder+'maze_2d.coords',
