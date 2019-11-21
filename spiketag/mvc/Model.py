@@ -117,6 +117,7 @@ class MainModel(object):
             self.clu_manager = self.spktag.clu_manager
             self.spk_time_dict = self.spktag.spk_time_dict
             self.spk_time_array = self.spktag.spk_time_array
+            self.spkid_matrix = self.spktag.spkid_matrix
             # info('load spktag file')
             # self.spktag.fromfile(spktag_filename)
             # self.gtimes = self.spktag.to_gtimes()

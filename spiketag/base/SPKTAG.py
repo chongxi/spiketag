@@ -6,6 +6,25 @@ from .CLU import status_manager
 import numpy as np
 import json
 import pickle
+import pandas as pd
+from numba import njit
+
+
+@njit(cache=True)
+def to_labels(grp_clu_matrix, cumsum_nclu):
+    '''
+    grp_clu_matrix: (N, 2) matrix, each row is a (grp_id, clu_id) pair
+    cumsum_nclu: (40,) vector, cumsum of model.nclus or spktag.nclus
+    '''
+    grp_clu_matrix = grp_clu_matrix.astype(np.int32)
+    N = grp_clu_matrix.shape[0]
+    labels = np.zeros((N,))
+    for i in range(N):
+        grp_id, clu_id = grp_clu_matrix[i]
+        if clu_id > 0:
+            labels[i] = cumsum_nclu[grp_id-1] + clu_id
+    return labels
+
 
 
 class SPKTAG(object):
@@ -45,6 +64,7 @@ class SPKTAG(object):
 
     def build_meta(self):
         meta = {}
+        meta["fs"] = self.probe.fs
         meta["ngrp"] = self.ngrp
         meta["grplen"] = self.probe.group_len
         meta["fetlen"] = self.fetlen
@@ -76,6 +96,21 @@ class SPKTAG(object):
         return spktag
 
 
+    def build_spkid_matrix(self):
+        spkid_matrix = np.hstack((self.spktag['t'].reshape(-1,1), 
+                                  self.spktag['group'].reshape(-1,1), 
+                                  self.spktag['fet'], 
+                                  self.spktag['clu'].reshape(-1,1)))
+        spkid_matrix = spkid_matrix[spkid_matrix[:,-1]!=0]
+        grp_clu_matrix = spkid_matrix[:, [1,-1]]
+        global_labels = to_labels(grp_clu_matrix, self.nclus.cumsum())
+        spkid_matrix[:, -1] = global_labels
+        spkid_matrix = pd.DataFrame(spkid_matrix).sort_values(0, ascending=True)
+        spkid_matrix.columns = ['frame_id','group_id','fet0','fet1','fet2','fet3','spike_id']
+        spkid_matrix.index = np.arange(global_labels.shape[0])
+        return spkid_matrix
+
+
     def update(self, spk, fet, clu, gtimes):
         self.spk = spk
         self.fet = fet
@@ -83,22 +118,26 @@ class SPKTAG(object):
         self.gtimes = gtimes
         self.build_meta()
         self.build_spktag()	
+        self.build_spkid_matrix()
 
 
     def tofile(self, filename):
         self.meta = self.build_meta()
         self.treeinfo = self.build_hdbscan_tree()
         self.spktag = self.build_spktag()
+        self.spkid_matrix = self.build_spkid_matrix()
         with open(filename+'.meta', 'w') as metafile:
                 json.dump(self.meta, metafile, indent=4)
         np.save(filename+'.npy', self.treeinfo)
-        self.spktag.tofile(filename)
+        self.spktag.tofile(filename)   # numpy to file
+        self.spkid_matrix.to_pickle(filename+'.pd')  # pandas data frame
 
 
     def fromfile(self, filename):
         # meta file
         with open(filename+'.meta', 'r') as metafile:
             self.meta = json.load(metafile)
+        self.fs     = self.meta['fs']
         self.ngrp   = self.meta['ngrp']
         self.grplen = self.meta['grplen']
         self.spklen = self.meta['spklen']
@@ -115,6 +154,10 @@ class SPKTAG(object):
                       ('fet', 'f4', (self.fetlen,)),
                       ('clu', 'int32')]
         self.spktag = np.fromfile(filename, dtype=self.dtype)
+        try:
+            self.spkid_matrix = pd.read_pickle(filename+'.pd')
+        except:
+            pass
 
 
     def tospk(self):
@@ -151,14 +194,35 @@ class SPKTAG(object):
             gtimes[g] = times[np.where(groups == g)[0]]
         self.gtimes = gtimes
         return self.gtimes
-        
+
+
+    @property
+    def done_groups(self):
+        return np.where(np.array(self.clu_manager.state_list) == 3)[0]
+
+    @property
+    def nclus(self):
+        self._nclus = []
+        for i in range(self.ngrp):
+            n = self.clu[i].nclu
+            self._nclus.append(n)
+        self._nclus = np.array(self._nclus) - 1
+        return self._nclus
+
+    def _get_label(self, grp_id, clu_id):
+        assert(clu_id<=self.nclus[grp_id]), "group {} contains only {} clusters".format(grp_id, self.nclus[grp_id])
+        if clu_id == 0:
+            return 0
+        else:
+            clu_offset = self.nclus.cumsum()[grp_id-1]
+            return clu_offset+clu_id
 
     def get_spk_times(self, group_id, cluster_id):
         '''
         get spike times from a specific group with a specific cluster number
         '''
         idx = self.clu[group_id][cluster_id]
-        spk_times = self.gtimes[group_id][idx]/25000.
+        spk_times = self.gtimes[group_id][idx]/self.fs
         return spk_times
 
     def get_spk_time_dict(self):
