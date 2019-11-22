@@ -17,6 +17,12 @@ class MainView(QMainWindow):
 
 
     def initUI(self):
+        
+        self.setAutoFillBackground(True)
+        p = self.palette()
+        p.setColor(self.backgroundRole(), Qt.darkGray)
+        p.setColor(self.foregroundRole(), Qt.white)
+        self.setPalette(p)
 
         self.setWindowTitle("Spiketag") 
 
