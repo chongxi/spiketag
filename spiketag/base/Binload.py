@@ -3,6 +3,7 @@ import mmap
 from numba import jit
 import numexpr as ne
 import numpy as np
+import matplotlib.pyplot as plt
 import torch
 from ..utils import Timer, interpNd
 from ..utils.conf import info
@@ -11,6 +12,7 @@ import torch
 from scipy import signal
 import os.path as op
 from tqdm import tqdm
+
 
 
 def fs2t(N, fs):
@@ -223,6 +225,26 @@ class bload(object):
         self.wview.show()
 
 
+    def plot(self, chs, time_range, fs=25000., gap=220):
+        fig, ax = plt.subplots(1,1,figsize=(8,15))
+        
+        t0, t1 = time_range
+        start, end = int(fs*t0), int(fs*t1)
+        [ax.plot(self.t[start:end], self.data[start:end, i]+i*gap) for i in chs];
+        _yticks = chs*gap
+        ax.set_yticks(_yticks)
+        ax.set_yticklabels(['channel {}'.format(ch) for ch in chs])
+
+        xpos, ypos = t1 + 10e-3, (_yticks[0]+_yticks[-1])/2
+        ax.vlines(xpos, ymin=ypos, ymax=ypos+100, colors='w')
+        ax.hlines(y=ypos, xmin=xpos, xmax=xpos+15e-3, colors='w')
+        ax.text(xpos, ypos+30, '100 $\mu m$')
+        ax.text(xpos, ypos-60, '15 $ms$')
+        adjust_spines(ax.spines, outward=2)
+        return fig
+
+
+
     def convolve(self, kernel, scale=1, device='gpu'):
         '''
         >>> from spiketag.base import mua_kernel
@@ -307,3 +329,11 @@ class bload(object):
             ch = np.hstack((ch, np.full(spks[:,0].shape, i, dtype=np.int64)))
 
         return np.array([t, ch])
+
+
+
+
+def adjust_spines(spines,smart_bounds=True, outward=8):
+    for spine in spines.values():
+        spine.set_position(('outward', outward))
+        spine.set_smart_bounds(smart_bounds)
