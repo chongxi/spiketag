@@ -10,11 +10,11 @@ warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
 
-def spk_time_to_scv(spk_time, ts, t_window=250e-3, sublist=None):
+def spk_time_to_scv(spk_time_dict, ts, t_window=250e-3, sublist=None):
     if sublist is None:
-        spk_time_list=list(spk_time.values())
+        spk_time_list=list(spk_time_dict.values())
     else:
-        spk_time_list = [spk_time.get(key) for key in sublist]
+        spk_time_list = [spk_time_dict.get(key) for key in sublist]
     suv = scv_from_spk_time_list(spk_time_list, ts, t_window)
     return suv
 
@@ -31,7 +31,7 @@ def scv_from_spk_time_list(spk_time_list, ts, t_window=250e-3):
         for j in prange(N):    
             suv[i, j] = np.sum(np.logical_and(spk_time_list[j] >= ts[i]-t_window, 
                                               spk_time_list[j] <  ts[i]))
-    return suv
+    return suv[1:]
 
 
 @njit(cache=True)
