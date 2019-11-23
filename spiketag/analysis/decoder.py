@@ -60,11 +60,11 @@ class Decoder(object):
                            self.pc.ts[self._percent_to_time(testing_range[1])]]
 
         self.train_idx = np.arange(self._percent_to_time(training_range[0]),
-                                   self._percent_to_time(training_range[1])+1)
+                                   self._percent_to_time(training_range[1]))
         self.valid_idx = np.arange(self._percent_to_time(valid_range[0]),
-                                   self._percent_to_time(valid_range[1])+1)
+                                   self._percent_to_time(valid_range[1]))
         self.test_idx  = np.arange(self._percent_to_time(testing_range[0]),
-                                   self._percent_to_time(testing_range[1])+1)
+                                   self._percent_to_time(testing_range[1]))
 
         if v_cutoff is None:
             v_cutoff = self.pc.v_cutoff
@@ -91,7 +91,8 @@ class Decoder(object):
         assert(self.pc.ts.shape[0] == self.pc.pos.shape[0])
 
         X = self.pc.get_scv(self.t_window) # t_step is None unless specified
-        y = self.pc.pos
+        y = self.pc.pos[1:] # the initial position is not predictable
+        assert(X.shape[0]==y.shape[0])
 
         train_X, train_y = X[self.train_idx], y[self.train_idx]
         valid_X, valid_y = X[self.valid_idx], y[self.valid_idx]
