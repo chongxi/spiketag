@@ -7,6 +7,7 @@ from matplotlib.pyplot import cm
 from scipy.interpolate import interp1d
 from .core import spk_time_to_scv, firing_pos_from_scv, smooth
 from ..base import SPKTAG
+from ..utils import colorbar
 
 
 
@@ -42,6 +43,7 @@ class place_field(object):
         self.ts, self.pos = ts, pos
         self._ts_restore, self._pos_restore = ts, pos
         self.spk_time_array, self.spk_time_dict = None, None
+        self.firing_ts, self.firing_pos = {}, {}
         self.df = {}
 
     def __call__(self, t_step):
@@ -252,13 +254,16 @@ class place_field(object):
         gkern2d /= gkern2d.sum()
         return gkern2d
 
-
-    def _get_field(self, spk_times):
+    def _get_firing_pos(self, neuron_id, spk_times):
         spk_ts = np.searchsorted(self.ts, spk_times) - 1
         idx = np.setdiff1d(spk_ts, self.low_speed_idx)
-        self.firing_ts  = self.ts[spk_ts] #[:,1]
-        self.firing_pos = self.pos[idx]        
-        self.firing_map, x_edges, y_edges = np.histogram2d(x=self.firing_pos[:,0], y=self.firing_pos[:,1], 
+        self.firing_ts[neuron_id]  = self.ts[spk_ts] #[:,1]
+        self.firing_pos[neuron_id] = self.pos[idx]
+
+
+    def _get_field(self, neuron_id, spk_times):
+        firing_pos = self._get_firing_pos(neuron_id, spk_times)
+        self.firing_map, x_edges, y_edges = np.histogram2d(x=self.firing_pos[neuron_id][:,0], y=self.firing_pos[neuron_id][:,1], 
                                                            bins=self.nbins, range=self.maze_range)
         self.firing_map = self.firing_map.T
         np.seterr(divide='ignore', invalid='ignore')
@@ -308,21 +313,23 @@ class place_field(object):
         ### calculate representation from `start` to `end`
         if start is not None and end is not None:
             spk_times = spk_times[np.logical_and(start<=spk_times, spk_times<end)]
-        self._get_field(spk_times)
+        self._get_field(neuron_id, spk_times)
 
 
-    def plot_field(self, trajectory=False, cmap='viridis', marker=True, alpha=0.5, markersize=5, markercolor='m'):
-        f, ax = plt.subplots(1,1,figsize=(13,10));
-        pcm = ax.pcolormesh(self.X, self.Y, self.FR_smoothed, cmap=cmap);
-        plt.colorbar(pcm, ax=ax, label='Hz');
+    def plot_field(self, neuron_id, trajectory=False, cmap='viridis', marker=True, alpha=0.5, markersize=5, markercolor='m', ax=None, cbar=True):
+        if ax is None:
+            f, ax = plt.subplots(1,1,figsize=(13,10));
+        pcm = ax.pcolormesh(self.X, self.Y, self.fields[neuron_id], cmap=cmap);
+        if cbar:
+            colorbar(pcm, label='Hz');
         if trajectory:
             ax.plot(self.pos[:,0], self.pos[:,1], alpha=0.8);
             ax.plot(self.pos[0,0], self.pos[0,1], 'ro');
             ax.plot(self.pos[-1,0],self.pos[-1,1], 'ko');
         if marker:
-            ax.plot(self.firing_pos[:,0], self.firing_pos[:,1], 'o', 
+            ax.plot(self.firing_pos[neuron_id][:,0], self.firing_pos[neuron_id][:,1], 'o', 
                     c=markercolor, alpha=alpha, markersize=markersize);
-        return f,ax
+        return ax
 
 
     def get_fields(self, spk_time_dict=None, start=None, end=None, v_cutoff=None, rank=True):
@@ -353,7 +360,7 @@ class place_field(object):
             ### get place fields from neuron i
             self.get_field(spk_time_dict, i, start, end)
             self.fields[i] = self.FR_smoothed
-            self.firing_poshd[i] = self.firing_pos
+            self.firing_poshd[i] = self.firing_pos[i]
             self.fields[i] = self.FR_smoothed
             ### metrics for place fields
 
@@ -502,7 +509,7 @@ class place_field(object):
 
         fig, ax = plt.subplots(1,1, figsize=figsize)
         ax.plot(self.pos[epoch, 0], self.pos[epoch, 1])
-        ax.scatter(self.pos[epoch, 0], self.pos[epoch, 1], c=self.v_smoothed[epoch], s=30, cmap='viridis')
+        ax.scatter(self.pos[epoch, 0], self.pos[epoch, 1], c=self.v_smoothed[epoch], s=20, cmap='viridis')
         ax.plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], 'ro', markersize=markersize, label='end')
         ax.plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], 'bo', markersize=markersize, label='start')
         ax.legend()
