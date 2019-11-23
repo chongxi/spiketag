@@ -42,7 +42,7 @@ class place_field(object):
         self.ts, self.pos = ts, pos
         self._ts_restore, self._pos_restore = ts, pos
         self.spk_time_array, self.spk_time_dict = None, None
-
+        self.df = {}
 
     def __call__(self, t_step):
         '''
@@ -175,6 +175,11 @@ class place_field(object):
         self.v = np.hstack((self.v[0], self.v))
         self.v_smoothed = smooth(self.v.reshape(-1,1), int(np.round(self.fs))).ravel()
         self.low_speed_idx = np.where(self.v_smoothed < self.v_cutoff)[0]
+
+        self.df['pos'] = pd.DataFrame(data=np.hstack((self.pos, self.v_smoothed.reshape(-1,1))), index=self.ts, 
+                                        columns=['x','y','v'])
+        self.df['pos'].index.name = 'ts'
+
         '''
         # check speed:
         f, ax = plt.subplots(1,1, figsize=(18,8))
@@ -444,6 +449,7 @@ class place_field(object):
         self.spike_df.set_index('spike_id', inplace=True)
         self.spike_df.index = self.spike_df.index.astype(int)
         self.spike_df.index -= self.spike_df.index.min()
+        self.df['spk'] = self.spike_df
         self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
                               for i in self.spike_df.index.unique().sort_values()}
         self.get_fields(self.spk_time_dict, rank=True)
