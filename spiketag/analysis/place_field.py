@@ -225,14 +225,13 @@ class place_field(object):
         self.kernstd = 2.5
 
 
-    def plot_occupation_map(self):
+    def plot_occupation_map(self, cmap=cm.viridis):
         f, ax = plt.subplots(1,2,figsize=(20,9))
         ax[0].plot(self.pos[:,0], self.pos[:,1])
         ax[0].plot(self.pos[0,0], self.pos[0,1], 'ro')
         ax[0].plot(self.pos[-1,0], self.pos[-1,1], 'go')
-        ax[0].pcolormesh(self.X, self.Y, self.O, cmap=cm.hot)
-        # sns.heatmap(self.O[::-1]*self.dt, annot=False, cbar=False, ax=ax[1])
-        ax[1].pcolormesh(self.X, self.Y, self.O, cmap=cm.hot)
+        ax[0].pcolormesh(self.X, self.Y, self.O, cmap=cmap)
+        ax[1].pcolormesh(self.X, self.Y, self.O, cmap=cmap)
         plt.show()
 
     @property
@@ -358,7 +357,7 @@ class place_field(object):
             self.rank_fields(metric_name='spatial_bit_smoothed_spike')
 
 
-    def plot_fields(self, idx=None, N=12, size=3, cmap='viridis', marker=False, markersize=1, alpha=0.8, order=False):
+    def plot_fields(self, idx=None, N=10, size=3, cmap='hot', marker=False, markersize=1, alpha=0.8, order=False):
         '''
         order: if True will plot with ranked fields according to the metric 
         '''
