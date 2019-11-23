@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy import signal
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -432,6 +433,23 @@ class place_field(object):
         ax.set_xlabel('time (secs)')
         sns.despine()
         return fig
+
+
+    def load_spkdf(self, df_file, fs=25000., show=False):
+        '''
+        load spike dataframe
+        '''
+        self.spike_df = pd.read_pickle(df_file)
+        self.spike_df['frame_id'] /= fs
+        self.spike_df.set_index('spike_id', inplace=True)
+        self.spike_df.index = self.spike_df.index.astype(int)
+        self.spike_df.index -= self.spike_df.index.min()
+        self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
+                              for i in self.spike_df.index.unique().sort_values()}
+        self.get_fields(self.spk_time_dict, rank=True)
+        if show is True:
+            self.field_fig = self.plot_fields();        
+
 
 
     def load_spktag(self, spktag_file, show=False):
