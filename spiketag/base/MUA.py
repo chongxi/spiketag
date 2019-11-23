@@ -1,7 +1,8 @@
 import os
 import numpy as np
-from numba import njit
+from numba import njit, prange
 from multiprocessing import Pool
+from tqdm import tqdm
 from ..view import wave_view 
 from .SPK import SPK
 from .Binload import bload
@@ -21,20 +22,18 @@ def find_spk_in_time_seg(spk_times, time_segs):
     return np.hstack(np.array(spk_times_in_range))
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _to_spk(data, pos, chlist, spklen=19, prelen=7, cutoff_neg=-5000, cutoff_pos=1000):
     nspks = len(pos)
-    spk = np.empty((nspks, spklen, len(chlist)), dtype=np.float32)
-    noise_idx = []
-    for i in range(nspks):
+    spk = np.zeros((nspks, spklen, len(chlist)), dtype=np.float32)
+    for i in prange(nspks):
         spike_wav = data[pos[i]-prelen:pos[i]-prelen+spklen, chlist]
-        spk[i, ...] = spike_wav
-        peaks  = spike_wav.reshape(1,-1)
-        if peaks.min()<cutoff_neg or peaks.max()>cutoff_pos: 
-            noise_idx.append(i)
+        peaks = spike_wav.reshape(1,-1)
+        if peaks.min()>cutoff_neg and peaks.max()<cutoff_pos: 
+            spk[i, ...] = spike_wav
     _nan = np.where(chlist==-1)[0]
     spk[..., _nan] = 0
-    return spk, np.array(noise_idx)
+    return spk 
 
 
 def idx_still_spike(time_spike, time_still, dt):
@@ -137,24 +136,29 @@ class MUA(object):
         pivotal_chs = self.probe[group_id]
         spk_times   = self._get_spk_times(group_id, time_segs, method)
         if spk_times.shape[0] > 0:
-            spks, noise_idx = _to_spk(data   = self.data, 
-                                      pos    = spk_times, 
-                                      chlist = pivotal_chs, 
-                                      spklen = self.spklen,
-                                      prelen = self.prelen,
-                                      cutoff_neg = self.cutoff_neg * self._scale_factor,
-                                      cutoff_pos = self.cutoff_pos * self._scale_factor)
+            spks    = _to_spk(data   = self.data, 
+                              pos    = spk_times, 
+                              chlist = pivotal_chs, 
+                              spklen = self.spklen,
+                              prelen = self.prelen,
+                              cutoff_neg = self.cutoff_neg * self._scale_factor,
+                              cutoff_pos = self.cutoff_pos * self._scale_factor)
             if self.scale is True: # already scaled
-                return spks, spk_times, noise_idx
+                return spks, spk_times
             else:                  # haven't scaled so need to be scaled here
-                return spks/self._scale_factor, spk_times, noise_idx
+                return spks/self._scale_factor, spk_times
         else:
             return None, None, None
 
-    def _delete_spks(self, spks, spk_times, noise_idx):
+    def _delete_spks(self, spks, spk_times):
+        '''
+        spk shape: (N, 19, 4): N is #spks, 19 is the spk_len, 4 is the ch_len
+        need to find the noisy spikes (they are already put to all 0)
+        '''
+        noise_idx = np.where(spks.sum(axis=1).sum(axis=1)==0)[0]
         spks = np.delete(spks, noise_idx, axis=0)
         spk_times = np.delete(spk_times, noise_idx, axis=0)
-        return spks, spk_times
+        return spks, spk_times, len(noise_idx)
 
     def tospk(self, amp_cutoff=True, speed_cutoff=False, time_cutoff=True):
         info('mua.tospk() with time_cutoff={}, amp_cutoff={}, speed_cutoff={}'.format(
@@ -162,13 +166,12 @@ class MUA(object):
         self.spkdict = {}
         self.spk_times = {}
         for g in self.probe.grp_dict.keys():
-            spks, spk_times, noise_idx = self._tospk(group_id=g,  time_segs=self.time_segs, method='spk_info')
+            spks, spk_times = self._tospk(group_id=g,  time_segs=self.time_segs, method='spk_info')
             ### remove noise from spike
             if amp_cutoff is True and spks is not None:
-                n_noise = float(noise_idx.shape[0])
                 n_spk   = float(spks.shape[0])
-                info('group {} delete {}%({}/{}) spks via cutoff'.format(g, n_noise/n_spk*100, n_noise, n_spk))
-                self.spkdict[g], self.spk_times[g] = self._delete_spks(spks, spk_times, noise_idx)
+                self.spkdict[g], self.spk_times[g], n_noise = self._delete_spks(spks, spk_times)
+                info('group {} delete {}%({}/{}) spks via amp_cutoff'.format(g, n_noise/n_spk*100, n_noise, n_spk))
             else:
                 self.spkdict[g], self.spk_times[g] = spks, spk_times
 
@@ -184,7 +187,7 @@ class MUA(object):
 
         # check 0 spks case, fill in some random noise
         for g in self.probe.grp_dict.keys():
-            if self.spkdict[g] is None:
+            if self.spkdict[g] is None or len(self.spk_times[g])==0:
                 self.spkdict[g] = np.random.randn(1, self.spklen, len(self.probe[g]))
                 self.spk_times[g] = np.array([0]) 
         info('----------------success------------------')     
