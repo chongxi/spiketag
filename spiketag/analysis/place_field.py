@@ -504,15 +504,16 @@ class place_field(object):
         #     return scv, new_ts, new_pos
 
 
-    def plot_epoch(self, time_range, figsize=(5,5), markersize=15):
+    def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'bo'], markersize=15, ax=None):
         epoch = np.where((self.ts<time_range[1]) & (self.ts>=time_range[0]))[0]
 
-        fig, ax = plt.subplots(1,1, figsize=figsize)
+        if ax is None:
+            fig, ax = plt.subplots(1,1, figsize=figsize)
         ax.plot(self.pos[epoch, 0], self.pos[epoch, 1])
         ax.scatter(self.pos[epoch, 0], self.pos[epoch, 1], c=self.v_smoothed[epoch], s=20, cmap='viridis')
-        ax.plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], 'ro', markersize=markersize, label='end')
-        ax.plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], 'bo', markersize=markersize, label='start')
+        ax.plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, label='end')
+        ax.plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], marker[1], markersize=markersize, label='start')
         ax.legend()
         ax.set_xlim(self.maze_range[0])
         ax.set_ylim(self.maze_range[1])
-        return fig, ax
+        return ax
