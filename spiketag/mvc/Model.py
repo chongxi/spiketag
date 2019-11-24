@@ -62,17 +62,18 @@ class MainModel(object):
             self.pc = place_field(logfile=playground_log, session_id=session_id, v_cutoff=v_cutoff)
             start, end = self._time_segs[0]
             self.pc.align_with_recording(start, end, replay_offset)
+            self.pc.initialize(bin_size=bin_size, v_cutoff=v_cutoff)
             if sort_movment_only:
-                self.time_still = self.ts[self.v_still_idx] 
+                self.time_still = self.ts[self.low_speed_idx] 
 
-        # TODO2: test this
+        # Load pc 
         elif pc is not None:
             self.pc = pc
             start, end = self._time_segs[0]
             self.pc.align_with_recording(start, end, replay_offset)
             self.pc.initialize(bin_size=bin_size, v_cutoff=v_cutoff)
             if sort_movment_only:
-                self.time_still = self.pc.ts[self.pc.v_still_idx]
+                self.time_still = self.pc.ts[self.pc.low_speed_idx]
 
         else:
             self.pc = None
