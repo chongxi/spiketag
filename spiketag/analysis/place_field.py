@@ -43,7 +43,6 @@ class place_field(object):
         self.ts, self.pos = ts, pos
         self._ts_restore, self._pos_restore = ts, pos
         self.spk_time_array, self.spk_time_dict = None, None
-        self.firing_ts, self.firing_pos = {}, {}
         self.df = {}
 
     def __call__(self, t_step):
@@ -254,16 +253,13 @@ class place_field(object):
         gkern2d /= gkern2d.sum()
         return gkern2d
 
-    def _get_firing_pos(self, neuron_id, spk_times):
+
+    def _get_field(self, spk_times):
         spk_ts = np.searchsorted(self.ts, spk_times) - 1
         idx = np.setdiff1d(spk_ts, self.low_speed_idx)
-        self.firing_ts[neuron_id]  = self.ts[spk_ts] #[:,1]
-        self.firing_pos[neuron_id] = self.pos[idx]
-
-
-    def _get_field(self, neuron_id, spk_times):
-        firing_pos = self._get_firing_pos(neuron_id, spk_times)
-        self.firing_map, x_edges, y_edges = np.histogram2d(x=self.firing_pos[neuron_id][:,0], y=self.firing_pos[neuron_id][:,1], 
+        self.firing_ts  = self.ts[spk_ts] #[:,1]
+        self.firing_pos = self.pos[idx]        
+        self.firing_map, x_edges, y_edges = np.histogram2d(x=self.firing_pos[:,0], y=self.firing_pos[:,1], 
                                                            bins=self.nbins, range=self.maze_range)
         self.firing_map = self.firing_map.T
         np.seterr(divide='ignore', invalid='ignore')
@@ -313,23 +309,21 @@ class place_field(object):
         ### calculate representation from `start` to `end`
         if start is not None and end is not None:
             spk_times = spk_times[np.logical_and(start<=spk_times, spk_times<end)]
-        self._get_field(neuron_id, spk_times)
+        self._get_field(spk_times)
 
 
-    def plot_field(self, neuron_id, trajectory=False, cmap='viridis', marker=True, alpha=0.5, markersize=5, markercolor='m', ax=None, cbar=True):
-        if ax is None:
-            f, ax = plt.subplots(1,1,figsize=(13,10));
-        pcm = ax.pcolormesh(self.X, self.Y, self.fields[neuron_id], cmap=cmap);
-        if cbar:
-            colorbar(pcm, label='Hz');
+    def plot_field(self, trajectory=False, cmap='viridis', marker=True, alpha=0.5, markersize=5, markercolor='m'):
+        f, ax = plt.subplots(1,1,figsize=(13,10));
+        pcm = ax.pcolormesh(self.X, self.Y, self.FR_smoothed, cmap=cmap);
+        plt.colorbar(pcm, ax=ax, label='Hz');
         if trajectory:
             ax.plot(self.pos[:,0], self.pos[:,1], alpha=0.8);
             ax.plot(self.pos[0,0], self.pos[0,1], 'ro');
             ax.plot(self.pos[-1,0],self.pos[-1,1], 'ko');
         if marker:
-            ax.plot(self.firing_pos[neuron_id][:,0], self.firing_pos[neuron_id][:,1], 'o', 
+            ax.plot(self.firing_pos[:,0], self.firing_pos[:,1], 'o', 
                     c=markercolor, alpha=alpha, markersize=markersize);
-        return ax
+        return f,ax
 
 
     def get_fields(self, spk_time_dict=None, start=None, end=None, v_cutoff=None, rank=True):
@@ -348,7 +342,7 @@ class place_field(object):
         self.n_fields = len(spk_time_dict.keys())
         self.n_units  = self.n_fields
         self.fields = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
-        self.firing_poshd = {}
+        self.firing_pos_dict = {}
 
         if v_cutoff is None:
             self.get_speed()
@@ -360,7 +354,7 @@ class place_field(object):
             ### get place fields from neuron i
             self.get_field(spk_time_dict, i, start, end)
             self.fields[i] = self.FR_smoothed
-            self.firing_poshd[i] = self.firing_pos[i]
+            self.firing_pos_dict[i] = self.firing_pos
             self.fields[i] = self.FR_smoothed
             ### metrics for place fields
 
@@ -391,9 +385,9 @@ class place_field(object):
                 ax.set_yticks([])
                 ax.set_aspect(self.maze_ratio)
                 if marker:
-                    ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 
+                    ax.plot(self.firing_pos_dict[field_id][:,0], self.firing_pos_dict[field_id][:,1], 
                                                               'mo', markersize=markersize, alpha=alpha)
-            plt.grid('off')
+            plt.grid(False)
             plt.show();
 
         else:
@@ -405,10 +399,10 @@ class place_field(object):
                 ax = fig.add_subplot(nrow, ncol, i+1);
                 pcm = ax.pcolormesh(self.X, self.Y, self.fields[field_id], cmap=cmap);
                 if marker:
-                    ax.plot(self.firing_poshd[field_id][:,0], self.firing_poshd[field_id][:,1], 
+                    ax.plot(self.firing_pos_dict[field_id][:,0], self.firing_pos_dict[field_id][:,1], 
                                                               'mo', markersize=markersize, alpha=alpha)
                 ax.set_aspect(self.maze_ratio)
-            plt.grid('off')
+            plt.grid(False)
             plt.show();
 
         return fig
