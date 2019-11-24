@@ -148,7 +148,7 @@ class MUA(object):
             else:                  # haven't scaled so need to be scaled here
                 return spks/self._scale_factor, spk_times
         else:
-            return None, None, None
+            return None, None
 
     def _delete_spks(self, spks, spk_times):
         '''
