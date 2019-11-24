@@ -445,15 +445,28 @@ class place_field(object):
         '''
         load spike dataframe
         '''
-        self.spike_df = pd.read_pickle(df_file)
-        self.spike_df['frame_id'] /= fs
-        self.spike_df.set_index('spike_id', inplace=True)
-        self.spike_df.index = self.spike_df.index.astype(int)
-        self.spike_df.index -= self.spike_df.index.min()
-        self.df['spk'] = self.spike_df
-        self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
-                              for i in self.spike_df.index.unique().sort_values()}
-        self.get_fields(self.spk_time_dict, rank=True)
+        try:
+            self.spike_df = pd.read_pickle(df_file)
+            self.spike_df['frame_id'] /= fs
+            self.spike_df.set_index('spike_id', inplace=True)
+            self.spike_df.index = self.spike_df.index.astype(int)
+            self.spike_df.index -= self.spike_df.index.min()
+            self.df['spk'] = self.spike_df
+            print('Load the spike dataframe')
+            self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
+                                  for i in self.spike_df.index.unique().sort_values()}
+            print('Calculate the place field')                      
+            self.get_fields(self.spk_time_dict, rank=True)
+        except:
+            print('Fail to load spike dataframe')
+
+        try:
+            self.df['spk']['x'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,0])
+            self.df['spk']['y'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,1])
+            self.df['spk']['v'] = np.interp(self.df['spk']['frame_id'], self.ts, self.v_smoothed)
+            print('Fill the position and speed to the spike dataframe')
+        except:
+            print('Fail to fill the position and speed to the spike dataframe')
         if show is True:
             self.field_fig = self.plot_fields();        
 
