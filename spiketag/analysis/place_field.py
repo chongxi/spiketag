@@ -455,6 +455,7 @@ class place_field(object):
             print('Load the spike dataframe')
             self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
                                   for i in self.spike_df.index.unique().sort_values()}
+            self.df['spk'].reset_index(inplace=True)
             print('Calculate the place field')                      
             self.get_fields(self.spk_time_dict, rank=True)
         except:
