@@ -161,8 +161,8 @@ class NaiveBayes(Decoder):
     def predict(self, X):
         if len(X.shape) == 1:
             X = X.reshape(1,-1)
-        post_2d = bayesian_decoding(self.fields, X, t_window=self.t_window)
-        binned_pos = argmax_2d_tensor(post_2d)
+        self.post_2d = bayesian_decoding(self.fields, X, t_window=self.t_window)
+        binned_pos = argmax_2d_tensor(self.post_2d)
         y = binned_pos*self.spatial_bin_size + self.spatial_origin
         return y
 
