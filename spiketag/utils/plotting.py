@@ -1,4 +1,16 @@
+import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
 
+
+
+def cubehelix_cmap(scheme='dark'):
+    if scheme == 'dark':
+        cmap = sns.cubehelix_palette(as_cmap=True, dark=0.05, light=1.2, reverse=True);
+    else:
+        cmap = sns.cubehelix_palette(as_cmap=True, dark=0.05, light=1.2, reverse=False); 
+    # sns.palplot(cmap.colors)
+    return cmap
 
 
 def colorline(
