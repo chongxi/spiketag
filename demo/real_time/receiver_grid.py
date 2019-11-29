@@ -97,7 +97,7 @@ class BMI_GUI(QWidget):
             with Timer('receive', verbose=False):
                 _timestamp, _grp_id, _fet0, _fet1, _fet2, _fet3, _spk_id = self.bmi.gui_queue.get()
                 # print(_grp_id, _spk_id)
-                if _grp_id in self.bmi.fpga.configured_groups:
+                if _grp_id in self.bmi.fpga.configured_groups and _spk_id>0:
                     group_need_update.append(_grp_id)
                     incoming_fet = np.array([_fet0, _fet1, _fet2, _fet3])/float(2**16)
                     incoming_clu = int(_spk_id)
@@ -126,21 +126,24 @@ if __name__ == '__main__':
     app = QApplication(sys.argv) 
     prb = probe(prbfile='./dusty.json')
     gui = BMI_GUI(prb=prb, fet_file='./fet.bin')
-    bin_size, B_bins = 25e-3, 10
-    gui.bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
 
-    # 2. decoder
-    pos = np.fromfile('./sorting/dusty_pos.bin').reshape(-1,2)
-    pc = place_field(pos=pos, t_step=33.333e-3)
-    replay_offset = 2.004
-    start = 320
-    end   = 2500
-    pc.align_with_recording(start, end, replay_offset)
-    pc.initialize(bin_size=4, v_cutoff=25)
-    pc.load_spktag('./sorting/spktag/test_allspikes', show=True)
-    dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
-    dec.connect_to(pc)
-    gui.bmi.set_decoder(dec, dec_result_file='./decoded_pos.bin')
+
+    # 2. binner
+    # bin_size, B_bins = 25e-3, 10
+    # gui.bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
+
+    # 3. decoder
+    # pos = np.fromfile('../sorting/dusty_pos.bin').reshape(-1,2)
+    # pc = place_field(pos=pos, t_step=33.333e-3)
+    # replay_offset = 2.004
+    # start = 320
+    # end   = 2500
+    # pc.align_with_recording(start, end, replay_offset)
+    # pc.initialize(bin_size=4, v_cutoff=25)
+    # pc.load_spktag('../sorting/spktag/test_allspikes', show=True)
+    # dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
+    # dec.connect_to(pc)
+    # gui.bmi.set_decoder(dec, dec_result_file='./decoded_pos.bin')
 
     gui.show()
     sys.exit(app.exec_())
