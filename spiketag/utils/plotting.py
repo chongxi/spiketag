@@ -63,3 +63,19 @@ def colorbar(mappable, label):
 
 
 
+
+def plot_epoches(time_list, time_span, ax, color=['g', 'r']):
+    '''
+    plot all trajectories within time_span seconds, starting from the time points in the time_list
+    initial at `g` color and end at `r` color
+    '''
+    for _time in time_list:
+        current_pos = pc.binned_pos[np.searchsorted(pc.ts, _time)]
+        epoch = np.where((pc.ts<_time+time_span) & (pc.ts>=_time))[0]
+        # trajectory
+        ax.plot(pc.binned_pos[epoch, 0], pc.binned_pos[epoch, 1])
+        # initial
+        ax.plot(pc.binned_pos[epoch[0], 0], pc.binned_pos[epoch[0], 1],  color=color[0], marker='o', markersize=15)
+        # end
+        ax.plot(pc.binned_pos[epoch[-1], 0], pc.binned_pos[epoch[-1], 1], color=color[1], marker='o', markersize=15)
+
