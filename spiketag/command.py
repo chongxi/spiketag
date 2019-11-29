@@ -316,3 +316,13 @@ def bmi(gui):
         gui = BMI_RASTER_GUI(fet_file='./fet.bin', t_window=10e-3, view_window=10)
         gui.show()
         sys.exit(app.exec_())
+
+    if gui == 'fet':
+        '''
+        >>> spiketag bmi fet
+        '''
+        from spiketag.res.GUI.BMI_FET_GUI import BMI_GUI as BMI_FET_GUI
+        app = QApplication(sys.argv) 
+        gui = BMI_FET_GUI(fet_file='./fet.bin')
+        gui.show()
+        sys.exit(app.exec_())
