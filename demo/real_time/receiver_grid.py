@@ -16,12 +16,12 @@ from spiketag.analysis.decoder import NaiveBayes
 
 
 class BMI_GUI(QWidget):
-    def __init__(self, prb, fet_file, show=True):
+    def __init__(self, fet_file, prb=None, show=True):
         QWidget.__init__(self)
         self.fet_view_timer = QtCore.QTimer(self)
         self.fet_view_timer.timeout.connect(self.update_fet_views)   # fet_view_update
         self.current_group = 0
-        self.init_BMI(prb, fet_file)
+        self.init_BMI(fet_file, prb)
         self.fresh_interval = 30
         self._fet = {}
         self._clu = {}
@@ -32,11 +32,11 @@ class BMI_GUI(QWidget):
             self.init_UI()
 
 
-    def init_BMI(self, prb, fet_file):
+    def init_BMI(self, fet_file, prb=None):
         print('---init FPGA BMI---')
         print('---download probe file into FPGA---')
         try:
-            self.bmi = BMI(prb, fet_file)
+            self.bmi = BMI(fetfile=fet_file, prb=prb)
         except Exception as e:
             raise
         
