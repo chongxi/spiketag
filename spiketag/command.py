@@ -305,8 +305,11 @@ def raster():
 
 
 @main.command()
-@click.argument('gui')
+@click.option('--gui', prompt='raster/fet', default='raster')
 def bmi(gui):
+    import os
+    os.remove("./fet.bin")
+
     if gui == 'raster':
         '''
         >>> spiketag bmi raster
