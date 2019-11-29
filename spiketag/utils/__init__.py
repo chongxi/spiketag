@@ -1,6 +1,7 @@
 from .utils import Timer, EventEmitter, Picker, key_buffer
-from .tool import colorbar, comet, Player, decoder_viewer
-from .cameras import YSyncCamera
+from .tool import comet, Player, decoder_viewer
+from .plotting import colorbar, colorline
+from .cameras import XSyncCamera, YSyncCamera
 from .conf import logger, debug, info, warning, error, critical
 from . import conf
 import numpy as np
