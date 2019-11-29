@@ -33,8 +33,8 @@ class controller(object):
     Third stage:  (sorting for spike model including transformer, vq and labels):
     >> ctrl = controller(fpga=True, **kwargs)     #1. load pre-recorded files
     >> ctrl.show()                                #2. sorting (label the `done` state)
-    >> ctrl.save('./spktag/vq')                   #2. save the model as spktag file to the hard drive
-    >> ctrl.compile()                             #3. Set FPGA transformer (y=a(Px+b)) and vq parameters (vqs and labels) and download to the FPGA
+    >> ctrl.save('./spktag/vq')                   #3. save the model as spktag file to the hard drive
+    >> ctrl.compile()                             #4. Set FPGA transformer (y=a(Px+b)) and vq parameters (vqs and labels) and download to the FPGA
 
     To rebuild a single group (maybe during experiment):
     >> ctrl.build_vq(grp_id, fpga=True)
