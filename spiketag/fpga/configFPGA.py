@@ -82,8 +82,11 @@ class xike_config(object):
     '''
     @property
     def mem_16(self):
-        self._mem_16 = np.zeros((16,))
-        for i in range(16):
+        '''
+        [4:0] 5-bits address
+        '''
+        self._mem_16 = np.zeros((2**5,))
+        for i in range(2**5):
             self._mem_16[i] = read_mem_16(i)
         return self._mem_16
 
