@@ -10,3 +10,4 @@ phy == 1.09
 seaborn >= 0.7.0
 hdbscan == 0.8.12
 ipyparallel == 6.2.4
+mplcursors == 0.3

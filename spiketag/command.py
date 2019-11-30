@@ -147,6 +147,7 @@ def report(binaryfile, probefile, nbits=32):
     from spiketag.base import MUA 
     from collections import Counter
     import seaborn as sns
+    import mplcursors
     nbits = int(nbits)
     prb = probe()
     prb.load(probefile)
@@ -179,8 +180,8 @@ def report(binaryfile, probefile, nbits=32):
         ax[0].set_yticks(np.arange(0,160,8))
         ax[0].invert_yaxis()
         ax[0].set_title('#spikes found on (channels) vs (time)')
-        nspks_img = ax[1].imshow(nspks.reshape(-1, prb.group_len), cmap='hot') #ocean_r
-        ax[1].grid(which='minor', color='k', linestyle='-', linewidth=2)
+        nspks_img = ax[1].imshow(nspks.reshape(-1, prb.group_len), cmap=plt.cm.magma) #ocean_r
+        ax[1].grid(which='minor', color='w', linestyle='-', linewidth=2)
         ax[1].set_ylabel('Group Number')
         ax[1].set_xticks(range(prb.group_len))
         ax[1].set_yticks(range(prb.n_group))
@@ -198,6 +199,7 @@ def report(binaryfile, probefile, nbits=32):
 
         fig.colorbar(nspks_img)
         plt.tight_layout()
+        mplcursors.cursor()
         plt.show()
 
     elif len(binaryfile) == 1:
