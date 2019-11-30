@@ -163,32 +163,41 @@ def report(binaryfile, probefile, nbits=32):
         t =   t[t>0.004]
         c = Counter(ch)
         nspks = np.array([c[ch] for ch in prb.chs]) 
+        nspks_max = nspks.max()
         sns.set_context('paper')
+        sns.set(font_scale=1.5)
         sns.set_style('white')
-        fig, ax = plt.subplots(1,2, figsize=(25,15), gridspec_kw = {'width_ratios':[3, 1]})
-        ax[0].plot(t, prb.ch_idx[ch], '.', color='k', markersize=3, alpha=0.5)
+        plt.style.use('dark_background')
+
+        fig, ax = plt.subplots(1,2, figsize=(25,15), gridspec_kw = {'width_ratios':[4, 1]})
+        sns.scatterplot(t, prb.ch_idx[ch], hue=prb.ch_idx[ch], palette=plt.cm.hsv, s=18, marker='|',
+                        legend=False, ax=ax[0])
+        # ax[0].set_facecolor((.1, .1, .1))
         ax[0].set_ylim(ax[0].get_ylim()[::-1])
         ax[0].set_xlabel('Time(secs)')
         ax[0].set_ylabel('Virtual Channel Number')
-        ax[0].set_yticks(np.arange(0,160,4))
+        ax[0].set_yticks(np.arange(0,160,8))
+        ax[0].invert_yaxis()
         ax[0].set_title('#spikes found on (channels) vs (time)')
-        nspks_img = ax[1].imshow(nspks.reshape(-1, prb.group_len), cmap='Blues') #ocean_r
+        nspks_img = ax[1].imshow(nspks.reshape(-1, prb.group_len), cmap='hot') #ocean_r
         ax[1].grid(which='minor', color='k', linestyle='-', linewidth=2)
         ax[1].set_ylabel('Group Number')
         ax[1].set_xticks(range(prb.group_len))
         ax[1].set_yticks(range(prb.n_group))
         ax[1].set_xlabel('Channels in the Group')
         ax[1].set_title('#spikes found on (channels) in (group)')
+        ax[1].invert_yaxis()
         sns.despine()
 
         for i in range(prb.grp_matrix.shape[0]):
             for j in range(prb.grp_matrix.shape[1]):
-                if nspks[prb.grp_matrix[i,j]] < 20:
-                    ax[1].text(j, i, str(prb.grp_matrix[i,j]), color='black', ha='center', va='center', fontsize=8)
+                if nspks[prb.grp_matrix[i,j]] < nspks_max*0.7:
+                    ax[1].text(j, i, str(prb.grp_matrix[i,j]), color='white', ha='center', va='center', fontsize=10)
                 else:
-                    ax[1].text(j, i, str(prb.grp_matrix[i,j]), color='white', ha='center', va='center', fontsize=8)
+                    ax[1].text(j, i, str(prb.grp_matrix[i,j]), color='black', ha='center', va='center', fontsize=10)
 
         fig.colorbar(nspks_img)
+        plt.tight_layout()
         plt.show()
 
     elif len(binaryfile) == 1:
