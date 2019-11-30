@@ -137,7 +137,7 @@ class MainModel(object):
                            numbytes     = self.numbytes, 
                            binary_radix = self.binpoint,
                            scale        = self.scale,
-                           cutoff       = self._cutoff, 
+                           cutoff       = self._amp_cutoff, 
                            time_segs    = self._time_segs, 
                            time_still   = self.time_still,
                            lfp          = False)

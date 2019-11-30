@@ -307,8 +307,8 @@ def raster():
 @main.command()
 @click.option('--gui', prompt='raster/fet', default='raster')
 def bmi(gui):
-    import os
-    os.remove("./fet.bin")
+    # import os
+    # os.remove("./fet.bin")
 
     if gui == 'raster':
         '''
