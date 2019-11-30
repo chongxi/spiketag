@@ -97,7 +97,7 @@ class BMI_GUI(QWidget):
             with Timer('receive', verbose=False):
                 _timestamp, _grp_id, _fet0, _fet1, _fet2, _fet3, _spk_id = self.bmi.gui_queue.get()
                 # print(_grp_id, _spk_id)
-                if _grp_id in self.bmi.fpga.configured_groups and _spk_id>0:
+                if _grp_id in self.bmi.fpga.configured_groups and _spk_id>0 and _spk_id!=101: ## 101 is for target TTL neuron
                     group_need_update.append(_grp_id)
                     incoming_fet = np.array([_fet0, _fet1, _fet2, _fet3])/float(2**16)
                     incoming_clu = int(_spk_id)
