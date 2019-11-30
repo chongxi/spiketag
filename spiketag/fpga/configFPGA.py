@@ -80,6 +80,12 @@ class xike_config(object):
     property interface with mem_reg_16 in the FPGA ([4:0] address for 32 slots)
     ------------------------------------------------------------------------------------
     '''
+    @property
+    def mem_16(self):
+        self._mem_16 = np.zeros((16,))
+        for i in range(16):
+            self._mem_16[i] = read_mem_16(i)
+        return self._mem_16
 
     @property
     def n_units(self):
@@ -96,7 +102,7 @@ class xike_config(object):
     
     @target_unit.setter
     def target_unit(self, target_unit_id):
-        if target_unit_id > self._n_units:
+        if target_unit_id > self.n_units:
             print('cannot be bigger than {} configured units'.format(self.n_units))
         else:
             write_mem_16(8, target_unit_id)
