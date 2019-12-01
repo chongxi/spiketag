@@ -16,13 +16,14 @@ from spiketag.analysis.decoder import NaiveBayes
 
 
 class BMI_GUI(QWidget):
-    def __init__(self, fet_file, prb=None, show=True):
+    def __init__(self, prb, fet_file, show=True):
         QWidget.__init__(self)
         self.fet_view_timer = QtCore.QTimer(self)
         self.fet_view_timer.timeout.connect(self.update_fet_views)   # fet_view_update
         self.current_group = 0
-        self.init_BMI(fet_file, prb)
+        self.init_BMI(prb, fet_file)
         self.fresh_interval = 30
+        self._frame = 0
         self._fet = {}
         self._clu = {}
         for i in range(40):
@@ -32,11 +33,11 @@ class BMI_GUI(QWidget):
             self.init_UI()
 
 
-    def init_BMI(self, fet_file, prb=None):
+    def init_BMI(self, prb, fet_file):
         print('---init FPGA BMI---')
         print('---download probe file into FPGA---')
         try:
-            self.bmi = BMI(fetfile=fet_file, prb=prb)
+            self.bmi = BMI(prb, fet_file)
         except Exception as e:
             raise
         
@@ -55,7 +56,7 @@ class BMI_GUI(QWidget):
 
         rows,cols=6,7
         self.fet_grid = grid_scatter3d(rows, cols) 
-        self.N = 2000
+        self.N = 5000
         for i in range(rows*cols):
             if i in self.bmi.fpga.configured_groups:
                 self.fet_grid.fet_view[i].info = i
@@ -75,12 +76,11 @@ class BMI_GUI(QWidget):
             self.bmi_process_stop()
 
 
-    def bmi_process_start(self, gui_queue=True):
+    def bmi_process_start(self, gui_queue=False):
         self.bmiBtn.setText('BMI Stream ON')
         self.bmiBtn.setStyleSheet("background-color: green")
-        self.bmi.start(gui_queue)
-        if gui_queue:
-            self.fet_view_timer.start(self.fresh_interval)
+        self.bmi.start(gui_queue=False)
+        self.fet_view_timer.start(self.fresh_interval)
 
 
     def bmi_process_stop(self):
@@ -91,40 +91,76 @@ class BMI_GUI(QWidget):
 
 
     def update_fet_views(self):
-        group_need_update = []
-        _nspk, limit = 0, 40
-        while not self.bmi.gui_queue.empty():
-            with Timer('receive', verbose=False):
-                _timestamp, _grp_id, _fet0, _fet1, _fet2, _fet3, _spk_id = self.bmi.gui_queue.get()
-                # print(_grp_id, _spk_id)
-                if _grp_id in self.bmi.fpga.configured_groups and _spk_id>0:
-                    group_need_update.append(_grp_id)
-                    incoming_fet = np.array([_fet0, _fet1, _fet2, _fet3])/float(2**16)
-                    incoming_clu = int(_spk_id)
-                    self._fet[_grp_id] = np.roll(self._fet[_grp_id], 1, axis=0)
-                    self._fet[_grp_id][0] = incoming_fet
-                    self._clu[_grp_id] = np.roll(self._clu[_grp_id], 1)
-                    self._clu[_grp_id][0] = incoming_clu
+        self._frame += 1
+        # print('frame',self._frame%2)
+        N = 5000
+        try:
+            # fet = np.fromfile('./fet.bin', dtype=np.int32).reshape(-1, 7)  
+            fet = np.memmap('./fet.bin', dtype=np.int32)
+            ngrp = len(self.bmi.fpga.configured_groups)
+            if fet.shape[0] > 0:
+                fet = fet.reshape(-1, 7)
+                fet_info = fet[:,:2]
+                fet_val = fet[:,2:6]
+                labels  = fet[:, -1]
+                labels[labels==101] = self.bmi.fpga.target_unit # it is 101 because FPGA output triggered TTL
+                # get idx of fet from current selected group
+                if self._frame % 2 == 0:
+                    for grp_id in self.bmi.fpga.configured_groups[:int(ngrp/2)]:
+                        idx = np.where(fet_info[:,1]==grp_id)[0]
+                        if len(idx)>N: idx = idx[-N:]
+                        fet = fet_val[idx, :]/float(2**16)
+                        clu = labels[idx]
+                        # self.log.info('get_fet{}'.format(idx.shape))
+                        if len(fet)>0:
+                            self.fet_grid.fet_view[grp_id].stream_in(fet, clu, highlight_no=30)
 
-                    _nspk += 1
-                    if _nspk>limit:
-                        while not self.bmi.gui_queue.empty():
-                            self.bmi.gui_queue.get()
-                        break
+                elif self._frame % 2 == 1:
+                    for grp_id in self.bmi.fpga.configured_groups[int(ngrp/2):]:
+                        idx = np.where(fet_info[:,1]==grp_id)[0]
+                        if len(idx)>N: idx = idx[-N:]
+                        fet = fet_val[idx, :]/float(2**16)
+                        clu = labels[idx]
+                        # self.log.info('get_fet{}'.format(idx.shape))
+                        if len(fet)>0:
+                            self.fet_grid.fet_view[grp_id].stream_in(fet, clu, highlight_no=30)
+        except:
+            pass
 
-        with Timer('update', verbose=False):
-            for grp_id in group_need_update:
-                with Timer('render', verbose=False):
-                    self.fet_grid.fet_view[grp_id].stream_in(self._fet[grp_id][:_nspk], 
-                                                             self._clu[grp_id][:_nspk],
-                                                             rho=1, highlight_no=10)
+        # group_need_update = []
+        # _nspk, limit = 0, 40
+        # while not self.bmi.gui_queue.empty():
+        #     with Timer('receive', verbose=False):
+        #         _timestamp, _grp_id, _fet0, _fet1, _fet2, _fet3, _spk_id = self.bmi.gui_queue.get()
+        #         # print(_grp_id, _spk_id)
+        #         if _grp_id in self.bmi.fpga.configured_groups and _spk_id>0:
+        #             group_need_update.append(_grp_id)
+        #             incoming_fet = np.array([_fet0, _fet1, _fet2, _fet3])/float(2**16)
+        #             incoming_clu = int(_spk_id)
+        #             self._fet[_grp_id] = np.roll(self._fet[_grp_id], 1, axis=0)
+        #             self._fet[_grp_id][0] = incoming_fet
+        #             self._clu[_grp_id] = np.roll(self._clu[_grp_id], 1)
+        #             self._clu[_grp_id][0] = incoming_clu
+
+        #             _nspk += 1
+        #             if _nspk>limit:
+        #                 while not self.bmi.gui_queue.empty():
+        #                     self.bmi.gui_queue.get()
+        #                 break
+
+        # with Timer('update', verbose=False):
+        #     for grp_id in group_need_update:
+        #         with Timer('render', verbose=False):
+        #             self.fet_grid.fet_view[grp_id].stream_in(self._fet[grp_id][:_nspk], 
+        #                                                      self._clu[grp_id][:_nspk],
+        #                                                      rho=1, highlight_no=10)
 
 
 
 if __name__ == '__main__':
     # 1. prb, gui and bmi and binner
     app = QApplication(sys.argv) 
-    prb = probe(prbfile='./dusty.json')
+    prb = probe(prbfile='../dusty.json')
     gui = BMI_GUI(prb=prb, fet_file='./fet.bin')
 
 
