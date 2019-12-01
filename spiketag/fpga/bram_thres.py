@@ -61,6 +61,12 @@ class ch_ref(object):
             self.hash_repr += '{}:{}\n'.format(ch, self[ch])
         return self.hash_repr
 
+    def to_numpy(self):
+        self.array = np.zeros((self.nCh,))
+        for i in range(self.nCh):
+            self.array[i] = self.__getitem__(i)
+        return self.array
+
     __repr__ = __str__
 
 
@@ -251,8 +257,9 @@ class threshold(object):
 
     __repr__ = __str__
 
-    # def __repr__(self):
-    #     for ch in np.arange(self.nCh):
-    #         print('threshold of ch{0} is {1}'.format(ch, self[ch]))
-    #     # return 'threshold enable status: {0}'.format(bool(read_mem_16(self.enable_reg_addres)))
+    def to_numpy(self):
+        self.array = np.zeros((self.nCh,))
+        for i in range(self.nCh):
+            self.array[i] = self.__getitem__(i)
+        return self.array
 

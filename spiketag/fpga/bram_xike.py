@@ -221,3 +221,14 @@ class label_hash(object):
         for i in range(self.nCh):
             self._labels += ('group {} labels: {}\n'.format(i, list(np.unique(self.__getitem__(i)))))
         return self._labels
+
+    def to_numpy(self):
+        self.array = []
+        for i in range(self.nCh):
+            self.array.append(list(self.__getitem__(i)))
+        return np.array(self.array)
+
+    def from_numpy(self, array):
+        for i in range(self.nCh):
+            self.__setitem__(i, array[i])       
+            
