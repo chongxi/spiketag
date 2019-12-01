@@ -216,8 +216,8 @@ class label_hash(object):
         return lb
 
     def __repr__(self):
-        _labels = np.zeros((self.nCh, self.dim))
+        # self._labels = np.zeros((self.nCh, self.dim))
+        self._labels = ''
         for i in range(self.nCh):
-            _labels[i] = self.__getitem__(i)
-        print(_labels)
-        return ' '
+            self._labels += ('group {} labels: {}\n'.format(i, list(np.unique(self.__getitem__(i)))))
+        return self._labels
