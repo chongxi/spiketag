@@ -643,6 +643,7 @@ class controller(object):
         self.reset_vq()
         self.set_vq(vq_method)
         self.fpga.n_units = self.unit_done
+        self.fpga.target_unit = 0
         print('FPGA is compiled')
         if self._check_FPGA_labels():
             print('{} units are ready for real-time spike assignment'.format(self.fpga.n_units))

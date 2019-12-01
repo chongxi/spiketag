@@ -129,10 +129,16 @@ class xike_config(object):
     
     @target_unit.setter
     def target_unit(self, target_unit_id):
-        if target_unit_id > self.n_units:
-            print('cannot be bigger than {} configured units'.format(self.n_units))
-        else:
-            write_mem_16(8, target_unit_id)
+        '''
+        after ctrl.compile(), the target_unit is set to 0 by default
+        '''
+        if target_unit_id != 0:
+            previous_target_unit_id = read_mem_16(8)
+            label_matrix = self.label.to_numpy() # (40,500) matrix
+            if previous_target_unit_id != 0:
+                label_matrix[label_matrix==101] = previous_target_unit_id
+            label_matrix[label_matrix==target_unit_id] = 101
+        write_mem_16(8, target_unit_id)
 
     '''
     ------------------------------------------------------------------------------------
