@@ -132,12 +132,18 @@ class xike_config(object):
         '''
         after ctrl.compile(), the target_unit is set to 0 by default
         '''
-        if target_unit_id != 0:
+        if target_unit_id != 0:   # set the target_unit
             previous_target_unit_id = read_mem_16(8)
             label_matrix = self.label.to_numpy() # (40,500) matrix
             if previous_target_unit_id != 0:
                 label_matrix[label_matrix==101] = previous_target_unit_id
             label_matrix[label_matrix==target_unit_id] = 101
+            self.label.from_numpy(label_matrix)
+        else:   # reset 
+            previous_target_unit_id = read_mem_16(8)
+            label_matrix = self.label.to_numpy() # (40,500) matrix
+            label_matrix[label_matrix==101] = previous_target_unit_id
+            self.label.from_numpy(label_matrix)
         write_mem_16(8, target_unit_id)
 
     '''
