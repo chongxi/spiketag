@@ -75,6 +75,30 @@ class xike_config(object):
         self.vq    =    vq_hash(nCh=self.ngrp,  base_address=self.ngrp * (self.p_dim + 1 + self.spklen*self.ch_span))
         self.label = label_hash(nCh=self.ngrp,  base_address=self.ngrp * (self.p_dim + 1 + self.spklen*self.ch_span + self.n_vq))
 
+
+    def __repr__(self):
+        s = '''
+        fpga object to configure parameters:
+        --- channel grouping ---
+        0. ch_hash
+        1. ch_grpNo
+        --- thresholding ---
+        2. dc
+        3. thres
+        --- reference subtraction ---
+        4. ch_ref
+        --- transformer --- 
+        5. scale
+        6. shift
+        7. pca
+        --- classifier ---
+        8. vq
+        9. label 
+        --- additional memory ---
+        10. mem_16  {0: n_units ....  8: target_unit}
+            '''
+        return s
+
     '''
     ------------------------------------------------------------------------------------
     property interface with mem_reg_16 in the FPGA ([4:0] address for 32 slots)
@@ -115,6 +139,12 @@ class xike_config(object):
     methods for batch configuration 
     ------------------------------------------------------------------------------------
     '''
+    def __call__(self, prb):
+        self.set_probe(prb)
+
+    def set_probe(self, prb):
+        self.probe = prb
+        self.set_channel_params_to_fpga()
 
     def set_channel_params_to_fpga(self):
         assert(self.n_ch == self.probe.n_ch)  # very important!
@@ -125,6 +155,7 @@ class xike_config(object):
                 self.ch_grpNo[ch] = self.probe.ch2g[ch]
             except:
                 self.ch_grpNo[ch] = 100            
+        print(self.probe.__str__())
 
     def set_channel_ref(self, ch_ref):
         self.ch_ref[:] = ch_ref

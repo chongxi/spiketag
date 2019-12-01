@@ -16,7 +16,7 @@ def load_ipython_extension(ipython, *args):
     # print('cool')
     # ipython.register_magic_function(FPGA, 'line')
     import asyncio
-    code ='''from spiketag.fpga import xike_config\nfpga = xike_config()'''
+    code ='''from spiketag.fpga import xike_config\nfrom spiketag.base import probe\nfpga = xike_config()'''
     asyncio.run(ipython.run_code(code))
 
 def FPGA(line):
