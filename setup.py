@@ -1,8 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from setuptools import setup, find_packages
+# from setuptools import setup, find_packages
+import os
+from os import path as op
+from warnings import warn
 
+import setuptools
+from distutils.core import setup
 version = "0.1.0"
+
+def package_tree(pkgroot):
+    path = os.path.dirname(__file__)
+    subdirs = [os.path.relpath(i[0], path).replace(os.path.sep, '.')
+               for i in os.walk(os.path.join(path, pkgroot))
+               if '__init__.py' in i[2]]
+    return subdirs
 
 requirements = ['Click>=6.0', ]
 
@@ -44,7 +56,7 @@ setup(name='spiketag',
           docs=['sphinx', 'numpydoc'],
           demo=['vispy'],
       ),
-      packages=find_packages(include=['spiketag']),
+      packages=package_tree('spiketag'),
       test_suite='test',
       keywords=[
           'Spike Sorting', 
