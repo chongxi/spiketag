@@ -162,8 +162,12 @@ class amplitude_view(scatter_2d_view):
                 self.poses = np.concatenate((self.poses, pos))
                 self.colors = np.concatenate((self.colors, color))
 
+        self.ymin, self.ymax = self.poses[:,1].min()-20, self.poses[:,1].max()
+        self._xaxis_y_pos = self.map([0, self.ymin])[1]
+        self._xaxis.transform.translate = (0, self._xaxis_y_pos)
+
         super(amplitude_view, self).set_data(pos=self.poses, colors=self.colors, delimit=delimit) 
-        self._view.camera.set_range(x=(-10, self._spike_time[-1]/self._fs+10))
+        self._view.camera.set_range(x=(-10, self._spike_time[-1]/self._fs+10), y=(self.ymin, self.ymax))
 
 
     def on_key_press(self, e):
@@ -182,8 +186,9 @@ class amplitude_view(scatter_2d_view):
 
         elif e.text == 'r':
             self._view.camera.reset()
-            self._view.camera.set_range(x=(-10, self._spike_time[-1]/self._fs+10))
-            # self._view.camera.set_range()
+            self._view.camera.set_range(x=(-10, self._spike_time[-1]/self._fs+10), y=(self.ymin, self.ymax))
+            self._xaxis_y_pos = self.map([0, self.ymin])[1]
+            self._xaxis.transform.translate = (0, self._xaxis_y_pos)
         elif e.text == 'c':
             self.x_axis_lock = not self.x_axis_lock 
         elif e.text == 'x':

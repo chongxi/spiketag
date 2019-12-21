@@ -95,7 +95,7 @@ class scatter_2d_view(scene.SceneCanvas):
         fg = axis_color
         # text show amplitude
         self.amp_text = scene.Text("", pos=(0, 0), italic=False, bold=False, anchor_x='left', anchor_y='center',
-                                       color=axis_color, font_size=13, parent=self._view)
+                                       color=axis_color, font_size=15, parent=self._view)
         self.amp_text.pos  = (0, 12)
 
         # x axis shows time and can be moved horizontally for clipping
@@ -120,14 +120,23 @@ class scatter_2d_view(scene.SceneCanvas):
         self.cross.attach(self._grid)
         self.cross.link_view(self._view)
 
-
     def select(self, view_idx):
         pass
 
-
     def imap(self, mouse_pos):
+        '''
+        inverse map from mouse to scene
+        '''
         tr = self._view.scene.transform
         pos = tr.imap(mouse_pos)[:2]
+        return pos
+
+    def map(self, point_pos):
+        '''
+        forward map from scene to mouse
+        '''
+        tr = self._view.scene.transform
+        pos = tr.map(point_pos)[:2]
         return pos
        
 
@@ -182,7 +191,7 @@ class scatter_2d_view(scene.SceneCanvas):
             pos = e.pos - self._view.margin
             self._xaxis.transform.translate = (0, pos[1])
             self.amp = self.imap(e.pos)[1]
-            self.amp_text.text = '{}'.format(self.amp)
+            self.amp_text.text = '{} and pos:{}'.format(self.amp, pos)
 
 
     def on_mouse_wheel(self, e):
