@@ -3,6 +3,14 @@
 #--------------------------------------------------------------
 import numpy as np
 
+
+def CCG(spk_time, spike_id, window_bins=50, bin_size=1):
+    ccg = correlate(spk_time, 
+                    spike_id, np.unique(spike_id), 
+                    window_bins=window_bins, bin_size=1)
+    return ccg
+
+
 def correlate(spike_time, membership, cluster_ids, fs=25e3, window_bins=50, bin_size=1):
     '''
         Compute cross-correlate for every pair of clusters. Learn this algorithm from phy, but make it accurate and faster.

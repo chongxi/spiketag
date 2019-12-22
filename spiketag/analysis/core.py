@@ -9,6 +9,82 @@ warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
+@njit(cache=True, parallel=True, fastmath=True)
+def _spike_binning(spike_time, event_time, spike_id, windows=np.array([-0.5, 0.5])):
+    '''
+    bin(count) the `spike_time` in an array of `window` that around `event_time`.
+    related issue: https://github.com/chongxi/spiketag/issues/57
+    --------
+    Parameters
+    ----------
+    spike_time: a numpy array (T,) contains time stamps of spikes
+    event_time: a numpy array (B,) contains time stamps of binning position
+    spike_id:   a numpy array (T,) contains spike ids with (N,) unique labels
+    window:    a numpy array (2,) contains the binning window 
+    
+    Returns
+    -------
+    B is #events(#bins), N is #cells, W is #window
+    count: a numpy array representing the binning result (W, B, N)
+    '''
+    
+    B = event_time.shape[0]
+    cell_ids = np.unique(spike_id)
+    N = np.unique(cell_ids).shape[0]
+    spike_id -= cell_ids.min()
+    W = windows.shape[0]
+    count = np.zeros((W, B, N))  # (#Win, #Bin, #Cell)
+    
+    for k in prange(N):
+        _spike_time = spike_time[spike_id==k]
+#         print(_spike_time.shape)
+        for w in range(W):
+            window = windows[w]
+            idx_start = np.searchsorted(_spike_time, event_time+window[0], side='right')
+            for i in range(event_time.shape[0]):
+                nspk = 0
+                while True:
+                    idx = int(idx_start[i] + nspk)
+                    if idx<_spike_time.shape[0] and event_time[i]+window[0] <= _spike_time[idx] and _spike_time[idx] < event_time[i]+window[1]:
+                        nspk+=1      
+                    else:
+                        break
+                count[w, i, k] = nspk
+    return count
+
+
+def spike_binning(spike_time, event_time, windows=np.array([[-0.5, 0.5]]), spike_id=None):
+    '''
+    bin(count) the `spike_time` in `window` that around `event_time`
+
+    work with: no, single or multiple `spike_id`
+    work with: single or multiple `window` in `windows`
+
+    Can be used to calculate PSTH, CCG and population decoding 
+
+    related issue: https://github.com/chongxi/spiketag/issues/57
+    --------
+    Parameters
+    ----------
+    spike_time: a numpy array (T,) contains time stamps of spikes
+    event_time: a numpy array (B,) contains time stamps of binning position
+    spike_id:   a numpy array (T,) contains spike ids with (N,) unique labels
+    window:    a numpy array (2,) contains the binning window 
+    
+    Returns
+    -------
+    B is #events(#bins), N is #cells, W is #window
+    count: a numpy array representing the binning result (W, B, N)
+    '''
+    
+    windows = np.array(windows)
+    if spike_id is None:
+        spike_id = np.zeros_like(spike_time)
+    if windows.ndim==1:
+        windows = windows.reshape(1, -1)
+    return np.squeeze(_spike_binning(spike_time, event_time, spike_id, windows))
+
+
 
 def spk_time_to_scv(spk_time_dict, ts, t_window=250e-3, sublist=None):
     if sublist is None:
