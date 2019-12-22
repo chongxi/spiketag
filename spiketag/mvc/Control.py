@@ -635,7 +635,7 @@ class controller(object):
         # step 1: set FPGA transfomer
         for grp_id in range(self.prb.n_group):
             self.fpga.scale[grp_id] = 0  # this will ban the tranformer and check fpga.transformer status
-            if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu_manager.state_list[grp_id]==3:
+            if self.model.gtimes[grp_id].shape[0] > 100:
                 self.set_transformer(group_id=grp_id)
                 self.fpga.label[grp_id] = np.zeros((500,))
 
