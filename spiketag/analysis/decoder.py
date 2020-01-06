@@ -179,9 +179,9 @@ class Maxout_ring(Decoder):
     """
     Maxout Decoder for BMI control (input X, output y) where y is the angle calculated by softmax of the (B,N) firing count matrix.
     """
-    def __init__(self, t_window, t_step=None):
+    def __init__(self, t_window=None, t_step=None):
         super(Maxout_ring, self).__init__(t_window, t_step)
-        self.name = 'Maxout'
+        self.name = 'Maxout_ring'
         
     def fit(self, X=None, y=None):
         '''
