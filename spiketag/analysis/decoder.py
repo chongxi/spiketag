@@ -172,3 +172,42 @@ class NaiveBayes(Decoder):
         binned_pos = argmax_2d_tensor(post_2d)
         y = binned_pos*self.spatial_bin_size + self.spatial_origin
         return y
+
+
+
+class Maxout(Decoder):
+    """
+    Maxout Decoder for BMI control (input X, output y) where y is the field position of the neuron that exhibit the max z-scored of firing rate.
+    """
+    def __init__(self, t_window, t_step=None):
+        super(Maxout, self).__init__(t_window, t_step)
+        self.name = 'Maxout'
+        
+    def fit(self, X=None, y=None):
+        '''
+        Naive Bayes place decoder fitting use precise spike timing to compute the representation 
+        (Rather than using binned spike count vector in t_window)
+        Therefore the X and y is None for the consistency of the decoder API
+        '''
+        self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], rank=False)
+        self.fields = self.pc.fields
+        self.spatial_bin_size, self.spatial_origin = self.pc.bin_size, self.pc.maze_original
+
+        # for real-time decoding on incoming bin from BMI   
+        self.possion_matrix = self.t_window*self.fields.sum(axis=0)
+        self.log_fr = np.log(self.fields) # make sure Fr[Fr==0] = 1e-12
+
+    def predict(self, X):
+        if len(X.shape) == 1:
+            X = X.reshape(1,-1)
+        self.post_2d = bayesian_decoding(self.fields, X, t_window=self.t_window)
+        binned_pos = argmax_2d_tensor(self.post_2d)
+        y = binned_pos*self.spatial_bin_size + self.spatial_origin
+        return y
+
+    def predict_rt(self, X):
+        suv_weighted_log_fr = licomb_Matrix(X, self.log_fr)
+        post_2d = np.exp(suv_weighted_log_fr - self.possion_matrix)
+        binned_pos = argmax_2d_tensor(post_2d)
+        y = binned_pos*self.spatial_bin_size + self.spatial_origin
+        return y
