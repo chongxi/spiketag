@@ -8,6 +8,12 @@ import warnings
 warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
+def softmax(X):
+    X = torch.tensor(X).double()
+    X_exp = torch.exp(X-X.max())
+    partition = torch.sum(X_exp, dim=1, keepdim=True)
+    _softmax = X_exp / partition # The broadcast mechanism is applied here
+    return _softmax.numpy()
 
 @njit(cache=True, parallel=True, fastmath=True)
 def _spike_binning(spike_time, event_time, spike_id, windows=np.array([-0.5, 0.5])):

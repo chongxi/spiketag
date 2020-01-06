@@ -1,4 +1,4 @@
-from .core import licomb_Matrix, bayesian_decoding, bayesian_decoding_rt, argmax_2d_tensor, smooth
+from .core import softmax, licomb_Matrix, bayesian_decoding, bayesian_decoding_rt, argmax_2d_tensor, smooth
 import numpy as np
 from sklearn.metrics import r2_score
 
@@ -175,12 +175,12 @@ class NaiveBayes(Decoder):
 
 
 
-class Maxout(Decoder):
+class Maxout_ring(Decoder):
     """
-    Maxout Decoder for BMI control (input X, output y) where y is the field position of the neuron that exhibit the max z-scored of firing rate.
+    Maxout Decoder for BMI control (input X, output y) where y is the angle calculated by softmax of the (B,N) firing count matrix.
     """
     def __init__(self, t_window, t_step=None):
-        super(Maxout, self).__init__(t_window, t_step)
+        super(Maxout_ring, self).__init__(t_window, t_step)
         self.name = 'Maxout'
         
     def fit(self, X=None, y=None):
@@ -197,17 +197,17 @@ class Maxout(Decoder):
         self.possion_matrix = self.t_window*self.fields.sum(axis=0)
         self.log_fr = np.log(self.fields) # make sure Fr[Fr==0] = 1e-12
 
-    def predict(self, X):
-        if len(X.shape) == 1:
-            X = X.reshape(1,-1)
-        self.post_2d = bayesian_decoding(self.fields, X, t_window=self.t_window)
-        binned_pos = argmax_2d_tensor(self.post_2d)
-        y = binned_pos*self.spatial_bin_size + self.spatial_origin
-        return y
+    # def predict(self, X):
+    #     if len(X.shape) == 1:
+    #         X = X.reshape(1,-1)
+    #     self.post_2d = bayesian_decoding(self.fields, X, t_window=self.t_window)
+    #     binned_pos = argmax_2d_tensor(self.post_2d)
+    #     y = binned_pos*self.spatial_bin_size + self.spatial_origin
+    #     return y
 
     def predict_rt(self, X):
-        suv_weighted_log_fr = licomb_Matrix(X, self.log_fr)
-        post_2d = np.exp(suv_weighted_log_fr - self.possion_matrix)
-        binned_pos = argmax_2d_tensor(post_2d)
-        y = binned_pos*self.spatial_bin_size + self.spatial_origin
-        return y
+        X = np.sum(X, axis=0)  # X is (B_bins, N_neurons) spike count matrix, we need to sum up B bins to decode the full window
+        N = len(X) # N neurons (has to be >10 to make sense), the #features of the input vector for decoding
+        y = np.argmax(softmax(X.reshape(1,-1)))
+        hd = 360/N * y
+        return hd
