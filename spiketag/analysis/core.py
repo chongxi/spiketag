@@ -24,7 +24,7 @@ def spike_time_from_fet(fet, fs=25000.):
 def firing_rate_from_fet(fet, fs=25000., binsize=50e-3):
     win = signal.blackman(250)  # 10ms smoothing window
     win /= np.sum(win)
-    spike_timing   = get_spike_time_from_fet(fet, fs)   # a spike time list
+    spike_timing   = spike_time_from_fet(fet, fs)   # a spike time list
     N_neuron       = len(spike_timing)
     t_start,t_end  = fet[0][0]/fs, fet[-1][0]/fs
     bins           = np.arange(t_start, t_end, binsize)
