@@ -5,7 +5,7 @@ import matplotlib.animation as animation
 import mpl_toolkits.axes_grid1
 import matplotlib.widgets
 import seaborn as sns
-sns.set_style("darkgrid", {"axes.facecolor": ".85"})
+# sns.set_style("darkgrid", {"axes.facecolor": ".85"})
 
 
 
