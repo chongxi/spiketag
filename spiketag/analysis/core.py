@@ -8,12 +8,35 @@ import warnings
 warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
+
 def softmax(X):
     X = torch.tensor(X).double()
     X_exp = torch.exp(X-X.max())
     partition = torch.sum(X_exp, dim=1, keepdim=True)
     _softmax = X_exp / partition # The broadcast mechanism is applied here
     return _softmax.numpy()
+
+
+def spike_time_from_fet(fet, fs=25000.):
+    spike_timing = [ fet[fet[:,-1]==i][:,0]/fs for i in np.unique(fet[:,-1]) ]
+    return spike_timing
+
+def firing_rate_from_fet(fet, fs=25000., binsize=50e-3):
+    win = signal.blackman(250)  # 10ms smoothing window
+    win /= np.sum(win)
+    spike_timing   = get_spike_time_from_fet(fet, fs)   # a spike time list
+    N_neuron       = len(spike_timing)
+    t_start,t_end  = fet[0][0]/fs, fet[-1][0]/fs
+    bins           = np.arange(t_start, t_end, binsize)
+    B_bins         = len(bins) - 1
+    spike_count    = np.zeros((B_bins, N_neuron))
+    spike_rate     = np.zeros((B_bins, N_neuron))
+    for i in range(N_neuron):
+        spike_count[:, i], _ = np.histogram(spike_timing[i], bins)
+        spike_rate[:, i] = np.convolve(spike_count[:, i]/binsize, win, 'same')
+        
+    return bins[:-1], spike_rate
+
 
 @njit(cache=True, parallel=True, fastmath=True)
 def _spike_binning(spike_time, event_time, spike_id, windows=np.array([-0.5, 0.5])):
