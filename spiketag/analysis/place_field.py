@@ -381,6 +381,7 @@ class place_field(object):
                 else:
                     field_id = i
                 pcm = ax.pcolormesh(self.X, self.Y, self.fields[field_id], cmap=cmap);
+                ax.set_title('#{0}: {1:.2f}Hz'.format(field_id, self.fields[field_id].max()), fontsize=20)
                 ax.set_xticks([])
                 ax.set_yticks([])
                 ax.set_aspect(self.maze_ratio)
@@ -398,6 +399,7 @@ class place_field(object):
             for i, field_id in enumerate(idx):
                 ax = fig.add_subplot(nrow, ncol, i+1);
                 pcm = ax.pcolormesh(self.X, self.Y, self.fields[field_id], cmap=cmap);
+                ax.set_title('#{0}: {1:.2f}Hz'.format(field_id, self.fields[field_id].max()))
                 if marker:
                     ax.plot(self.firing_pos_dict[field_id][:,0], self.firing_pos_dict[field_id][:,1], 
                                                               'mo', markersize=markersize, alpha=alpha)
