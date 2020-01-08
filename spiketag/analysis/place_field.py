@@ -149,6 +149,11 @@ class place_field(object):
             self._maze_original = self.maze_range[:,0] # the left, down corner location
 
     @property
+    def maze_center(self):
+        self._maze_center = self.maze_original[0]+self.maze_length[0]/2, self.maze_original[1]+self.maze_length[1]/2
+        return self._maze_center
+
+    @property
     def maze_original(self):
         return self._maze_original
 
