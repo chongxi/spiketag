@@ -1,6 +1,7 @@
 from .core import softmax, licomb_Matrix, bayesian_decoding, bayesian_decoding_rt, argmax_2d_tensor, smooth
 import numpy as np
 from sklearn.metrics import r2_score
+from ..utils import plot_err_2d
 
 
 
@@ -127,6 +128,13 @@ class Decoder(object):
         self.sm_predicted_y = smooth(self.predicted_y, self.smooth_factor)
         score = self.evaluate(self.sm_predicted_y, self.y_test)
         return score
+
+    def plot_decoding_err(self, dec_pos, real_pos, N=5000, err_percentile = 90, err_thr = 1/4):
+        err = abs(dec_pos - real_pos)
+        err[:,0] /= self.pc.maze_length[0]
+        err[:,1] /= self.pc.maze_length[1]
+        dt = self.t_step
+        return plot_err_2d(dec_pos, real_pos, err, dt, N, err_percentile, err_thr)
 
 
 

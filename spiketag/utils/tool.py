@@ -301,3 +301,94 @@ class Player(animation.FuncAnimation):
     def frame(self, frame_No):
         self.i = frame_No
         self.start()
+
+
+
+def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr = 1/4): 
+    '''
+    plot and show the decoding performance in 2D maze
+
+    Parameters
+    ----------
+    dec_pos : (n, 2) matrix
+        decoded 2D trajectory 
+    real_pos : (n, 2) matrix
+        true 2D trajectory
+    err : (n, 2) matrix
+        normalized decoding error (0-1) in x-axis andy-axis
+    dt : scalar
+        time step of the decoder
+    N : scalar
+        the last N samples to display
+    err_percentile : 
+        the value that x% of the error is below
+    err_thr : 
+        plot a vertical red line indicating the goal of err_percentile.
+
+    Returns
+    -------
+    The figure
+    '''
+    
+    from sklearn.metrics import r2_score
+    r2 = r2_score(real_pos, dec_pos, multioutput='raw_values')
+    
+    fig = plt.figure(1, figsize=(20,12))
+    grid = plt.GridSpec(8, 4, wspace=.5, hspace=1)
+    ax = {}
+    
+    # part I: last N examples of decoding vs true
+    ax[0,0] = fig.add_subplot(grid[:3,:2])
+    ax[0,1] = fig.add_subplot(grid[:3,2:])
+    ax[1,0] = fig.add_subplot(grid[3:,:2])
+    ax[1,1] = fig.add_subplot(grid[3:,2:])
+    N = int(N)
+    t = np.linspace(0, N*dt, N)
+    ax[0,0].plot(t, real_pos[:,0][-N:]);
+    ax[0,0].plot(t, dec_pos[:,0][-N:]);
+    ax[0,0].set_xlabel('Time(secs)')
+    ax[0,0].set_title('x-axis r2 score:{0:.2f}'.format(r2[0]), fontsize=18)
+    ax[0,1].plot(t, real_pos[:,1][-N:]);
+    ax[0,1].plot(t, dec_pos[:,1][-N:]);
+    ax[0,1].set_title('y-axis r2 score:{0:.2f}'.format(r2[1]), fontsize=18)
+    ax[0,1].set_xlabel('Time(secs)')
+    ax[0,0].legend(['True', 'Decoded'], loc=[0.05,1], fontsize=15);
+
+    # part II: error distribution
+    # x-axis
+    sns.distplot(err[:,0], kde=False, ax=ax[1,0]);
+    ax[1,0].axvspan(xmin = 0,
+                xmax = np.percentile(err[:,0], err_percentile),
+                ymin=0, ymax=1, alpha=.2, color='c');
+    ax[1,0].axvline(err_thr, color='r')
+    ax[1,0].set_xlim([0,1])
+    ax[1,0].legend(['{0:.2f}% of x-axis'.format(err_thr*100), 
+                    '{0} percentile of error'.format(err_percentile)], fontsize=15)
+    
+    from scipy import signal
+    win = signal.blackman(500)
+    win /= win.sum()
+    t = np.linspace(0, len(err)*dt, len(err))
+    xerr_time_ax = fig.add_axes([.3, .34, .15, .1])
+    xerr_time_ax.plot(t, err[:,0], alpha=.5, color='w')
+    xerr_time_ax.plot(t, np.convolve(err[:,0].ravel(), win, mode='same'), 'm', lw=2)
+    xerr_time_ax.set_title('decoding error (x) vs time')
+    xerr_time_ax.set_xlabel('time(secs)')
+
+    # y-axis
+    sns.distplot(err[:,1], kde=False, ax=ax[1,1]);
+    ax[1,1].axvspan(xmin = 0,
+                xmax = np.percentile(err[:,0], err_percentile),
+                ymin=0, ymax=1, alpha=.2, color='c');
+    ax[1,1].axvline(err_thr, color='r')
+    ax[1,1].set_xlim([0,1])
+    ax[1,1].legend(['{0:.2f}% of y-axis'.format(err_thr*100), 
+                    '{0} percentile of error'.format(err_percentile)], fontsize=15)
+    
+    yerr_time_ax = fig.add_axes([.72, .34, .15, .1])
+    yerr_time_ax.plot(t, err[:,1], alpha=.5, color='w')
+    yerr_time_ax.plot(t, np.convolve(err[:,1].ravel(), win, mode='same'), 'm', lw=2)
+    yerr_time_ax.set_title('decoding error (y) vs time')
+    yerr_time_ax.set_xlabel('time(secs)')
+    return fig
+
