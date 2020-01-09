@@ -373,7 +373,7 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
     win = signal.blackman(500)
     win /= win.sum()
     t = np.linspace(0, len(err)*dt, len(err))
-    xerr_time_ax = fig.add_axes([.3, .34, .15, .1])
+    xerr_time_ax = fig.add_axes([.32, .34, .15, .1])
     xerr_time_ax.plot(t, err[:,0], alpha=.5, color='w')
     xerr_time_ax.plot(t, np.convolve(err[:,0].ravel(), win, mode='same'), 'm', lw=2)
     xerr_time_ax.set_title('decoding error (x) vs time')
@@ -391,7 +391,7 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
     ax[1,1].set_xlabel('decoding error (y) distribution (normalized)')
     ax[1,1].set_ylabel('error density (y)')
     
-    yerr_time_ax = fig.add_axes([.72, .34, .15, .1])
+    yerr_time_ax = fig.add_axes([.74, .34, .15, .1])
     yerr_time_ax.plot(t, err[:,1], alpha=.5, color='w')
     yerr_time_ax.plot(t, np.convolve(err[:,1].ravel(), win, mode='same'), 'm', lw=2)
     yerr_time_ax.set_title('decoding error (y) vs time')
