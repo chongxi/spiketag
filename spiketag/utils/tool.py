@@ -347,11 +347,13 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
     ax[0,0].plot(t, real_pos[:,0][-N:]);
     ax[0,0].plot(t, dec_pos[:,0][-N:]);
     ax[0,0].set_xlabel('Time(secs)')
+    ax[0,0].set_ylabel('Position in x-axis(cm)')
     ax[0,0].set_title('x-axis r2 score:{0:.2f}'.format(r2[0]), fontsize=18)
     ax[0,1].plot(t, real_pos[:,1][-N:]);
     ax[0,1].plot(t, dec_pos[:,1][-N:]);
     ax[0,1].set_title('y-axis r2 score:{0:.2f}'.format(r2[1]), fontsize=18)
     ax[0,1].set_xlabel('Time(secs)')
+    ax[0,1].set_ylabel('Position in y-axis(cm)')
     ax[0,0].legend(['True', 'Decoded'], loc=[0.05,1], fontsize=15);
 
     # part II: error distribution
@@ -365,6 +367,7 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
     ax[1,0].legend(['{0:.2f}% of x-axis'.format(err_thr*100), 
                     '{0} percentile of error'.format(err_percentile)], fontsize=15)
     ax[1,0].set_xlabel('decoding error (x) distribution (normalized)')
+    ax[1,0].set_ylabel('error density (x)')
     
     from scipy import signal
     win = signal.blackman(500)
@@ -386,6 +389,7 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
     ax[1,1].legend(['{0:.2f}% of y-axis'.format(err_thr*100), 
                     '{0} percentile of error'.format(err_percentile)], fontsize=15)
     ax[1,1].set_xlabel('decoding error (y) distribution (normalized)')
+    ax[1,1].set_ylabel('error density (y)')
     
     yerr_time_ax = fig.add_axes([.72, .34, .15, .1])
     yerr_time_ax.plot(t, err[:,1], alpha=.5, color='w')
