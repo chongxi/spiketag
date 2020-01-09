@@ -364,6 +364,7 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
     ax[1,0].set_xlim([0,1])
     ax[1,0].legend(['{0:.2f}% of x-axis'.format(err_thr*100), 
                     '{0} percentile of error'.format(err_percentile)], fontsize=15)
+    ax[1,0].set_xlabel('decoding error (x) distribution (normalized)')
     
     from scipy import signal
     win = signal.blackman(500)
@@ -384,6 +385,7 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
     ax[1,1].set_xlim([0,1])
     ax[1,1].legend(['{0:.2f}% of y-axis'.format(err_thr*100), 
                     '{0} percentile of error'.format(err_percentile)], fontsize=15)
+    ax[1,1].set_xlabel('decoding error (y) distribution (normalized)')
     
     yerr_time_ax = fig.add_axes([.72, .34, .15, .1])
     yerr_time_ax.plot(t, err[:,1], alpha=.5, color='w')
