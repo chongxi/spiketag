@@ -369,7 +369,7 @@ class place_field(object):
             self.rank_fields(metric_name='spatial_bit_smoothed_spike')
 
 
-    def plot_fields(self, idx=None, N=10, size=3, cmap='hot', marker=False, markersize=1, alpha=0.8, order=False):
+    def plot_fields(self, idx=None, nspks=None, N=10, size=3, cmap='hot', marker=False, markersize=1, alpha=0.8, order=False):
         '''
         order: if True will plot with ranked fields according to the metric 
         '''
@@ -405,6 +405,10 @@ class place_field(object):
                 ax = fig.add_subplot(nrow, ncol, i+1);
                 pcm = ax.pcolormesh(self.X, self.Y, self.fields[field_id], cmap=cmap);
                 ax.set_title('#{0}: {1:.2f}Hz'.format(field_id, self.fields[field_id].max()))
+                ax.set_xticks([])
+                ax.set_yticks([])
+                if nspks is not None:
+                    ax.set_xlabel('{} spikes'.format(nspks[i]))
                 if marker:
                     ax.plot(self.firing_pos_dict[field_id][:,0], self.firing_pos_dict[field_id][:,1], 
                                                               'mo', markersize=markersize, alpha=alpha)
