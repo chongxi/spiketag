@@ -70,17 +70,19 @@ class Decoder(object):
         if v_cutoff is None:
             v_cutoff = self.pc.v_cutoff
 
+        # Clearly wrong, test it!!! 
+
         if low_speed_cutoff['training'] is True:
-            self.train_idx = np.where(self.pc.v_smoothed[self.train_idx]>v_cutoff)[0]
-            self.valid_idx = np.where(self.pc.v_smoothed[self.valid_idx]>v_cutoff)[0]
+            self.train_idx = self.train_idx[self.pc.v_smoothed[self.train_idx]>v_cutoff]
+            self.valid_idx = self.valid_idx[self.pc.v_smoothed[self.valid_idx]>v_cutoff]
 
         if low_speed_cutoff['testing'] is True:
-            self.test_idx = np.where(self.pc.v_smoothed[self.test_idx]>v_cutoff)[0]
+            self.test_idx = self.test_idx[self.pc.v_smoothed[self.test_idx]>v_cutoff]
 
         if self.verbose:
             print('{0} training samples\n{1} validation samples\n{2} testing samples'.format(self.train_idx.shape[0],
-                                                                           self.valid_idx.shape[0],
-                                                                           self.test_idx.shape[0]))
+                                                                                             self.valid_idx.shape[0],
+                                                                                             self.test_idx.shape[0]))
 
     def get_data(self):
         '''
