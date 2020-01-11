@@ -173,6 +173,13 @@ class place_field(object):
         pos = binned_pos*self.bin_size + self.maze_original
         return pos
 
+    def real_pos_2_binned_pos(self, real_pos, interger_output=True):
+        if interger_output:
+            binned_pos = (real_pos - self.maze_original)//self.bin_size
+        else:
+            binned_pos = (real_pos - self.maze_original)/self.bin_size
+        return binned_pos
+
     def get_speed(self):
         '''
         self.ts, self.pos is required
