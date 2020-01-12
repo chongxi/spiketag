@@ -459,9 +459,10 @@ class place_field(object):
         return fig
 
 
-    def load_spkdf(self, df_file, fs=25000., show=False):
+    def load_spkdf(self, df_file, fs=25000., replay_offset=0, show=False):
         '''
-        load spike dataframe
+        core function 
+        load spike dataframe in spktag folder
         '''
         try:
             self.spike_df = pd.read_pickle(df_file)
@@ -470,11 +471,16 @@ class place_field(object):
             self.spike_df.index = self.spike_df.index.astype(int)
             self.spike_df.index -= self.spike_df.index.min()
             self.df['spk'] = self.spike_df
-            print('Load the spike dataframe')
+            print('1. Load the spike dataframe')
             self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
                                   for i in self.spike_df.index.unique().sort_values()}
             self.df['spk'].reset_index(inplace=True)
-            print('Calculate the place field')                      
+
+            start, end = self.spike_df.frame_id.iloc[0], self.spike_df.frame_id.iloc[-1]
+            self.align_with_recording(start, end, replay_offset)
+            print('2. Align the behavior and ephys data with {} offset, starting@{} secs, end@{} secs'.format(replay_offset, start, end))
+
+            print('3. Calculate the place field during [{},{}] secs, cutoff when speed is lower than {}cm/secs'.format(start, end, self.v_cutoff))                      
             self.get_fields(self.spk_time_dict, rank=True)
         except:
             print('Fail to load spike dataframe')
@@ -483,7 +489,7 @@ class place_field(object):
             self.df['spk']['x'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,0])
             self.df['spk']['y'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,1])
             self.df['spk']['v'] = np.interp(self.df['spk']['frame_id'], self.ts, self.v_smoothed)
-            print('Fill the position and speed to the spike dataframe')
+            print('Fill the position and speed to the spike dataframe, check pc.df')
         except:
             print('Fail to fill the position and speed to the spike dataframe')
         if show is True:
