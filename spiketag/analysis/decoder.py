@@ -64,7 +64,7 @@ class Decoder(object):
         elif totime > len_frame - 1:
             totime = len_frame - 1
         return totime
-        
+
 
     def partition(self, training_range=[0.0, 0.5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0],
                         low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=None):
@@ -168,14 +168,42 @@ class Decoder(object):
 
 
 class NaiveBayes(Decoder):
-    """NaiveBayes Decoder for position prediction (input X, output y) where y is the position
-    >>> dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
-    >>> dec.connect_to(pc)
-    >>> dec.partition(training_range=[0.0, .5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0])
-    >>> (train_X, train_y), (valid_X, valid_y), (test_X, test_y) = dec.get_data()
-    >>> dec.fit(train_X, train_y)
-    >>> predicted_y = dec.predict(test_X)
-    >>> score = dec.evaluate(smooth(predicted_y, 60), test_y)
+    """
+    NaiveBayes Decoder for position prediction (input X, output y) 
+    where X is the spike bin matrix (B_bins, N_neurons)
+    where y is the 2D position (x,y)
+
+    Examples:
+    -------------------------------------------------------------
+    from spiketag.analysis import NaiveBayes, smooth
+
+    dec = NaiveBayes(t_window=250e-3, t_step=50e-3)
+    dec.connect_to(pc)
+
+    dec.partition(training_range=[0.0, .7], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0], 
+                  low_speed_cutoff={'training': True, 'testing': True})
+    (train_X, train_y), (valid_X, valid_y), (test_X, test_y) = dec.get_data(minimum_spikes=0)
+    dec.fit(train_X, train_y)
+
+    predicted_y = dec.predict(test_X)
+    dec_pos  = smooth(predicted_y, 60)
+    real_pos = test_y
+    
+    score = dec.evaluate(dec_pos, real_pos)
+    dec.plot_decoding_err(dec_pos, real_pos);
+
+    To get scv matrix to hack (check the size):
+    -------------------------------------------------------------
+    _scv = dec.pc.scv
+    _scv = dec.pc.scv[dec.train_idx]
+    _scv = dec.pc.scv[dec.test_idx]
+    _y = dec.predict(_scv)
+    post2d = dec.post_2d
+
+    Test real-time prediction:
+    -------------------------------------------------------------
+    _y = dec.predict_rt(_scv[8])
+
     """
     def __init__(self, t_window, t_step=None):
         super(NaiveBayes, self).__init__(t_window, t_step)
