@@ -488,9 +488,9 @@ class place_field(object):
         self.total_spike = len(self.spike_df)
         self.total_time = self.ts[-1] - self.ts[0]
         self.mean_mua_firing_rate = self.total_spike/self.total_time
-        print('2. Align the behavior and ephys data with {} offset\r\n    starting@{} secs, end@{} secs\r\n    ,all units mount up to {}spikes/sec'.format(replay_offset, start, end, self.mean_mua_firing_rate))
+        print('2. Align the behavior and ephys data with {0} offset\r\n    starting@{1} secs, end@{2} secs\r\n    all units mount up to {3:.3f}spikes/sec\r\n'.format(replay_offset, start, end, self.mean_mua_firing_rate))
 
-        print('3. Calculate the place field during [{},{}] secs\r\n    initialize with {}cm bin_size\r\n    cutoff when speed is lower than {}cm/secs\r\n'.format(start, end, self.bin_size, self.v_cutoff))                      
+        print('3. Calculate the place field during [{},{}] secs\r\n    initialize with {}cm bin_size\r\n    dump spikes when speed is lower than {}cm/secs\r\n'.format(start, end, self.bin_size, self.v_cutoff))                      
         self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
         self.get_fields(self.spk_time_dict, rank=True)
 
