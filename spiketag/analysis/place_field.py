@@ -30,7 +30,7 @@ class place_field(object):
     load_spktag for spike data
     get_fields for computing the representaions using spike and behavior data
     '''
-    def __init__(self, pos, ts=None, t_step=None, v_cutoff=None):
+    def __init__(self, pos, v_cutoff=5, bin_size=2.5, ts=None, t_step=None):
         '''
         resample the trajectory with new time interval
         reinitiallize with a new t_step (dt)
@@ -38,12 +38,14 @@ class place_field(object):
         if ts is None:
             ts = np.arange(0, pos.shape[0]*t_step, t_step)
             self.t_step = t_step
-        if v_cutoff is not None:
-            self.v_cutoff = v_cutoff
         self.ts, self.pos = ts, pos
         self._ts_restore, self._pos_restore = ts, pos
         self.spk_time_array, self.spk_time_dict = None, None
         self.df = {}
+
+        # key parameters for initialization (before self.initialize we need to align behavior with ephys) 
+        self.bin_size = bin_size
+        self.v_cutoff = v_cutoff
 
     def __call__(self, t_step):
         '''
@@ -478,9 +480,10 @@ class place_field(object):
 
             start, end = self.spike_df.frame_id.iloc[0], self.spike_df.frame_id.iloc[-1]
             self.align_with_recording(start, end, replay_offset)
-            print('2. Align the behavior and ephys data with {} offset\r\n    starting@{} secs, end@{} secs'.format(replay_offset, start, end))
+            print('2. Align the behavior and ephys data with {} offset\r\n    starting@{} secs, end@{} secs\r\n'.format(replay_offset, start, end))
 
-            print('3. Calculate the place field during [{},{}] secs\r\n    cutoff when speed is lower than {}cm/secs'.format(start, end, self.v_cutoff))                      
+            print('3. Calculate the place field during [{},{}] secs\r\n    initialize with {}cm bin_size\r\n    cutoff when speed is lower than {}cm/secs'.format(start, end, self.bin_size, self.v_cutoff))                      
+            self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
             self.get_fields(self.spk_time_dict, rank=True)
         except:
             print('Fail to load spike dataframe')
@@ -495,7 +498,7 @@ class place_field(object):
         if show is True:
             self.field_fig = self.plot_fields();        
         else:
-            print("5. Loading spktag succeed. To check place fields:\r\n   pc.plot_fields(N=10, cmap='hot', order=True);")
+            print("5. Loading spktag succeed. To check place fields:\r\n    pc.plot_fields(N=10, cmap='hot', order=True);")
 
 
 
