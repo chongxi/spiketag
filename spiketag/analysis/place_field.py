@@ -9,6 +9,7 @@ from scipy.interpolate import interp1d
 from .core import spk_time_to_scv, firing_pos_from_scv, smooth
 from ..base import SPKTAG
 from ..utils import colorbar
+from ..utils.plotting import colorline
 
 
 
