@@ -547,30 +547,35 @@ class place_field(object):
         #     return scv, new_ts, new_pos
 
 
-    def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'go'], markersize=15, cmap=None, legend_loc=None):
+    def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'wo'], markersize=15, alpha=.5, cmap=None, legend_loc=None):
         
         gs = dict(height_ratios=[20,1])
         fig, ax = plt.subplots(2,1,figsize=(5, 5), gridspec_kw=gs)
-        
-        epoch = np.where((self.ts<time_range[1]) & (self.ts>=time_range[0]))[0]
-        
-        if cmap is None:
-            cmap = mpl.cm.cool
-        norm = mpl.colors.Normalize(vmin=self.v_smoothed.min(), vmax=self.v_smoothed.max())
 
-        ax[0] = colorline(x=self.pos[epoch, 0], y=self.pos[epoch, 1], 
-                          z=self.v_smoothed[epoch]/self.v_smoothed.max(), #[0,1] 
-                          cmap=cmap, ax=ax[0])
+        for i, _time_range in enumerate(time_range):  # ith epoches
+            epoch = np.where((self.ts<_time_range[1]) & (self.ts>=_time_range[0]))[0]
+            
+            if cmap is None:
+                cmap = mpl.cm.cool
+            norm = mpl.colors.Normalize(vmin=self.v_smoothed.min(), vmax=self.v_smoothed.max())
 
-        ax[0].plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, label='end')
-        ax[0].plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], marker[1], markersize=markersize, label='start')
+            ax[0] = colorline(x=self.pos[epoch, 0], y=self.pos[epoch, 1], 
+                              z=self.v_smoothed[epoch]/self.v_smoothed.max(), #[0,1] 
+                              cmap=cmap, ax=ax[0])
+            if i ==0:
+                ax[0].plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, alpha=alpha, label='end')
+                ax[0].plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], marker[1], markersize=markersize, alpha=alpha, label='start')
+            else:
+                ax[0].plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, alpha=alpha)
+                ax[0].plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], marker[1], markersize=markersize, alpha=alpha)                
+
+        ax[0].set_xlim(self.maze_range[0]);
+        ax[0].set_ylim(self.maze_range[1]);
+
+        # ax[0].set_title('trajectory in [{0:.2f},{1:.2f}] secs'.format(_time_range[0], _time_range[1]))
         if legend_loc is not None:
             ax[0].legend(loc=legend_loc)
         
-        ax[0].set_xlim(self.maze_range[0]);
-        ax[0].set_ylim(self.maze_range[1]);
-        ax[0].set_title('trajectory in [{0:.2f},{1:.2f}] secs'.format(time_range[0], time_range[1]))
-
         cb = mpl.colorbar.ColorbarBase(ax[1], cmap=cmap,
                                         norm=norm,
                                         orientation='horizontal')
