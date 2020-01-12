@@ -478,9 +478,9 @@ class place_field(object):
 
             start, end = self.spike_df.frame_id.iloc[0], self.spike_df.frame_id.iloc[-1]
             self.align_with_recording(start, end, replay_offset)
-            print('2. Align the behavior and ephys data with {} offset, starting@{} secs, end@{} secs'.format(replay_offset, start, end))
+            print('2. Align the behavior and ephys data with {} offset\r\n starting@{} secs, end@{} secs'.format(replay_offset, start, end))
 
-            print('3. Calculate the place field during [{},{}] secs, cutoff when speed is lower than {}cm/secs'.format(start, end, self.v_cutoff))                      
+            print('3. Calculate the place field during [{},{}] secs\r\n cutoff when speed is lower than {}cm/secs'.format(start, end, self.v_cutoff))                      
             self.get_fields(self.spk_time_dict, rank=True)
         except:
             print('Fail to load spike dataframe')
@@ -489,11 +489,13 @@ class place_field(object):
             self.df['spk']['x'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,0])
             self.df['spk']['y'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,1])
             self.df['spk']['v'] = np.interp(self.df['spk']['frame_id'], self.ts, self.v_smoothed)
-            print('Fill the position and speed to the spike dataframe, check pc.df')
+            print('4. Fill the position and speed to the spike dataframe, check pc.df')
         except:
             print('Fail to fill the position and speed to the spike dataframe')
         if show is True:
             self.field_fig = self.plot_fields();        
+        else:
+            print("5. Loading spktag succeed. To check place fields:\r\npc.plot_fields(N=10, cmap='hot', order=True);")
 
 
 
