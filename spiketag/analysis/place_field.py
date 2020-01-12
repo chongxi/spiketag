@@ -444,11 +444,12 @@ class place_field(object):
             cmap = sns.cubehelix_palette(as_cmap=True, dark=0.05, light=1.2, reverse=True);
         neuron_id = self.sorted_fields_id[i]
         self._get_field(self.spk_time_dict[neuron_id])
-        self._plot_field(cmap=cmap, alpha=alpha, markersize=markersize, 
+        f,ax = self._plot_field(cmap=cmap, alpha=alpha, markersize=markersize, 
                          markercolor=markercolor, trajectory=trajectory);
         n_bits = self.metric['spatial_bit_spike'][neuron_id]
         p_rate = self.metric['peak_rate'][neuron_id]
-        print('neuron {0}: max firing rate {1:.2f}Hz, {2:.3f} bits'.format(neuron_id, p_rate, n_bits))
+        ax.set_title('neuron {0}: max firing rate {1:.2f}Hz, {2:.3f} bits'.format(neuron_id, p_rate, n_bits))
+        return f,ax
 
 
     def rank_fields(self, metric_name):
