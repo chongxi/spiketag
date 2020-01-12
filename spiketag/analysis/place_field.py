@@ -473,28 +473,30 @@ class place_field(object):
             self.spike_df.index = self.spike_df.index.astype(int)
             self.spike_df.index -= self.spike_df.index.min()
             self.df['spk'] = self.spike_df
-            print('1. Load the spike dataframe')
             self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
                                   for i in self.spike_df.index.unique().sort_values()}
             self.df['spk'].reset_index(inplace=True)
+            self.n_units = np.sort(self.spike_df.spike_id.unique()).shape[0]
+            self.n_groups = np.sort(self.spike_df.group_id.unique()).shape[0]
+            print('1. Load the spike dataframe, {} units are found in {} groups\r\n'.format(self.n_units, self.n_groups))
 
             start, end = self.spike_df.frame_id.iloc[0], self.spike_df.frame_id.iloc[-1]
             self.align_with_recording(start, end, replay_offset)
             print('2. Align the behavior and ephys data with {} offset\r\n    starting@{} secs, end@{} secs\r\n'.format(replay_offset, start, end))
 
-            print('3. Calculate the place field during [{},{}] secs\r\n    initialize with {}cm bin_size\r\n    cutoff when speed is lower than {}cm/secs'.format(start, end, self.bin_size, self.v_cutoff))                      
+            print('3. Calculate the place field during [{},{}] secs\r\n    initialize with {}cm bin_size\r\n    cutoff when speed is lower than {}cm/secs\r\n'.format(start, end, self.bin_size, self.v_cutoff))                      
             self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
             self.get_fields(self.spk_time_dict, rank=True)
         except:
-            print('Fail to load spike dataframe')
+            print('! Fail to load spike dataframe')
 
         try:
             self.df['spk']['x'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,0])
             self.df['spk']['y'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,1])
             self.df['spk']['v'] = np.interp(self.df['spk']['frame_id'], self.ts, self.v_smoothed)
-            print('4. Fill the position and speed to the spike dataframe, check pc.df')
+            print('4. Fill the position and speed to the spike dataframe, check pc.spike_df\r\n')
         except:
-            print('Fail to fill the position and speed to the spike dataframe')
+            print('! Fail to fill the position and speed to the spike dataframe')
         if show is True:
             self.field_fig = self.plot_fields();        
         else:
