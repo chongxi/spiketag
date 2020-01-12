@@ -4,6 +4,21 @@ from sklearn.metrics import r2_score
 from ..utils import plot_err_2d
 
 
+def mua_count_cut_off(X, y=None, minimum_spikes=1)
+    '''
+    temporary solution to cut the frame that too few spikes happen
+
+    X is the spike count vector(scv), (B_bins, N_neurons), the count in each bin is result from (t_window, t_step)
+    minimum_spikes is the minimum number of spikes that allow the `bins`(rows) enter into the decoder
+    '''
+    for i in range(100):  # each iteration some low rate bins is removed
+        mua_count = X.sum(axis=1). # sum over all neuron to get mua
+        idx = np.where(mua_count<=minimum_spikes)[0]
+        X[idx] = X[idx-1]
+        if y is not None:
+            y[idx] = y[idx-1]
+    return X, y
+
 
 class Decoder(object):
     """Base class for the decoders for place prediction"""
@@ -84,7 +99,8 @@ class Decoder(object):
                                                                                              self.valid_idx.shape[0],
                                                                                              self.test_idx.shape[0]))
 
-    def get_data(self):
+
+    def get_data(self, minimum_spikes=0):
         '''
         Connect to pc first and then set the partition parameter. After these two we can get data
         The data strucutre is different for RNN and non-RNN decoder
@@ -100,7 +116,14 @@ class Decoder(object):
         train_X, train_y = X[self.train_idx], y[self.train_idx]
         valid_X, valid_y = X[self.valid_idx], y[self.valid_idx]
         test_X,  test_y  = X[self.test_idx], y[self.test_idx]
+
+        if minimum_spikes>0:
+            train_X, train_y = mua_count_cut_off(train_X, train_y, minimum_spikes)
+            valid_X, valid_y = mua_count_cut_off(valid_X, valid_y, minimum_spikes)
+            test_X,  test_y  = mua_count_cut_off(test_X,  test_y,  minimum_spikes)
+
         return (train_X, train_y), (valid_X, valid_y), (test_X, test_y) 
+
 
     def evaluate(self, y_predict, y_true, multioutput=True):
         if multioutput is True:
@@ -110,6 +133,7 @@ class Decoder(object):
         if self.verbose:
             print('r2 score: {}\n'.format(self.score))
         return self.score
+
 
     def auto_pipeline(self, smooth_sec=2):
         '''
