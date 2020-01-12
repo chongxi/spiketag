@@ -547,7 +547,10 @@ class place_field(object):
         #     return scv, new_ts, new_pos
 
 
-    def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'go'], markersize=15, cmap=None):
+    def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'go'], markersize=15, cmap=None, legend_loc=None):
+        
+        gs = dict(height_ratios=[20,1])
+        fig, ax = plt.subplots(2,1,figsize=(5, 5), gridspec_kw=gs)
         
         epoch = np.where((self.ts<time_range[1]) & (self.ts>=time_range[0]))[0]
         
@@ -555,16 +558,14 @@ class place_field(object):
             cmap = mpl.cm.cool
         norm = mpl.colors.Normalize(vmin=self.v_smoothed.min(), vmax=self.v_smoothed.max())
 
-        gs = dict(height_ratios=[20,1])
-        fig, ax = plt.subplots(2,1,figsize=(5, 5), gridspec_kw=gs)
-
         ax[0] = colorline(x=self.pos[epoch, 0], y=self.pos[epoch, 1], 
                           z=self.v_smoothed[epoch]/self.v_smoothed.max(), #[0,1] 
                           cmap=cmap, ax=ax[0])
 
         ax[0].plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, label='end')
         ax[0].plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], marker[1], markersize=markersize, label='start')
-        ax[0].legend()
+        if legend_loc is not None:
+            ax[0].legend(loc=legend_loc)
         
         ax[0].set_xlim(self.maze_range[0]);
         ax[0].set_ylim(self.maze_range[1]);
@@ -573,5 +574,5 @@ class place_field(object):
         cb = mpl.colorbar.ColorbarBase(ax[1], cmap=cmap,
                                         norm=norm,
                                         orientation='horizontal')
-        cb.set_label('speed (cm/secs)')
+        cb.set_label('speed (cm/sec)')
         return ax
