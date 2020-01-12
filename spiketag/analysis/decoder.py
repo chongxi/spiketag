@@ -190,7 +190,9 @@ class NaiveBayes(Decoder):
     real_pos = test_y
     
     score = dec.evaluate(dec_pos, real_pos)
-    dec.plot_decoding_err(dec_pos, real_pos);
+
+    # optional (cost time):
+    # dec.plot_decoding_err(dec_pos, real_pos);
 
     To get scv matrix to hack (check the size):
     -------------------------------------------------------------
