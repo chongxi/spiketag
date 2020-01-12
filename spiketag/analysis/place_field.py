@@ -478,7 +478,7 @@ class place_field(object):
             self.df['spk'].reset_index(inplace=True)
             self.n_units = np.sort(self.spike_df.spike_id.unique()).shape[0]
             self.n_groups = np.sort(self.spike_df.group_id.unique()).shape[0]
-            print('1. Load the spktag dataframe\r\n    {} units are found in {} groups\r\n'.format(self.n_units, self.n_groups))
+            print('1. Load the spktag dataframe\r\n    {} units are found in {} electrode-groups\r\n'.format(self.n_units, self.n_groups))
         except:
             print('! Fail to load spike dataframe')
 
@@ -499,7 +499,7 @@ class place_field(object):
             self.df['spk']['x'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,0])
             self.df['spk']['y'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,1])
             self.df['spk']['v'] = np.interp(self.df['spk']['frame_id'], self.ts, self.v_smoothed)
-            print('4. Fill the position and speed to the spike dataframe, check pc.spike_df\r\n')
+            print('4. Interpolate the position and speed to each spikes, check `pc.spike_df`\r\n')
         except:
             print('! Fail to fill the position and speed to the spike dataframe')
         if show is True:
