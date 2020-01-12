@@ -478,11 +478,13 @@ class place_field(object):
             self.df['spk'].reset_index(inplace=True)
             self.n_units = np.sort(self.spike_df.spike_id.unique()).shape[0]
             self.n_groups = np.sort(self.spike_df.group_id.unique()).shape[0]
-            print('1. Load the spike dataframe, {} units are found in {} groups\r\n'.format(self.n_units, self.n_groups))
+            print('1. Load the spktag dataframe\r\n    {} units are found in {} groups\r\n'.format(self.n_units, self.n_groups))
 
             start, end = self.spike_df.frame_id.iloc[0], self.spike_df.frame_id.iloc[-1]
             self.align_with_recording(start, end, replay_offset)
-            print('2. Align the behavior and ephys data with {} offset\r\n    starting@{} secs, end@{} secs\r\n'.format(replay_offset, start, end))
+            # after align_with_recording we have the correct self.ts and self.pos
+            self.mean_mua_firing_rate = len(self.spike_df)/(self.ts[-1], self.ts[0])
+            print('2. Align the behavior and ephys data with {} offset\r\n    starting@{} secs, end@{} secs\r\n    ,all units mount up to {}spikes/sec'.format(replay_offset, start, end, self.mean_mua_firing_rate))
 
             print('3. Calculate the place field during [{},{}] secs\r\n    initialize with {}cm bin_size\r\n    cutoff when speed is lower than {}cm/secs\r\n'.format(start, end, self.bin_size, self.v_cutoff))                      
             self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
