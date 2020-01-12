@@ -546,7 +546,7 @@ class place_field(object):
         #     return scv, new_ts, new_pos
 
 
-    def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'go'], markersize=15, cmap=None)
+    def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'go'], markersize=15, cmap=None):
         
         epoch = np.where((self.ts<time_range[1]) & (self.ts>=time_range[0]))[0]
         
