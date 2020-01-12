@@ -548,6 +548,10 @@ class place_field(object):
 
 
     def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'wo'], markersize=15, alpha=.5, cmap=None, legend_loc=None):
+        '''
+        plot trajactory within time_range: [[a0,b0],[a1,b1]...]
+        with color code indicate the speed.  
+        '''
         
         gs = dict(height_ratios=[20,1])
         fig, ax = plt.subplots(2,1,figsize=(5, 5), gridspec_kw=gs)
