@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import seaborn as sns
 from matplotlib.pyplot import cm
 from scipy.interpolate import interp1d
@@ -545,16 +546,31 @@ class place_field(object):
         #     return scv, new_ts, new_pos
 
 
-    def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'bo'], markersize=15, ax=None):
+    def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'go'], markersize=15, cmap=None)
+        
         epoch = np.where((self.ts<time_range[1]) & (self.ts>=time_range[0]))[0]
+        
+        if cmap is None:
+            cmap = mpl.cm.cool
+        norm = mpl.colors.Normalize(vmin=self.v_smoothed.min(), vmax=self.v_smoothed.max())
 
-        if ax is None:
-            fig, ax = plt.subplots(1,1, figsize=figsize)
-        ax.plot(self.pos[epoch, 0], self.pos[epoch, 1])
-        ax.scatter(self.pos[epoch, 0], self.pos[epoch, 1], c=self.v_smoothed[epoch], s=20, cmap='viridis')
-        ax.plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, label='end')
-        ax.plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], marker[1], markersize=markersize, label='start')
-        ax.legend()
-        ax.set_xlim(self.maze_range[0])
-        ax.set_ylim(self.maze_range[1])
+        gs = dict(height_ratios=[20,1])
+        fig, ax = plt.subplots(2,1,figsize=(5, 5), gridspec_kw=gs)
+
+        ax[0] = colorline(x=self.pos[epoch, 0], y=self.pos[epoch, 1], 
+                          z=self.v_smoothed[epoch]/self.v_smoothed.max(), 
+                          cmap=cmap, ax=ax[0])
+
+        ax[0].plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, label='end')
+        ax[0].plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], marker[1], markersize=markersize, label='start')
+        ax[0].legend()
+        
+        ax[0].set_xlim(self.maze_range[0]);
+        ax[0].set_ylim(self.maze_range[1]);
+        ax[0].set_title('trajectory in [{0:.2f},{1:.2f}] secs'.format(time_range[0], time_range[1]))
+
+        cb = mpl.colorbar.ColorbarBase(ax[1], cmap=cmap,
+                                        norm=norm,
+                                        orientation='horizontal')
+        cb.set_label('speed (cm/secs)')
         return ax
