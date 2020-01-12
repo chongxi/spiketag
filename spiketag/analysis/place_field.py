@@ -485,7 +485,9 @@ class place_field(object):
         start, end = self.spike_df.frame_id.iloc[0], self.spike_df.frame_id.iloc[-1]
         self.align_with_recording(start, end, replay_offset)
         # after align_with_recording we have the correct self.ts and self.pos
-        self.mean_mua_firing_rate = len(self.spike_df)/(self.ts[-1], self.ts[0])
+        self.total_spike = len(self.spike_df)
+        self.total_time = self.ts[-1] - self.ts[0]
+        self.mean_mua_firing_rate = self.total_spike/self.total_time
         print('2. Align the behavior and ephys data with {} offset\r\n    starting@{} secs, end@{} secs\r\n    ,all units mount up to {}spikes/sec'.format(replay_offset, start, end, self.mean_mua_firing_rate))
 
         print('3. Calculate the place field during [{},{}] secs\r\n    initialize with {}cm bin_size\r\n    cutoff when speed is lower than {}cm/secs\r\n'.format(start, end, self.bin_size, self.v_cutoff))                      
