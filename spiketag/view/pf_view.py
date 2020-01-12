@@ -19,6 +19,7 @@ class pf_view(scene.SceneCanvas):
         self.view = self.central_widget.add_view()
         self.view.camera = 'panzoom'
         self.image = scene.visuals.Image(parent=self.view.scene, method='subdivide', cmap='hot', clim=[0.05, 1.05])
+        self.info_text = scene.visuals.Text(parent=self.scene, bold=True)
 
         self.debug = debug
         if show is True:
@@ -33,6 +34,12 @@ class pf_view(scene.SceneCanvas):
         return place_field
 
     def _render(self, place_field):
+        max_firing_rate = place_field.max()
+        self.info = 'Peak Rate: {0:.2f} Hz'.format(max_firing_rate)
+        self.info_text.text = str(self.info) 
+        self.info_text.pos  = np.array([138, 15])
+        self.info_text.color = (1,1,1,1) 
+        self.info_text.font_size = 15
         self.image.set_data(place_field/place_field.max())
         self.view.camera.set_range()
 
