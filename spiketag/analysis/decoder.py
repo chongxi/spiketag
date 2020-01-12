@@ -4,7 +4,7 @@ from sklearn.metrics import r2_score
 from ..utils import plot_err_2d
 
 
-def mua_count_cut_off(X, y=None, minimum_spikes=1)
+def mua_count_cut_off(X, y=None, minimum_spikes=1):
     '''
     temporary solution to cut the frame that too few spikes happen
 
@@ -12,7 +12,7 @@ def mua_count_cut_off(X, y=None, minimum_spikes=1)
     minimum_spikes is the minimum number of spikes that allow the `bins`(rows) enter into the decoder
     '''
     for i in range(100):  # each iteration some low rate bins is removed
-        mua_count = X.sum(axis=1). # sum over all neuron to get mua
+        mua_count = X.sum(axis=1) # sum over all neuron to get mua
         idx = np.where(mua_count<=minimum_spikes)[0]
         X[idx] = X[idx-1]
         if y is not None:
@@ -64,6 +64,7 @@ class Decoder(object):
         elif totime > len_frame - 1:
             totime = len_frame - 1
         return totime
+        
 
     def partition(self, training_range=[0.0, 0.5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0],
                         low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=None):
