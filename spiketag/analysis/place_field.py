@@ -559,7 +559,7 @@ class place_field(object):
         fig, ax = plt.subplots(2,1,figsize=(5, 5), gridspec_kw=gs)
 
         ax[0] = colorline(x=self.pos[epoch, 0], y=self.pos[epoch, 1], 
-                          z=self.v_smoothed[epoch]/self.v_smoothed.max(), 
+                          z=self.v_smoothed[epoch]/self.v_smoothed.max()-1, #[-1,1] 
                           cmap=cmap, ax=ax[0])
 
         ax[0].plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, label='end')
