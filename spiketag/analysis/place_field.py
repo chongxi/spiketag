@@ -430,15 +430,22 @@ class place_field(object):
         return fig
 
 
-    def plot_field(self, i=0):
+    def plot_field(self, i=0, cmap=None, alpha=.3, markersize=10, markercolor='#66f456', trajectory=True):
         '''
         plot ith place field with information in detail, only called after `pc.get_fields(pc.spk_time_dict, rank=True)`
-        use @interact(i=(0, pc.n_units-1, 1)) in notebook to go through all the fields
+        example:
+
+        @interact(i=(0, pc.n_units-1, 1))
+        def view_fields(i=0):
+            pc.plot_field(i)
+
         '''
+        if cmap is None:
+            cmap = sns.cubehelix_palette(as_cmap=True, dark=0.05, light=1.2, reverse=True);
         neuron_id = self.sorted_fields_id[i]
         self._get_field(self.spk_time_dict[neuron_id])
-        self._plot_field(cmap=cmap, alpha=.3, markersize=10, 
-                         markercolor='#66f456', trajectory=True);
+        self._plot_field(cmap=cmap, alpha=alpha, markersize=markersize, 
+                         markercolor=markercolor, trajectory=trajectory);
         n_bits = self.metric['spatial_bit_spike'][neuron_id]
         p_rate = self.metric['peak_rate'][neuron_id]
         print('neuron {0}: max firing rate {1:.2f}Hz, {2:.3f} bits'.format(neuron_id, p_rate, n_bits))
