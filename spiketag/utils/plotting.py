@@ -15,7 +15,7 @@ def cubehelix_cmap(scheme='dark'):
 
 def colorline(
     x, y, z=None, cmap=plt.get_cmap('copper'), norm=plt.Normalize(0.0, 1.0),
-        linewidth=3, alpha=1.0):
+        linewidth=3, alpha=1.0, ax=None):
     """
     http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
     http://matplotlib.org/examples/pylab_examples/multicolored_line.html
@@ -38,11 +38,11 @@ def colorline(
     import matplotlib.collections as mcoll
     lc = mcoll.LineCollection(segments, array=z, cmap=cmap, norm=norm,
                               linewidth=linewidth, alpha=alpha)
-
-    ax = plt.gca()
+    if ax is None:
+        ax = plt.gca()
     ax.add_collection(lc)
 
-    return lc
+    return ax
 
 
 
