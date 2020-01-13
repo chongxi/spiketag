@@ -540,9 +540,9 @@ class place_field(object):
 
 
     def report(self):
-        pc.plot_occupation_map();
-        pc.plot_speed(self.ts[0], self.ts[-1]//10, v_cutoff=self.v_cutoff);
-        pc.plot_fields(N=10, cmap='hot', order=True);
+        self.plot_occupation_map();
+        self.plot_speed(self.ts[0], self.ts[-1]//10, v_cutoff=self.v_cutoff);
+        self.plot_fields(N=10, cmap='hot', order=True);
 
 
     def load_spktag(self, spktag_file, show=False):
