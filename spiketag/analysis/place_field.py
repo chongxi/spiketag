@@ -499,7 +499,7 @@ class place_field(object):
         pc.load_spkdf(spktag_file_df)
         pc.report()
         '''
-        print('--------- place cell object: load spktag dataframe ---------')
+        print('--------------- place cell object: load spktag dataframe ---------------\r\n')
         try:
             self.spike_df = pd.read_pickle(df_file)
             self.spike_df['frame_id'] /= fs
@@ -538,7 +538,7 @@ class place_field(object):
             print('! Fail to fill the position and speed to the spike dataframe')
         if show is True:
             self.field_fig = self.plot_fields();     
-        print('------------------------------------------------------------')   
+        print('------------------------------------------------------------------------')   
 
 
     def report(self):
