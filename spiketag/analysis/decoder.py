@@ -49,6 +49,7 @@ class Decoder(object):
         '''
         self.pc = pc
         if self.t_step is not None:
+            print('Link the decoder with the place cell object (pc):\r\n resample the pc according to current decoder input sampling rate {0:.4f}'.format(1/self.t_step))
             self.pc(t_step=self.t_step)
 
     def resample(self, t_step, t_window):
