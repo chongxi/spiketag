@@ -540,7 +540,7 @@ class place_field(object):
 
 
     def report(self):
-        print('occupation map from {0:.2f} to {1:.2f}, with speed cutoff:{}'.format(self.ts[0], self.ts[-1], self.v_cutoff))
+        print('occupation map from {0:.2f} to {1:.2f}, with speed cutoff:{2:.2f}'.format(self.ts[0], self.ts[-1], self.v_cutoff))
         self.plot_occupation_map();
         self.plot_speed(self.ts[0], self.ts[-1]//10, v_cutoff=self.v_cutoff);
         self.plot_fields(N=10, cmap='hot', order=True);
