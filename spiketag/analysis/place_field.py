@@ -208,7 +208,7 @@ class place_field(object):
         # return v_smoothed, v
 
     def plot_speed(self, start, stop, v_cutoff=5):
-        fig, ax = plt.subplots(1,1, figsize=(18,8))
+        fig, ax = plt.subplots(1,1, figsize=(18,5))
         period = np.logical_and(self.ts>start, self.ts<stop)
         plt.plot(self.ts[period], self.v[period], alpha=.7)
         plt.plot(self.ts[period], self.v_smoothed[period], lw=3)
@@ -540,8 +540,13 @@ class place_field(object):
 
 
     def report(self):
+        print('occupation map from {} to {}'.format(self.ts[0], self.ts[-1]))
         self.plot_occupation_map();
+        
+        print('smoothed speed from {} to {}'.format(self.ts[0], self.ts[-1]//10))
         self.plot_speed(self.ts[0], self.ts[-1]//10, v_cutoff=self.v_cutoff);
+
+        print("{} units place field".format(self.n_units))
         self.plot_fields(N=10, cmap='hot', order=True);
 
 
