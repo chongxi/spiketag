@@ -490,8 +490,14 @@ class place_field(object):
 
     def load_spkdf(self, df_file, fs=25000., replay_offset=0, show=False):
         '''
-        core function 
-        load spike dataframe in spktag folder
+        core function: load spike dataframe in spktag folder (to get Spikes)
+        This function also align ephys with behavior and compute the place fields of each found units in the `df_file`
+
+        Example:
+        ------------
+        pc = place_field(pos=pos, ts=ts)
+        pc.load_spkdf(spktag_file_df)
+        pc.report()
         '''
         try:
             self.spike_df = pd.read_pickle(df_file)
@@ -531,6 +537,12 @@ class place_field(object):
             print('! Fail to fill the position and speed to the spike dataframe')
         if show is True:
             self.field_fig = self.plot_fields();        
+
+
+    def report(self):
+        pc.plot_occupation_map();
+        pc.plot_speed(self.ts[0], self.ts[-1]//10, v_cutoff=self.v_cutoff);
+        pc.plot_fields(N=10, cmap='hot', order=True);
 
 
     def load_spktag(self, spktag_file, show=False):
