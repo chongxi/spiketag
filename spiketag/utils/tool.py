@@ -359,13 +359,14 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
     # part II: error distribution
     # x-axis
     sns.distplot(err[:,0], kde=False, ax=ax[1,0]);
-    ax[1,0].axvspan(xmin = 0,
-                xmax = np.percentile(err[:,0], err_percentile),
-                ymin=0, ymax=1, alpha=.2, color='c');
+    err_bound_x = [0, np.percentile(err[:,0], err_percentile)]
+    ax[1,0].axvspan(xmin = err_bound_x[0],
+                    xmax = err_bound_x[1],
+                    ymin=0, ymax=1, alpha=.2, color='c');
     ax[1,0].axvline(err_thr, color='r')
     ax[1,0].set_xlim([0,1])
     ax[1,0].legend(['{0:.2f}% of x-axis'.format(err_thr*100), 
-                    '{0} percentile of error'.format(err_percentile)], fontsize=15)
+                    '{0} percentile of error:{1:.2f}'.format(err_percentile, err_bound_x[1])], fontsize=15)
     ax[1,0].set_xlabel('decoding error (x) distribution (normalized)')
     ax[1,0].set_ylabel('error density (x)')
     
@@ -381,13 +382,14 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
 
     # y-axis
     sns.distplot(err[:,1], kde=False, ax=ax[1,1]);
-    ax[1,1].axvspan(xmin = 0,
-                xmax = np.percentile(err[:,0], err_percentile),
-                ymin=0, ymax=1, alpha=.2, color='c');
+    err_bound_y = [0, np.percentile(err[:,1], err_percentile)]
+    ax[1,1].axvspan(xmin = err_bound_y[0],
+                    xmax = err_bound_y[1],
+                    ymin=0, ymax=1, alpha=.2, color='c');
     ax[1,1].axvline(err_thr, color='r')
     ax[1,1].set_xlim([0,1])
     ax[1,1].legend(['{0:.2f}% of y-axis'.format(err_thr*100), 
-                    '{0} percentile of error'.format(err_percentile)], fontsize=15)
+                    '{0} percentile of error:{1:.2f}'.format(err_percentile, err_bound_y[1])], fontsize=15)
     ax[1,1].set_xlabel('decoding error (y) distribution (normalized)')
     ax[1,1].set_ylabel('error density (y)')
     
