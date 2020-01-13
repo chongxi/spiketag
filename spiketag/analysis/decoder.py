@@ -84,16 +84,16 @@ class Decoder(object):
                                    self._percent_to_time(testing_range[1]))
 
         if v_cutoff is None:
-            v_cutoff = self.pc.v_cutoff
+            self.v_cutoff = self.pc.v_cutoff
 
         # Clearly wrong, test it!!! 
 
         if low_speed_cutoff['training'] is True:
-            self.train_idx = self.train_idx[self.pc.v_smoothed[self.train_idx]>v_cutoff]
-            self.valid_idx = self.valid_idx[self.pc.v_smoothed[self.valid_idx]>v_cutoff]
+            self.train_idx = self.train_idx[self.pc.v_smoothed[self.train_idx]>self.v_cutoff]
+            self.valid_idx = self.valid_idx[self.pc.v_smoothed[self.valid_idx]>self.v_cutoff]
 
         if low_speed_cutoff['testing'] is True:
-            self.test_idx = self.test_idx[self.pc.v_smoothed[self.test_idx]>v_cutoff]
+            self.test_idx = self.test_idx[self.pc.v_smoothed[self.test_idx]>self.v_cutoff]
 
         if self.verbose:
             print('{0} training samples\n{1} validation samples\n{2} testing samples'.format(self.train_idx.shape[0],
@@ -110,20 +110,20 @@ class Decoder(object):
         '''
         assert(self.pc.ts.shape[0] == self.pc.pos.shape[0])
 
-        X = self.pc.get_scv(self.t_window) # t_step is None unless specified
+        X = self.pc.get_scv(self.t_window) # t_step is None unless specified, using pc.ts
         y = self.pc.pos[1:] # the initial position is not predictable
         assert(X.shape[0]==y.shape[0])
 
-        train_X, train_y = X[self.train_idx], y[self.train_idx]
-        valid_X, valid_y = X[self.valid_idx], y[self.valid_idx]
-        test_X,  test_y  = X[self.test_idx], y[self.test_idx]
+        self.train_X, self.train_y = X[self.train_idx], y[self.train_idx]
+        self.valid_X, self.valid_y = X[self.valid_idx], y[self.valid_idx]
+        self.test_X,  self.test_y  = X[self.test_idx], y[self.test_idx]
 
         if minimum_spikes>0:
-            train_X, train_y = mua_count_cut_off(train_X, train_y, minimum_spikes)
-            valid_X, valid_y = mua_count_cut_off(valid_X, valid_y, minimum_spikes)
-            test_X,  test_y  = mua_count_cut_off(test_X,  test_y,  minimum_spikes)
+            self.train_X, self.train_y = mua_count_cut_off(self.train_X, self.train_y, minimum_spikes)
+            self.valid_X, self.valid_y = mua_count_cut_off(self.valid_X, self.valid_y, minimum_spikes)
+            self.test_X,  self.test_y  = mua_count_cut_off(self.test_X,  self.test_y,  minimum_spikes)
 
-        return (train_X, train_y), (valid_X, valid_y), (test_X, test_y) 
+        return (self.train_X, self.train_y), (self.valid_X, self.valid_y), (self.test_X, self.test_y) 
 
 
     def evaluate(self, y_predict, y_true, multioutput=True):
@@ -217,7 +217,7 @@ class NaiveBayes(Decoder):
         (Rather than using binned spike count vector in t_window)
         Therefore the X and y is None for the consistency of the decoder API
         '''
-        self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], rank=False)
+        self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], v_cutoff=self.v_cutoff, rank=False)
         self.fields = self.pc.fields
         self.spatial_bin_size, self.spatial_origin = self.pc.bin_size, self.pc.maze_original
 
