@@ -52,10 +52,18 @@ class Decoder(object):
             print('Link the decoder with the place cell object (pc):\r\n resample the pc according to current decoder input sampling rate {0:.4f} Hz'.format(1/self.t_step))
             self.pc(t_step=self.t_step)
 
-    def resample(self, t_step, t_window):
-        self.t_window = t_window
-        self.t_step   = t_step
-        self.connect_to(self.pc)     
+
+    def resample(self, t_step=None, t_window=None):
+        if t_window is None:
+            t_window = self.binner.bin_size*self.binner.B
+        elif t_window != self.t_window:
+            self.t_window = t_window
+        if t_step is None:
+            t_step = self.binner.bin_size
+        elif t_step != self.t_step:
+            self.t_step   = t_step
+            self.connect_to(self.pc)
+
 
     def _percent_to_time(self, percent):
         len_frame = len(self.pc.ts)
@@ -102,7 +110,7 @@ class Decoder(object):
                                                                                              self.test_idx.shape[0]))
 
 
-    def get_data(self, minimum_spikes=0):
+    def get_data(self, minimum_spikes=2):
         '''
         Connect to pc first and then set the partition parameter. After these two we can get data
         The data strucutre is different for RNN and non-RNN decoder
@@ -149,7 +157,7 @@ class Decoder(object):
         >>>                   low_speed_cutoff={'training': True, 'testing': True})
         >>>     r_scores.append(dec.auto_pipeline(2))
         '''
-        (X_train, y_train), (X_valid, y_valid), (self.X_test, self.y_test) = self.get_data()
+        (X_train, y_train), (X_valid, y_valid), (self.X_test, self.y_test) = self.get_data(minimum_spikes=2)
         self.fit(X_train, y_train)
         self.predicted_y = self.predict(self.X_test)
         self.smooth_factor  = int(smooth_sec/self.pc.t_step) # 2 second by default
