@@ -280,7 +280,7 @@ def get_hd(trajectory, speed_threshold, offset_hd=180):
     '''
     # 1. Calculate both hd and speed (both are vectors)
     delta_pos = np.diff(trajectory, axis=0)
-    hd = np.arctan2(delta_pos[:,0], delta_pos[:,1])
+    hd = np.arctan2(delta_pos[:,0], -delta_pos[:,1])
     speed = np.linalg.norm(delta_pos, axis=1)
     # 2. filter out the bad points in the vector
     valid_idx = np.where(np.logical_and(hd!=0, speed>speed_threshold))[0]
@@ -289,6 +289,6 @@ def get_hd(trajectory, speed_threshold, offset_hd=180):
     speed = np.mean(speed[valid_idx])
     # 4. Offset the head-direction 
     # Tricky: (which screen animal is looking at?, is there a mirror imaging of the projector? etc)
-    hd = hd*180/np.pi    # radius to degrees
-    hd += offset_hd      # add the offset head direction
+    hd = (hd*180/np.pi + 360)    # radius to degrees
+    hd = (hd+offset_hd)%360      # add the offset head direction
     return hd, speed

@@ -219,6 +219,7 @@ class NaiveBayes(Decoder):
     def __init__(self, t_window, t_step=None):
         super(NaiveBayes, self).__init__(t_window, t_step)
         self.name = 'NaiveBayes'
+        self.rt_post_2d, self.binned_pos = None, None  # these two variables can be used for real-time visualization in the playground
         
     def fit(self, X=None, y=None):
         '''
@@ -251,7 +252,7 @@ class NaiveBayes(Decoder):
         self.rt_post_2d = np.exp(suv_weighted_log_fr - self.possion_matrix)
         self.binned_pos = argmax_2d_tensor(self.rt_post_2d)
         y = self.binned_pos*self.spatial_bin_size + self.spatial_origin
-        return y
+        return y, self.rt_post_2d/self.rt_post_2d.max()
 
 
 
