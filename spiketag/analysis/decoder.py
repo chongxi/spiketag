@@ -243,10 +243,14 @@ class NaiveBayes(Decoder):
         return y
 
     def predict_rt(self, X):
+        if X.shape[0]>1:
+            X = np.sum(X, axis=0)  # X is (B_bins, N_neurons) spike count matrix, we need to sum up B bins to decode the full window
+        else:
+            X = X.ravel()
         suv_weighted_log_fr = licomb_Matrix(X, self.log_fr)
-        post_2d = np.exp(suv_weighted_log_fr - self.possion_matrix)
-        binned_pos = argmax_2d_tensor(post_2d)
-        y = binned_pos*self.spatial_bin_size + self.spatial_origin
+        self.rt_post_2d = np.exp(suv_weighted_log_fr - self.possion_matrix)
+        self.binned_pos = argmax_2d_tensor(self.rt_post_2d)
+        y = self.binned_pos*self.spatial_bin_size + self.spatial_origin
         return y
 
 
