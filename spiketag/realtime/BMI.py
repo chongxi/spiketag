@@ -88,7 +88,7 @@ class BMI(object):
         '''
         N_units = self.fpga.n_units + 1
         self.binner = Binner(bin_size, N_units, B_bins)    # binner initialization (space and time)      
-        print('BMI binner: {} bins {} units, each bin is {} seconds'.format(N_units, B_bins, bin_size))  
+        print('BMI binner: {} bins {} units, each bin is {} seconds'.format(B_bins, N_units, bin_size))  
         print('---2. BMI binner initiation succeed---\n')
         # @self.binner.connect
         # def on_decode(X):
@@ -102,14 +102,17 @@ class BMI(object):
     #     self.spike_count_vector.share_memory_()
 
     def set_decoder(self, dec, dec_result_file=None):
-        print('Training decoder for the bmi')
+        print('------------------------------------------------------------------------')
+        print('---Set the decoder `t_window` and `t_step` according to the bmi.binner---\r\n')
         self.dec = dec
         self.dec.resample(t_step=self.binner.bin_size, t_window=self.binner.bin_size*self.binner.B)
+        print('--- Training decoder --- \r\n')
         self.dec.partition(training_range=[0.0, 1.0], valid_range=[0.5, 0.6], testing_range=[0.0, 1.0])
         score = self.dec.auto_pipeline(smooth_sec=2) # 2 seconds smooth for scoring
 
         if dec_result_file is not None:
            self.dec_result = os.open(dec_result_file, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
+        print('------------------------------------------------------------------------')
 
         ### key code (move this part anywhere needed, e.g. connect to playground)
         # print('connecting decoder to the bmi for real-time control')
