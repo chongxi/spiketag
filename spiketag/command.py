@@ -319,6 +319,9 @@ def raster():
 def feature():
     '''
     spiketag feature
+    press 'o' to expand a feteature view
+    press `d-1-2-3` to change the dimension
+    press `c-8-g` to recluster
     '''
     from spiketag.view import grid_scatter3d
     app = QApplication(sys.argv) 

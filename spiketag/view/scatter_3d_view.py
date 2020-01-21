@@ -291,7 +291,17 @@ class scatter_3d_view(scene.SceneCanvas):
             self._noise_toggle = False
 
 
+    def replicate_view(self):
+        from spiketag.view import scatter_3d_view
+        fetview = scatter_3d_view()
+        fetview.set_data(self.fet, self.clu)
+        fetview.show()
+
+
     def on_key_press(self, e):
+
+        if e.text == 'o':
+            self.replicate_view()
 
         if e.key.name == 'Escape':
             self.clu.select(np.array([]))
@@ -311,20 +321,17 @@ class scatter_3d_view(scene.SceneCanvas):
             if e.text == 'e':
                 self.toggle_noise_clu()
 
-        if e.text == 'c':
-            if self.mode != 'clustering':
-                self.mode = 'clustering'
-                self.n_clu = ''
 
         if self.mode == 'clustering':
+            print(e.text)
             if e.text.isdigit():
-                self.n_clu += e.text
+                self.n_clu = self.n_clu + e.text
             elif e.text == 'g':
-                try:
-                    self.n_clu = int(self.n_clu)
-                    self.cluster(dim=range(0, self.fet.shape[1]), max_n_clusters=self.n_clu)
-                except:
-                    pass
+                # try:
+                self.n_clu = int(self.n_clu)
+                self.cluster(dim=range(0, self.fet.shape[1]), max_n_clusters=self.n_clu)
+                # except:
+                #     pass
                 self.mode = ''
                 self.n_clu = ''
             elif e.text == 'c':
@@ -335,6 +342,11 @@ class scatter_3d_view(scene.SceneCanvas):
                     pass
                 self.mode = ''
                 self.n_clu = ''
+
+        if e.text == 'c':
+            self.mode = 'clustering'
+            self.n_clu = ''
+            # print('clustering mode')
 
 
 
@@ -356,6 +368,7 @@ class scatter_3d_view(scene.SceneCanvas):
         '''
         dim is the dim index for clustering
         '''
+        print('clustering DPGMM')
         from sklearn.mixture import BayesianGaussianMixture as DPGMM
         dpgmm = DPGMM(
             n_components=max_n_clusters, covariance_type='full', weight_concentration_prior=1e-3,

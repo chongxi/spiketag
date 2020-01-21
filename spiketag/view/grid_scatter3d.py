@@ -34,10 +34,11 @@ class grid_scatter3d(QtGui.QWidget):
         for idx, position in enumerate(positions):
             self.fet_view[idx] = scatter_3d_view()
             self.fet_view[idx].info = idx
+            self.grid.addWidget(self.fet_view[idx].native, *position)
             # self.fet_view[idx].create_native()
             # self.fet_view[idx].native.setParent(self)
-            self.grid.addWidget(self.fet_view[idx].native, *position)
-            self.grid.addWidget(self.fet_view[idx].native, *position)
+            # self.grid.addWidget(self.fet_view[idx].native, *position)
+
 
     def load_units(self, fet):
         '''
@@ -54,6 +55,7 @@ class grid_scatter3d(QtGui.QWidget):
             _fet = fet[fet[:,1]==i_grp][:, 2:6]/float(2**16)
             _clu = fet[fet[:,1]==i_grp][:, -1].astype(np.int32)
             self.fet_view[i_grp].set_data(_fet, _clu)
+            self.fet_view[i_grp].register_event()
 
     def from_file(self, unit_packet_binfile):
         '''
