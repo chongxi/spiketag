@@ -15,7 +15,7 @@ from ..view import scatter_3d_view
 from ..utils import Timer
 
 class grid_scatter3d(QtGui.QWidget):
-    def __init__(self, rows, cols):
+    def __init__(self, rows=5, cols=8):
         # QtGui.QMainWindow.__init__(self)
         super(grid_scatter3d, self).__init__()
         self.resize(1000, 500)
@@ -33,10 +33,36 @@ class grid_scatter3d(QtGui.QWidget):
         self.fet_view = {}
         for idx, position in enumerate(positions):
             self.fet_view[idx] = scatter_3d_view()
+            self.fet_view[idx].info = idx
             # self.fet_view[idx].create_native()
             # self.fet_view[idx].native.setParent(self)
             self.grid.addWidget(self.fet_view[idx].native, *position)
             self.grid.addWidget(self.fet_view[idx].native, *position)
+
+    def load_units(self, fet):
+        '''
+        unit packet:
+        (timestamps, #group, fet0, fet1, fet2, fet3, unit_id)
+        (timestamps, #group, fet0, fet1, fet2, fet3, unit_id)
+        (timestamps, #group, fet0, fet1, fet2, fet3, unit_id)
+        (timestamps, #group, fet0, fet1, fet2, fet3, unit_id)
+        ...
+        '''
+        grps = np.unique(fet[:,1])
+        # n_units = np.unique(fet[:,-1])
+        for i_grp in grps:
+            _fet = fet[fet[:,1]==i_grp][:, 2:6]/float(2**16)
+            _clu = fet[fet[:,1]==i_grp][:, -1].astype(np.int32)
+            self.fet_view[i_grp].set_data(_fet, _clu)
+
+    def from_file(self, unit_packet_binfile):
+        '''
+        The fet.bin
+        '''
+        self.fet = np.fromfile(unit_packet_binfile, dtype=np.int32).reshape(-1,7)
+        self.load_units(self.fet)
+
+
 
     # def set_data(self, groupNo, fet, clu):
     #     self.fet_view[groupNo].set_data(fet, clu)
