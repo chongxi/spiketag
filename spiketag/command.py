@@ -316,6 +316,19 @@ def raster():
 
 
 @main.command()
+def feature():
+    '''
+    spiketag feature
+    '''
+    from spiketag.view import grid_scatter3d
+    app = QApplication(sys.argv) 
+    grid_fetview = grid_scatter3d(5,8)
+    grid_fetview.show()
+    grid_fetview.from_file('./fet.bin')
+    sys.exit(app.exec_())
+
+
+@main.command()
 @click.option('--gui', prompt='raster/fet', default='raster')
 def bmi(gui):
     # import os
