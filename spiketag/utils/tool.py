@@ -80,7 +80,7 @@ def comet(pos, fs, pos_compare=None, start=1, stop=None, length=300, interval=1,
 
 
 
-def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None, length=300, interval=1, markersize=27, blit=True, player=False, dpi=100, **kwargs):
+def decoder_viewer(pos, pos_compare=None, fs=60., mua_count=None, start=1, stop=None, length=300, interval=1, markersize=27, blit=True, player=False, dpi=100, **kwargs):
     '''
     ani = comet2(pos=pos, pos_compare=pos[300:, :], start=300, stop=pos.shape[0], length=300, interval=1, 
                  blit=True)
@@ -113,21 +113,21 @@ def decoder_viewer(pos, fs, pos_compare=None, mua_count=None, start=1, stop=None
     time_text.set_alpha(.7)
 
     point1, = ax[0].plot([],[], marker="o", color="blue", ms=markersize, alpha=.5)
-    line1,  = ax[0].plot([], [], lw=2, label='pos1')
+    line1,  = ax[0].plot([], [], lw=2, color="blue", label='Decoded', alpha=.5)
     
     line_mua_rate, = ax[1].plot([], [], '-o', lw=2)
 
     if pos_compare is not None:
         point2, = ax[0].plot([],[], marker="o", color="crimson", ms=markersize, alpha=.5)
-        line2,  = ax[0].plot([], [], lw=2, label='pos2')
+        line2,  = ax[0].plot([], [], lw=2, color="crimson",label='True', alpha=.5)
 
-    plt.legend()
 
     def init():
         time_text.set_text('')
         point1.set_data([], []) 
         line1.set_data([], []) 
         line_mua_rate.set_data([], [])
+        plt.legend()
         if pos_compare is not None:
             point2.set_data([], []) 
             line2.set_data([], []) 

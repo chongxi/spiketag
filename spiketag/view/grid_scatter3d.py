@@ -40,7 +40,7 @@ class grid_scatter3d(QtGui.QWidget):
             # self.grid.addWidget(self.fet_view[idx].native, *position)
 
 
-    def load_units(self, fet):
+    def load_units(self, fet, scale_factor=float(2**16)):
         '''
         unit packet:
         (timestamps, #group, fet0, fet1, fet2, fet3, unit_id)
@@ -52,7 +52,7 @@ class grid_scatter3d(QtGui.QWidget):
         grps = np.unique(fet[:,1])
         # n_units = np.unique(fet[:,-1])
         for i_grp in grps:
-            _fet = fet[fet[:,1]==i_grp][:, 2:6]/float(2**16)
+            _fet = fet[fet[:,1]==i_grp][:, 2:6]/scale_factor
             _clu = fet[fet[:,1]==i_grp][:, -1].astype(np.int32)
             self.fet_view[i_grp].set_data(_fet, _clu)
             self.fet_view[i_grp].register_event()
