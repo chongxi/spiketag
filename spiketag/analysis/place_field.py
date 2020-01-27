@@ -141,6 +141,8 @@ class place_field(object):
         self.get_maze_range(maze_range)
         self.get_speed() 
         self.occupation_map(bin_size)
+        self.pos_df = pd.DataFrame(np.hstack((self.ts.reshape(-1,1), self.pos)),
+                                   columns=['time', 'x', 'y'])
         # self.binned_pos = (self.pos-self.maze_original)//self.bin_size
 
 
@@ -625,3 +627,8 @@ class place_field(object):
                                         orientation='horizontal')
         cb.set_label('speed (cm/sec)')
         return ax
+
+
+    def to_file(self, filename):
+        df_all_in_one = pd.concat([self.pos_df, self.spk_df], sort=True)
+        df_all_in_one.to_pickle(filename+'.pd')
