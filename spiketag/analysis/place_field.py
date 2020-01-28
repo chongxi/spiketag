@@ -630,5 +630,5 @@ class place_field(object):
 
 
     def to_file(self, filename):
-        df_all_in_one = pd.concat([self.pos_df, self.spk_df], sort=True)
+        df_all_in_one = pd.concat([self.pos_df, self.spike_df], sort=True)
         df_all_in_one.to_pickle(filename+'.pd')
