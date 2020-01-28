@@ -48,6 +48,7 @@ class place_field(object):
         # key parameters for initialization (before self.initialize we need to align behavior with ephys) 
         self.bin_size = bin_size
         self.v_cutoff = v_cutoff
+        self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
 
     def __call__(self, t_step):
         '''
@@ -100,39 +101,6 @@ class place_field(object):
         self.t_start = self.ts[0]
         self.t_end   = self.ts[-1]
         self._ts_restore, self._pos_restore = self.ts, self.pos
-
-
-    def load_log(self, logfile=None, session_id=0, v_cutoff=5, maze_range=[[-100,100], [-100,100]], bin_size=4, sync=True):
-        '''
-        """getting the place fields from a log"""
-        # default mode:
-        # 1: ts, pos, dt 
-        # 2: v_smoothed, v_cutoff
-        # 3: maze_range, bin_size 
-        '''
-        from playground.base import logger
-        
-        if logfile is None:
-            pass
-             
-        # logfile mode
-        else:
-            self.logfile = logfile
-            self.log = logger(self.logfile, sync=sync)
-            self.ts, self.pos = self.log.to_trajectory(session_id)
-            self.pos[:,1] = -self.pos[:,1]
-
-            # self.v_smoothed, self.v = self.log.get_speed(self.ts, self.pos, smooth_window=60, std=15)
-            # self.v_cutoff = v_cutoff
-            # self.get_still_idx() 
-
-            # self.get_speed(smooth_window=60, std=15, v_cutoff=5) 
-            # self.maze_range = maze_range
-            # self.occupation_map(bin_size)
-            self.initialize(bin_size=bin_size, v_cutoff=v_cutoff, maze_range=maze_range)
-
-        ### place fields parameters ###
-        self.n_fields = 0
 
 
     def initialize(self, bin_size, v_cutoff, maze_range=None):
@@ -209,7 +177,11 @@ class place_field(object):
         '''
         # return v_smoothed, v
 
-    def plot_speed(self, start, stop, v_cutoff=5):
+    def plot_speed(self, start=None, stop=None, v_cutoff=5):
+        if start is None:
+            start = self.ts[0]
+        if stop is None:
+            stop = self.ts[-1]
         fig, ax = plt.subplots(1,1, figsize=(18,5))
         period = np.logical_and(self.ts>start, self.ts<stop)
         plt.plot(self.ts[period], self.v[period], alpha=.7)
