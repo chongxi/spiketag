@@ -5,6 +5,8 @@ from functools import partial
 from time import time
 import numpy as np
 from . import conf
+import matplotlib.pyplot as plt
+from .plotting import colorbar
 
 #------------------------------------------------------------------------------
 # Simple FIFO for regular real-time input (scalar, vector, matrix or tensor)
@@ -55,6 +57,12 @@ class FIFO(deque):
     
     def sum(self):
         return self.numpy().sum(axis=0)
+
+    def max(self):
+        return self.numpy().max()
+
+    def min(self):
+        return self.numpy().min() 
     
     @property
     def shape(self):
@@ -71,7 +79,7 @@ class FIFO(deque):
     @property
     def depth(self):
         return self._depth
-    
+
     @depth.setter
     def depth(self, depth):
         previous_fifo = self.numpy()
@@ -79,6 +87,13 @@ class FIFO(deque):
         self._depth = depth
         for item in previous_fifo:
             self.input(item)
+
+    def plot(self, figsize=(5,5)):
+        fig, ax = plt.subplots(1,1,figsize=figsize)
+        img = ax.imshow(self.numpy())
+        ax.set_title('FIFO: {}x{} (depth x width)'.format(self.shape[0], self.shape[1]))
+        colorbar(img, 'firing rate');
+        return ax
             
 
 
