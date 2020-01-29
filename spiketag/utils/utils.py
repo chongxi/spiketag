@@ -1,6 +1,6 @@
 import re
 import os
-from collections import defaultdict
+from collections import defaultdict, deque
 from functools import partial
 from time import time
 from vispy import scene, app
