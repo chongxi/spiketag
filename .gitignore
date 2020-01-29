@@ -19,6 +19,7 @@ __pycache__/
 # IDE
 .idea
 .vscode
+.vim
 
 # personal 
 spiketag_test_data/*
