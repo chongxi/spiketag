@@ -20,7 +20,7 @@ class FIFO(deque):
     
     Example:
     -----------------
-    fifo = FIFO(maxlen=5)
+    fifo = FIFO(depth=5)
     print(fifo.shape, fifo.full)
     fifo.input(np.random.random(10,))
     print(fifo.shape, fifo.full)
@@ -51,17 +51,17 @@ class FIFO(deque):
         self.append(var)
         
     def numpy(self):
-        return np.array(fifo)
+        return np.array(self)
     
     def mean(self):
-        return fifo.numpy().mean(axis=0)
+        return self.numpy().mean(axis=0)
     
     def sum(self):
-        return fifo.numpy().sum(axis=0)
+        return self.numpy().sum(axis=0)
     
     @property
     def shape(self):
-        return np.array(fifo).shape
+        return np.array(self).shape
     
     @property
     def full(self):
