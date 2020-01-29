@@ -88,11 +88,11 @@ class FIFO(deque):
         for item in previous_fifo:
             self.input(item)
 
-    def plot(self, figsize=(5,5)):
+    def plot(self, figsize=(5,5), colorbar_title='spike count'):
         fig, ax = plt.subplots(1,1,figsize=figsize)
         img = ax.imshow(self.numpy())
         ax.set_title('FIFO: {}x{} (depth x width)'.format(self.shape[0], self.shape[1]))
-        colorbar(img, 'firing rate');
+        colorbar(img, colorbar_title);
         return ax
             
 

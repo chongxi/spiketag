@@ -13,6 +13,13 @@ class UNIT(object):
         pass
 
     def load_unitpacket(self, filename):
+        '''
+        1. pd dataframe
+        2. fet.bin
+
+        Both follows table structure:
+        ['time', 'group_id', 'fet0', 'fet1', 'fet2', 'fet3', 'spike_id']
+        '''
         if filename.split('.')[-1]=='pd':
             self.df = pd.read_pickle(filename)
             self.df['frame_id'] /= 25000.
@@ -40,4 +47,3 @@ class UNIT(object):
 
     def load_behavior(self, filename):
         pass
-        
