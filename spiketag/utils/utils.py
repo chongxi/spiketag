@@ -10,6 +10,82 @@ import spiketag
 from . import conf
 
 #------------------------------------------------------------------------------
+# Simple FIFO for regular real-time input (scalar, vector, matrix or tensor)
+#------------------------------------------------------------------------------
+
+class FIFO(deque):
+    '''
+    A depth changeble FIFO (but assume each time receive regular data)
+    Useful in real-time buffer application
+    
+    Example:
+    -----------------
+    fifo = FIFO(maxlen=5)
+    print(fifo.shape, fifo.full)
+    fifo.input(np.random.random(10,))
+    print(fifo.shape, fifo.full)
+    plt.imshow(fifo.numpy())    
+
+    # to change the depth (anytime) #
+    fifo.depth = 10
+    
+    Parameters:
+    -----------------
+    depth: the FIFO depth. In deque it is maxlen (must specify when init)
+    shape: the FIFO numpy shape
+    full:  whether the FIFO is full
+    empty: whether the FIFO is empty
+    
+    Methods:
+    -----------------
+    fifo.input(var): input a scalar, vector or matrix
+    fifo.mean(): mean over fifo depth
+    fifo.sum():  sum over fifo depth
+    '''
+
+    def __init__(self, depth):
+        self._depth = depth
+        super().__init__(self, maxlen=depth)
+    
+    def input(self, var):
+        self.append(var)
+        
+    def numpy(self):
+        return np.array(fifo)
+    
+    def mean(self):
+        return fifo.numpy().mean(axis=0)
+    
+    def sum(self):
+        return fifo.numpy().sum(axis=0)
+    
+    @property
+    def shape(self):
+        return np.array(fifo).shape
+    
+    @property
+    def full(self):
+        return len(self) == self._depth
+    
+    @property
+    def empty(self):
+        return len(self) == 0
+
+    @property
+    def depth(self):
+        return self._depth
+    
+    @depth.setter
+    def depth(self, depth):
+        previous_fifo = self.numpy()
+        super().__init__(self, maxlen=depth)
+        self._depth = depth
+        for item in previous_fifo:
+            self.input(item)
+            
+
+
+#------------------------------------------------------------------------------
 # Simple Timer for performance test
 #------------------------------------------------------------------------------
 
