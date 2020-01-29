@@ -3,7 +3,7 @@ from vispy import scene, app
 from vispy.util import keys
 from .color_scheme import palette
 # from ..base.CLU import CLU
-from ..utils.utils import Picker
+from ..view import Picker
 from ..utils import Timer
 from itertools import cycle
 from vispy.color import get_colormaps, BaseColormap

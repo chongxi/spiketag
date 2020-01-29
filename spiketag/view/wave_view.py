@@ -2,9 +2,9 @@ import numpy as np
 from vispy import scene, app
 from .MyWaveVisual import MyWaveVisual
 from .color_scheme import palette
-from ..utils.cameras import YSyncCamera
-from ..utils.utils import Picker
+from ..view import Picker, YSyncCamera
 from vispy.util import keys
+
 
 class Axis(scene.AxisWidget):
     """from scene.AxisWidget"""

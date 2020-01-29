@@ -2,8 +2,7 @@ import numpy as np
 from vispy import scene, app, visuals
 from vispy.util import keys
 from .trace_view import Cross
-from ..utils.utils import Picker
-from ..utils.cameras import XSyncCamera
+from ..view import Picker, XSyncCamera
 from ..utils import EventEmitter
 
 

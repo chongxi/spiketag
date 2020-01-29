@@ -5,8 +5,9 @@ from vispy.util import keys
 # from collections import OrderedDict
 from sklearn.neighbors import KDTree
 from itertools import combinations as comb
-from ..utils import Picker, key_buffer
-from matplotlib import path
+from ..utils import key_buffer
+from ..view import Picker
+# from matplotlib import path
 
 
 # white = Color("#ecf0f1")

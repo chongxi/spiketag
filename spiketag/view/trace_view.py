@@ -3,7 +3,7 @@ from vispy import scene, app
 from vispy.util import keys
 from .MyWaveVisual import MyWaveVisual
 from .color_scheme import palette
-from ..utils.utils import Picker
+from ..view import Picker
 from ..utils import EventEmitter
 
 
