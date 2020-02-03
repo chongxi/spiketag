@@ -304,7 +304,7 @@ class Player(animation.FuncAnimation):
 
 
 
-def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr = 1/4): 
+def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90): 
     '''
     plot and show the decoding performance in 2D maze
 
@@ -322,8 +322,6 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
         the last N samples to display
     err_percentile : 
         the value that x% of the error is below
-    err_thr : 
-        plot a vertical red line indicating the goal of err_percentile.
 
     Returns
     -------
@@ -346,28 +344,31 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
     t = np.linspace(0, N*dt, N)
     ax[0,0].plot(t, real_pos[:,0][-N:]);
     ax[0,0].plot(t, dec_pos[:,0][-N:]);
-    ax[0,0].set_xlabel('Time(secs)')
+    ax[0,0].set_xlabel('Time(s)')
     ax[0,0].set_ylabel('Position in x-axis(cm)')
-    ax[0,0].set_title('x-axis r2 score:{0:.2f}'.format(r2[0]), fontsize=18)
+    ax[0,0].set_title('x-axis r2 score:{0:.2f}'.format(r2[0]), fontsize=20)
     ax[0,1].plot(t, real_pos[:,1][-N:]);
     ax[0,1].plot(t, dec_pos[:,1][-N:]);
-    ax[0,1].set_title('y-axis r2 score:{0:.2f}'.format(r2[1]), fontsize=18)
-    ax[0,1].set_xlabel('Time(secs)')
+    ax[0,1].set_title('y-axis r2 score:{0:.2f}'.format(r2[1]), fontsize=20)
+    ax[0,1].set_xlabel('Time(s)')
     ax[0,1].set_ylabel('Position in y-axis(cm)')
-    ax[0,0].legend(['True', 'Decoded'], loc=[0.05,1], fontsize=15);
+    ax[0,0].legend(['True', 'Decoded'], loc=[0.02,1], fontsize=20);
 
     # part II: error distribution
+    err_mean_x = np.mean(err[:,0])
+    err_mean_y = np.mean(err[:,1])
     # x-axis
-    sns.distplot(err[:,0], kde=False, ax=ax[1,0]);
+    # sns.distplot(err[:,0], kde=False, norm_hist=True, ax=ax[1,0]);
+    ax[1,0].hist(err[:,0], bins=40, density=True)
     err_bound_x = [0, np.percentile(err[:,0], err_percentile)]
     ax[1,0].axvspan(xmin = err_bound_x[0],
                     xmax = err_bound_x[1],
                     ymin=0, ymax=1, alpha=.2, color='c');
-    ax[1,0].axvline(err_thr, color='r')
-    ax[1,0].set_xlim([0,1])
-    ax[1,0].legend(['{0:.2f}% of x-axis'.format(err_thr*100), 
-                    '{0} percentile of error:{1:.2f}'.format(err_percentile, err_bound_x[1])], fontsize=15)
-    ax[1,0].set_xlabel('decoding error (x) distribution (normalized)')
+    ax[1,0].axvline(err_mean_x, color='r')
+    # ax[1,0].set_xlim([0,1])
+    ax[1,0].legend(['mean error {0:.2f}'.format(err_mean_x), 
+                    '{0} percentile of error:{1:.2f}'.format(err_percentile, err_bound_x[1])], fontsize=20)
+    ax[1,0].set_xlabel('decoding error x-axis (cm)')
     ax[1,0].set_ylabel('error density (x)')
     
     from scipy import signal
@@ -375,28 +376,29 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_thr
     win /= win.sum()
     t = np.linspace(0, len(err)*dt, len(err))
     xerr_time_ax = fig.add_axes([.32, .34, .15, .1])
-    xerr_time_ax.plot(t, err[:,0], alpha=.5, color='w')
+    xerr_time_ax.plot(t, err[:,0], alpha=.5)
     xerr_time_ax.plot(t, np.convolve(err[:,0].ravel(), win, mode='same'), 'm', lw=2)
     xerr_time_ax.set_title('decoding error (x) vs time')
-    xerr_time_ax.set_xlabel('time(secs)')
+    xerr_time_ax.set_xlabel('time(s)')
 
     # y-axis
-    sns.distplot(err[:,1], kde=False, ax=ax[1,1]);
+    # sns.distplot(err[:,1], kde=False, norm_hist=True, ax=ax[1,1]);
+    ax[1,1].hist(err[:,1], bins=40, density=True)
     err_bound_y = [0, np.percentile(err[:,1], err_percentile)]
     ax[1,1].axvspan(xmin = err_bound_y[0],
                     xmax = err_bound_y[1],
                     ymin=0, ymax=1, alpha=.2, color='c');
-    ax[1,1].axvline(err_thr, color='r')
-    ax[1,1].set_xlim([0,1])
-    ax[1,1].legend(['{0:.2f}% of y-axis'.format(err_thr*100), 
-                    '{0} percentile of error:{1:.2f}'.format(err_percentile, err_bound_y[1])], fontsize=15)
-    ax[1,1].set_xlabel('decoding error (y) distribution (normalized)')
+    ax[1,1].axvline(err_mean_y, color='r')
+    # ax[1,1].set_xlim([0,1])
+    ax[1,1].legend(['mean error: {0:.2f}'.format(err_mean_y), 
+                    '{0} percentile of error:{1:.2f}'.format(err_percentile, err_bound_y[1])], fontsize=20)
+    ax[1,1].set_xlabel('decoding error y-axis (cm)')
     ax[1,1].set_ylabel('error density (y)')
     
     yerr_time_ax = fig.add_axes([.74, .34, .15, .1])
-    yerr_time_ax.plot(t, err[:,1], alpha=.5, color='w')
+    yerr_time_ax.plot(t, err[:,1], alpha=.5)
     yerr_time_ax.plot(t, np.convolve(err[:,1].ravel(), win, mode='same'), 'm', lw=2)
     yerr_time_ax.set_title('decoding error (y) vs time')
-    yerr_time_ax.set_xlabel('time(secs)')
+    yerr_time_ax.set_xlabel('time(s)')
     return fig
 
