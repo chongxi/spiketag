@@ -304,7 +304,7 @@ class Player(animation.FuncAnimation):
 
 
 
-def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90): 
+def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_max = None): 
     '''
     plot and show the decoding performance in 2D maze
 
@@ -322,6 +322,8 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90):
         the last N samples to display
     err_percentile : 
         the value that x% of the error is below
+    err_max :
+        the maximum possible err [x_max, y_max]
 
     Returns
     -------
@@ -365,9 +367,10 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90):
                     xmax = err_bound_x[1],
                     ymin=0, ymax=1, alpha=.2, color='c');
     ax[1,0].axvline(err_mean_x, color='r')
-    # ax[1,0].set_xlim([0,1])
-    ax[1,0].legend(['mean error {0:.2f}'.format(err_mean_x), 
-                    '{0} percentile of error:{1:.2f}'.format(err_percentile, err_bound_x[1])], fontsize=20)
+    if err_max is not None:
+        ax[1,0].set_xlim([0, err_max[0]])
+    ax[1,0].legend(['mean error {0:.2f} cm'.format(err_mean_x), 
+                    '{0} percentile of error:{1:.2f} cm'.format(err_percentile, err_bound_x[1])], fontsize=20)
     ax[1,0].set_xlabel('decoding error x-axis (cm)')
     ax[1,0].set_ylabel('error density (x)')
     
@@ -389,9 +392,10 @@ def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90):
                     xmax = err_bound_y[1],
                     ymin=0, ymax=1, alpha=.2, color='c');
     ax[1,1].axvline(err_mean_y, color='r')
-    # ax[1,1].set_xlim([0,1])
-    ax[1,1].legend(['mean error: {0:.2f}'.format(err_mean_y), 
-                    '{0} percentile of error:{1:.2f}'.format(err_percentile, err_bound_y[1])], fontsize=20)
+    if err_max is not None:
+        ax[1,1].set_xlim([0, err_max[1]])
+    ax[1,1].legend(['mean error: {0:.2f} cm'.format(err_mean_y), 
+                    '{0} percentile of error:{1:.2f} cm'.format(err_percentile, err_bound_y[1])], fontsize=20)
     ax[1,1].set_xlabel('decoding error y-axis (cm)')
     ax[1,1].set_ylabel('error density (y)')
     
