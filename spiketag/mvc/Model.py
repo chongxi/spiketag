@@ -235,19 +235,19 @@ class MainModel(object):
         return labels
 
 
-    def tofile(self, filename=None):
+    def tofile(self, filename=None, including_noise=False):
         '''
         This should automatically update the spktag array and save
         So that next time it can be loaded and avoid re-clustering
         '''
         if filename is not None:
-            self.spktag.tofile(filename)
+            self.spktag.tofile(filename, including_noise=including_noise)
         elif self.spktag_filename is not None:
-            self.spktag.tofile(self.spktag_filename)
+            self.spktag.tofile(self.spktag_filename, including_noise=including_noise)
         else:
             barename = self.filename.split('.')[0]
             self.spktag_filename = barename + '_spktag.bin'
-            self.spktag.tofile(self.spktag_filename)
+            self.spktag.tofile(self.spktag_filename, including_noise=including_noise)
 
     def refine(self, group, global_ids):
         info("received model modified event, refine spikes[group={}, global_ids={}]".format(group, global_ids))

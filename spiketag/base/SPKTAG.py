@@ -96,12 +96,13 @@ class SPKTAG(object):
         return spktag
 
 
-    def build_spkid_matrix(self):
+    def build_spkid_matrix(self, including_noise=False):
         spkid_matrix = np.hstack((self.spktag['t'].reshape(-1,1), 
                                   self.spktag['group'].reshape(-1,1), 
                                   self.spktag['fet'], 
                                   self.spktag['clu'].reshape(-1,1)))
-        spkid_matrix = spkid_matrix[spkid_matrix[:,-1]!=0]
+        if including_noise is False:
+            spkid_matrix = spkid_matrix[spkid_matrix[:,-1]!=0]
         grp_clu_matrix = spkid_matrix[:, [1,-1]]
         global_labels = to_labels(grp_clu_matrix, self.nclus.cumsum())
         spkid_matrix[:, -1] = global_labels
@@ -121,11 +122,11 @@ class SPKTAG(object):
         self.build_spkid_matrix()
 
 
-    def tofile(self, filename):
+    def tofile(self, filename, including_noise=False):
         self.meta = self.build_meta()
         self.treeinfo = self.build_hdbscan_tree()
         self.spktag = self.build_spktag()
-        self.spkid_matrix = self.build_spkid_matrix()
+        self.spkid_matrix = self.build_spkid_matrix(including_noise=including_noise)
         with open(filename+'.meta', 'w') as metafile:
                 json.dump(self.meta, metafile, indent=4)
         np.save(filename+'.npy', self.treeinfo)

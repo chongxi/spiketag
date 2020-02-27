@@ -350,8 +350,8 @@ class controller(object):
             self.view.set_data(group_id, self.model.mua, self.model.spk[group_id], self.model.fet[group_id], self.model.clu[group_id])
             self.view.show()
 
-    def save(self, filename):
-        self.model.tofile(filename)
+    def save(self, filename, including_noise=False):
+        self.model.tofile(filename, including_noise)
 
     #####################################
     ####  sorting improvement
