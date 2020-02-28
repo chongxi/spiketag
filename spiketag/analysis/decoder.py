@@ -220,6 +220,7 @@ class NaiveBayes(Decoder):
         super(NaiveBayes, self).__init__(t_window, t_step)
         self.name = 'NaiveBayes'
         self.rt_post_2d, self.binned_pos = None, None  # these two variables can be used for real-time visualization in the playground
+        self._disable_neuron_idx = None  # mask out neuron
         
     def fit(self, X=None, y=None):
         '''
@@ -236,9 +237,15 @@ class NaiveBayes(Decoder):
         self.log_fr = np.log(self.fields) # make sure Fr[Fr==0] = 1e-12
 
     def predict(self, X):
-        if len(X.shape) == 1:
-            X = X.reshape(1,-1)
-        self.post_2d = bayesian_decoding(self.fields, X, t_window=self.t_window)
+        X_arr = X.copy()
+
+        if len(X_arr.shape) == 1:
+            X_arr = X_arr.reshape(1,-1)
+
+        if self._disable_neuron_idx is not None:
+            X_arr[:, self._disable_neuron_idx] = 0
+
+        self.post_2d = bayesian_decoding(self.fields, X_arr, t_window=self.t_window)
         binned_pos = argmax_2d_tensor(self.post_2d)
         y = binned_pos*self.spatial_bin_size + self.spatial_origin
         return y
@@ -248,11 +255,18 @@ class NaiveBayes(Decoder):
             X = np.sum(X, axis=0)  # X is (B_bins, N_neurons) spike count matrix, we need to sum up B bins to decode the full window
         else:
             X = X.ravel()
+
+        if self._disable_neuron_idx is not None:
+            X[:, self._disable_neuron_idx] = 0
+
         suv_weighted_log_fr = licomb_Matrix(X, self.log_fr)
         self.rt_post_2d = np.exp(suv_weighted_log_fr - self.possion_matrix)
         self.binned_pos = argmax_2d_tensor(self.rt_post_2d)
         y = self.binned_pos*self.spatial_bin_size + self.spatial_origin
         return y, self.rt_post_2d/self.rt_post_2d.max()
+
+    def drop_neuron(self, _disable_neuron_idx):
+        self._disable_neuron_idx = _disable_neuron_idx
 
 
 
