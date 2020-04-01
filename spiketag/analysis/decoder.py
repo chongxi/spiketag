@@ -257,7 +257,7 @@ class NaiveBayes(Decoder):
             X = X.ravel()
 
         if self._disable_neuron_idx is not None:
-            X[:, self._disable_neuron_idx] = 0
+            X[self._disable_neuron_idx] = 0
 
         suv_weighted_log_fr = licomb_Matrix(X, self.log_fr)
         self.rt_post_2d = np.exp(suv_weighted_log_fr - self.possion_matrix)
