@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from .memory_api import read_mem_16, write_mem_16
 from .bram_xike  import pca_hash, scale_hash, shift_hash, vq_hash, label_hash
 from . import bram_thres
@@ -98,6 +99,19 @@ class xike_config(object):
         10. mem_16  {0: n_units ....  8: target_unit}
             '''
         return s
+
+    def save(self, filename='./param'):
+        param = {}
+        param['ch_hash'] = self.ch_hash.to_numpy()
+        param['ch_grpNo'] = self.ch_grpNo.to_numpy()
+        param['thres'] = self.thres.to_numpy()
+        param['ch_ref'] = self.ch_ref.to_numpy()
+        param['scale'] = self.scale.to_numpy()
+        param['shift'] = self.shift.to_numpy()
+        param['pca'] = self.pca.to_numpy()
+        param['vq'] = self.vq.to_numpy()
+        param['label'] = self.label.to_numpy()
+        torch.save(param, filename)
 
     '''
     ------------------------------------------------------------------------------------

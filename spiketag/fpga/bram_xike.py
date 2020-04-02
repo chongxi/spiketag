@@ -75,6 +75,14 @@ class pca_hash(object):
             pca_comp_hex.append(hexstring)
             r32.close()     
         return pca_comp_hex
+
+    def to_numpy(self):
+        pca = []
+        for i in range(self.nCh):
+            pca.append( self.__getitem__(i) )
+        return np.stack(pca)
+
+
          
 
 class shift_hash(object):
@@ -107,6 +115,14 @@ class shift_hash(object):
         print(_shift)
         return ' '
 
+    def to_numpy(self):
+        shift = []
+        for i in range(self.nCh):
+            shift.append( self.__getitem__(i) )
+        return np.stack(shift)
+
+
+
 class scale_hash(object):
     """
     0-31
@@ -133,6 +149,12 @@ class scale_hash(object):
             _scale[i] = self.__getitem__(i)
         print(_scale)
         return ' '
+
+    def to_numpy(self):
+        scale = []
+        for i in range(self.nCh):
+            scale.append( self.__getitem__(i) )
+        return np.stack(scale)
 
 
 class vq_hash(object):
@@ -177,6 +199,12 @@ class vq_hash(object):
         for i in range(self.dim):
             vq[i] = self.read_vq_out(ch+i)
         return vq
+
+    def to_numpy(self):
+        vq = []
+        for i in range(self.nCh):
+            vq.append( self.__getitem__(i) )
+        return np.stack(vq)
 
 
 class label_hash(object):

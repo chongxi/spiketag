@@ -5,3 +5,9 @@ from .memory_api import *
 from .configFPGA import xike_config
 from .run import run
 
+
+import torch
+
+def load_param(filename):
+    return torch.load(filename)
+

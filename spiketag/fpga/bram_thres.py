@@ -105,6 +105,12 @@ class chgpNo(object):
             self.hash_repr += '{}:{}\n'.format(ch, self[ch])
         return self.hash_repr
 
+    def to_numpy(self):
+        grpNo = []
+        for i in range(self.nCh):
+            grpNo.append(self.__getitem__(i))
+        return np.stack(grpNo)
+
     __repr__ = __str__
 
 
@@ -144,6 +150,13 @@ class offset(object):
         for ch in range(self.nCh):
             self.hash_repr += '{}:{}\n'.format(ch, self[ch])
         return self.hash_repr
+
+    def to_numpy(self):
+        offset = []
+        for i in range(self.nCh):
+            offset.append(self.__getitem__(i))
+        return np.stack(offset)
+
 
     __repr__ = __str__
 
@@ -185,6 +198,13 @@ class channel_hash(object):
         for ch in range(self.nCh):
             self.hash_repr += '{}:{}\n'.format(ch, self[ch])
         return self.hash_repr
+
+    def to_numpy(self):
+        ch_hash = []
+        for i in range(self.nCh):
+            ch_hash.append(self.__getitem__(i))
+        return np.stack(ch_hash)
+
 
     __repr__ = __str__
 
