@@ -352,6 +352,7 @@ class controller(object):
 
     def save(self, filename, including_noise=False):
         self.model.tofile(filename, including_noise)
+        self.fpga.save(filename+'.param')
 
     #####################################
     ####  sorting improvement
