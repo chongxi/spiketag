@@ -2,7 +2,7 @@ from .core import softmax, licomb_Matrix, bayesian_decoding, bayesian_decoding_r
 import numpy as np
 from sklearn.metrics import r2_score
 from ..utils import plot_err_2d
-
+import copy
 
 def mua_count_cut_off(X, y=None, minimum_spikes=1):
     '''
@@ -47,7 +47,8 @@ class Decoder(object):
         This decoder is specialized for position decoding
         Connect to a place-cells object that contains behavior, neural data and co-analysis
         '''
-        self.pc = pc
+        # self.pc = pc
+        self.pc = copy.deepcopy(pc)
         if self.t_step is not None:
             print('Link the decoder with the place cell object (pc):\r\n resample the pc according to current decoder input sampling rate {0:.4f} Hz'.format(1/self.t_step))
             self.pc(t_step=self.t_step)
@@ -110,7 +111,7 @@ class Decoder(object):
                                                                                              self.test_idx.shape[0]))
 
 
-    def get_data(self, minimum_spikes=2):
+    def get_data(self, minimum_spikes=2, first_unit_is_noise=True):
         '''
         Connect to pc first and then set the partition parameter. After these two we can get data
         The data strucutre is different for RNN and non-RNN decoder
@@ -131,6 +132,11 @@ class Decoder(object):
             self.train_X, self.train_y = mua_count_cut_off(self.train_X, self.train_y, minimum_spikes)
             self.valid_X, self.valid_y = mua_count_cut_off(self.valid_X, self.valid_y, minimum_spikes)
             self.test_X,  self.test_y  = mua_count_cut_off(self.test_X,  self.test_y,  minimum_spikes)
+
+        if first_unit_is_noise:
+            self.train_X = self.train_X[:,1:]
+            self.valid_X = self.valid_X[:,1:]
+            self.test_X  = self.test_X[:,1:]
 
         return (self.train_X, self.train_y), (self.valid_X, self.valid_y), (self.test_X, self.test_y) 
 
@@ -222,12 +228,14 @@ class NaiveBayes(Decoder):
         self.rt_post_2d, self.binned_pos = None, None  # these two variables can be used for real-time visualization in the playground
         self._disable_neuron_idx = None  # mask out neuron
         
-    def fit(self, X=None, y=None):
+    def fit(self, X=None, y=None, first_unit_is_noise=True):
         '''
         Naive Bayes place decoder fitting use precise spike timing to compute the representation 
         (Rather than using binned spike count vector in t_window)
         Therefore the X and y is None for the consistency of the decoder API
         '''
+        if first_unit_is_noise:
+            self.pc.spk_time_dict = {i: self.pc.spk_time_dict[i+1] for i in range(len(self.pc.spk_time_dict.keys())-1)}
         self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], v_cutoff=self.v_cutoff, rank=False)
         self.fields = self.pc.fields
         self.spatial_bin_size, self.spatial_origin = self.pc.bin_size, self.pc.maze_original

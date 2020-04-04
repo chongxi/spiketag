@@ -86,7 +86,7 @@ class BMI(object):
         '''
         set bin size, N neurons and B bins for the binner
         '''
-        N_units = self.fpga.n_units + 1
+        N_units = self.fpga.n_units + 1 # The unit #0, no matter from which group, is always noise
         self.binner = Binner(bin_size, N_units, B_bins)    # binner initialization (space and time)      
         print('BMI binner: {} bins {} units, each bin is {} seconds'.format(B_bins, N_units, bin_size))  
         print('---2. BMI binner initiation succeed---\n')

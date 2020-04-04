@@ -340,8 +340,6 @@ class place_field(object):
             self.v_cutoff = v_cutoff
             self.get_speed()
 
-        print(spk_time_dict.keys())
-
         for i in spk_time_dict.keys():
             ### get place fields from neuron i
             self.get_field(spk_time_dict, i, start, end)

@@ -58,5 +58,7 @@ class Binner(EventEmitter):
     @property
     def output(self):
         # first column (unit) is the noise
+        # Warning: because the binner never send the unit#0 (noise) to the
+        # decoder, we should also exclude unit#0 when building the decoder. 
         self._output = self.count_vec[:, 1:] 
         return self._output
