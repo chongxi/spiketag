@@ -11,7 +11,7 @@ from numba import njit
 
 
 @njit(cache=True)
-def to_labels(grp_clu_matrix, cumsum_nclu):
+def to_global_labels(grp_clu_matrix, cumsum_nclu):
     '''
     grp_clu_matrix: (N, 2) matrix, each row is a (grp_id, clu_id) pair
     cumsum_nclu: (40,) vector, cumsum of model.nclus or spktag.nclus
@@ -21,8 +21,12 @@ def to_labels(grp_clu_matrix, cumsum_nclu):
     labels = np.zeros((N,))
     for i in range(N):
         grp_id, clu_id = grp_clu_matrix[i]
-        if clu_id > 0:
-            labels[i] = cumsum_nclu[grp_id-1] + clu_id
+        if grp_id > 0:  # for each grp_id there is a base value
+            base = cumsum_nclu[grp_id - 1]
+        else:
+            base = 0
+        if clu_id > 0:  # for each label, we need to add the base
+            labels[i] = base + clu_id
     return labels
 
 
@@ -104,7 +108,7 @@ class SPKTAG(object):
         if including_noise is False:
             spkid_matrix = spkid_matrix[spkid_matrix[:,-1]!=0]
         grp_clu_matrix = spkid_matrix[:, [1,-1]]
-        global_labels = to_labels(grp_clu_matrix, self.nclus.cumsum())
+        global_labels = to_global_labels(grp_clu_matrix, self.nclus.cumsum())
         spkid_matrix[:, -1] = global_labels
         spkid_matrix = pd.DataFrame(spkid_matrix).sort_values(0, ascending=True)
         spkid_matrix.columns = ['frame_id','group_id','fet0','fet1','fet2','fet3','spike_id']
