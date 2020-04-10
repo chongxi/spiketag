@@ -1,6 +1,6 @@
 from .utils import Timer, FIFO, EventEmitter, key_buffer
 from .tool import comet, Player, decoder_viewer, plot_err_2d
-from .plotting import colorbar, colorline
+from .plotting import colorbar, colorline, plot_unit_comparison
 from .conf import logger, debug, info, warning, error, critical
 from . import conf
 import numpy as np
