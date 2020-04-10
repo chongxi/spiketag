@@ -95,6 +95,7 @@ def plot_epoches(time_list, time_span, ax, color=['g', 'r']):
 
 
 def unit_comparison_all_dim(mod_units, bmi_units, vq, label, unit_No, bg=True, ms=1, ms_scale=8):
+    from matplotlib.lines import Line2D
     fig, ax = plt.subplots(6,3, figsize=(16,5*6), sharex=True, sharey=True)
     for i, dim in enumerate([[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]]):
         _vq = vq[label==unit_No]
