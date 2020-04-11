@@ -8,6 +8,7 @@ from ..utils import EventEmitter
 
 class scatter_2d_view(scene.SceneCanvas):
     ''' Basic scatter 2d view, any view need markers can extend this view.
+        Both amplitude_view and raster_view are made of scatter_2d_view
         This view draw the marker use the position by set_data,  and provide basis highlight, picker and transparency feature as well,
         the child class need to implemennt the transform from origin data set to position and transform from position to origin data set.
 
