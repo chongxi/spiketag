@@ -1,6 +1,6 @@
 import numpy as np
 from ..base.CLU import CLU
-from ..view import Picker
+from ..view import Picker, ROI
 from .color_scheme import palette
 from .scatter_2d_view import scatter_2d_view
 from vispy import scene, app, visuals
@@ -38,8 +38,10 @@ class raster_view(scatter_2d_view):
         if self._second_view:
             self.attach_yaxis()
             self._t_window = t_window
+        self.roi = ROI(self.scene, self._view, self._transform2view)
         self.key_option = 0
         self._control_transparency = False
+
 
 
 
@@ -139,21 +141,21 @@ class raster_view(scatter_2d_view):
     def on_mouse_press(self, e):
         if keys.CONTROL in e.modifiers:
             if self.key_option in ['1','2']:
-                self._picker.origin_point(e.pos)
+                self.roi.origin_point(e.pos)
 
 
     def on_mouse_move(self, e):
         if keys.CONTROL in e.modifiers and e.is_dragging:
             if self.key_option == '1':
-                self._picker.cast_net(e.pos,ptype='rectangle')
+                self.roi.cast_net(e.pos,ptype='rectangle')
             if self.key_option == '2':
-                self._picker.cast_net(e.pos,ptype='lasso')
+                self.roi.cast_net(e.pos,ptype='lasso')
 
 
     def on_mouse_release(self,e):
         if keys.CONTROL in e.modifiers and e.is_dragging:
             if self.key_option in ['1','2']:
-                self._selected_id = self._picker.pick(self._pos) # id ordered first by #neuron, then by #spike
+                self._selected_id = self.roi.pick(self._pos) # id ordered first by #neuron, then by #spike
                 self._highlight(self._selected_id) # test shows this works interactively in notebook
                 self.selected = self._to_spike_dict(self._selected_id)
 

@@ -1,5 +1,5 @@
 from .cameras import XSyncCamera, YSyncCamera
-from .picker import Picker
+from .picker import Picker, ROI
 from .probe_view import probe_view
 from .color_scheme import palette
 from .widgets import param_widget
