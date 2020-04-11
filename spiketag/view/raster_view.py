@@ -39,6 +39,7 @@ class raster_view(scatter_2d_view):
             self.attach_yaxis()
             self._t_window = t_window
         self.key_option = 0
+        self._control_transparency = False
 
 
 
@@ -217,10 +218,18 @@ class raster_view(scatter_2d_view):
         if e.text == 'r':
             self.set_range()
 
+        if keys.CONTROL in e.modifiers and not self._control_transparency:
+            self._view.events.mouse_wheel.disconnect(self._view.camera
+                    .viewbox_mouse_event)
+            self._control_transparency = not self._control_transparency 
+
         self.key_option = e.key.name
 
 
     def on_key_release(self, e):
+        if self._control_transparency:
+            self._view.events.mouse_wheel.connect(self._view.camera.viewbox_mouse_event)
+            self._control_transparency = not self._control_transparency
         self.key_option = 0
 
 
