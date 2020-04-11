@@ -52,6 +52,7 @@ class raster_view(scatter_2d_view):
         '''
         self._spike_time = spkid_matrix[:,0] 
         self._spike_id   = spkid_matrix[:,1]
+        self._spike_count_clu = np.bincount(np.sort(self._spike_id)).cumsum()
         if self._n_units is None: # if not given from user (user can read from fpga.n_units), will use what's there in the data
             self._n_units = len(np.unique(self._spike_id)) + 1
             print('load {} units'.format(self._n_units))
@@ -62,6 +63,7 @@ class raster_view(scatter_2d_view):
             self._draw(self._pfr)
         else:
             self._draw()
+        self.set_range()
 
 
     def attach_yaxis(self, axis_color=(0,1,1,0.8)):
@@ -84,6 +86,7 @@ class raster_view(scatter_2d_view):
     @property
     def binsize(self):
         return int(self._fs * self._time_tick)
+
 
     def highlight(self, global_idx):
         ''' Transform the global idx to the view idx:
@@ -149,13 +152,34 @@ class raster_view(scatter_2d_view):
     def on_mouse_release(self,e):
         if keys.CONTROL in e.modifiers and e.is_dragging:
             if self.key_option in ['1','2']:
-                mask = self._picker.pick(self._pos)
-                print(mask) 
+                self._selected_id = self._picker.pick(self._pos) # id ordered first by #neuron, then by #spike
+                self._highlight(self._selected_id) # test shows this works interactively in notebook
+                self.selected = self._to_spike_dict(self._selected_id)
 
 
     ### ----------------------------------------------
     ###              private method 
     ### ----------------------------------------------
+
+    def _to_spike_dict(self, _selected_id):
+        '''
+        N total spikes becomes a (N,2) matrix for rendering at the (x,y) position
+        self._pos is this (N,2) matrix, where the first column is spike time and second column is transformed spike id for rendering
+        self._pos is rendered as a 2d scatter object
+        It is ordered (N) first by #neuron, then by #spike 
+        input _selected_id is the 1D index of the order 
+
+        This function
+        convert the _selected_id, which is ordered first by #neuron, then by #spike (for fast rendering)
+        to      the spike_dict, which is (K,2) (K selected spikes: spike time, spike id) matrix ordered by spike time
+        '''
+        _spike_id   = np.unique(self._spike_id)[np.searchsorted(np.unique(self._pos[:,1]), self._pos[_selected_id][:,1])]
+        _spike_time = self._pos[_selected_id][:,0]  # spike time is in the first column
+
+        _spike_matrix = np.vstack((_spike_time, _spike_id)).T
+        _spike_matrix = _spike_matrix[np.argsort(_spike_time)]  # ordered by spike time 
+        return _spike_matrix
+
 
     def _draw(self, pfr=None, delimit=True):
        
