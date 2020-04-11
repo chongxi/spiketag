@@ -1,9 +1,11 @@
 import numpy as np
 from ..base.CLU import CLU
+from ..view import Picker
 from .color_scheme import palette
 from .scatter_2d_view import scatter_2d_view
 from vispy import scene, app, visuals
 from numba import njit, prange
+from vispy.util import keys
 
 
 @njit(cache=True, parallel=True, fastmath=True)
@@ -36,6 +38,9 @@ class raster_view(scatter_2d_view):
         if self._second_view:
             self.attach_yaxis()
             self._t_window = t_window
+        self.key_option = 0
+
+
 
     ### ----------------------------------------------
     ###              public method 
@@ -122,6 +127,32 @@ class raster_view(scatter_2d_view):
         self._clu.select(global_idx, caller=self.__module__)
 
  
+    '''
+      all of method follows is used for picker
+      Control + 1 Rectangle
+      Control + 2 Lasso
+    '''
+    def on_mouse_press(self, e):
+        if keys.CONTROL in e.modifiers:
+            if self.key_option in ['1','2']:
+                self._picker.origin_point(e.pos)
+
+
+    def on_mouse_move(self, e):
+        if keys.CONTROL in e.modifiers and e.is_dragging:
+            if self.key_option == '1':
+                self._picker.cast_net(e.pos,ptype='rectangle')
+            if self.key_option == '2':
+                self._picker.cast_net(e.pos,ptype='lasso')
+
+
+    def on_mouse_release(self,e):
+        if keys.CONTROL in e.modifiers and e.is_dragging:
+            if self.key_option in ['1','2']:
+                mask = self._picker.pick(self._pos)
+                print(mask) 
+
+
     ### ----------------------------------------------
     ###              private method 
     ### ----------------------------------------------
@@ -145,8 +176,8 @@ class raster_view(scatter_2d_view):
             else:
                 poses = np.concatenate((poses, pos))
                 colors = np.concatenate((colors, color))
-        
-        super(raster_view, self).set_data(pos=poses, colors=colors, delimit=delimit)
+
+        super(raster_view, self).set_data(pos=poses, colors=colors, delimit=delimit)   # goes to self._pos
 
         if self._second_view:
             # pfr is population firing rate
@@ -161,6 +192,13 @@ class raster_view(scatter_2d_view):
         '''
         if e.text == 'r':
             self.set_range()
+
+        self.key_option = e.key.name
+
+
+    def on_key_release(self, e):
+        self.key_option = 0
+
 
     def set_range(self):
         self._view.camera.set_range()
