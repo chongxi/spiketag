@@ -164,7 +164,8 @@ class ROI(Picker):
         Stay on cur_view and transform with it
         '''
         super().__init__(cur_scene, mapping)
-        self.roi_line = scene.visuals.Line(color='green')   # transform with parent camera
+        self.roi_line = scene.visuals.Line(color='green')   
+        ### the below two lines allows roi_line to transform with self.view ###
         self.view = cur_view
         self.view.add(self.roi_line)
 
