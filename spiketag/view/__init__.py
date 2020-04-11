@@ -18,5 +18,6 @@ from .trace_view import trace_view
 from .ctree_view import ctree_view
 from .volume_view import volume_view
 from .pf_view import pf_view
+from .image_view import image_view
 from .cluster_view import cluster_view
 from .grid_scatter3d import grid_scatter3d
