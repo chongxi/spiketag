@@ -212,7 +212,9 @@ class ROI_time_series(Picker):
 
 
     def _move_rectangle(self, pos):
-        width  = self._roi_width_scene
+        # width  = self._roi_width_scene
+        _last_vertices = self._mapping.map(self.roi_vertices)[:,:2]
+        width  = _last_vertices[:,0].max() - _last_vertices[:,0].min()
         height = self.view.rect.height
         print(width, height)
         if height and width:

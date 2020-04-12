@@ -152,7 +152,7 @@ class raster_view(scatter_2d_view):
             elif self.key_option == '2':
                 self.roi.cast_net(e.pos, ptype='lasso')
             else:
-                print('move to {}'.format(e.pos))
+                # print('move to {}'.format(e.pos))
                 self.roi.move_net(e.pos, ptype='rectangle')
 
 
