@@ -39,6 +39,7 @@ class raster_view(scatter_2d_view):
             self.attach_yaxis()
             self._t_window = t_window
         self.roi = ROI_time_series(self.scene, self._view, self._transform2view)
+        self.roi_selected_info = scene.visuals.Text(color='white', parent=self.scene)
         self.key_option = 0
         self._control_transparency = False
 
@@ -158,6 +159,11 @@ class raster_view(scatter_2d_view):
                 self._selected_id = self.roi.pick(self._pos) # id ordered first by #neuron, then by #spike
                 self._highlight(self._selected_id) # test shows this works interactively in notebook
                 self.selected = self._to_spike_dict(self._selected_id)
+                nspks  = self.selected.shape[0]
+                nunits = np.unique(self.selected[:, 1]).shape[0]
+                self.roi_selected_info.text = '{} spks from {} units are selected'.format(nspks, nunits)
+                self.roi_selected_info.pos  = [180,10]
+                self.roi_selected_info.font_size  = 10
 
 
     ### ----------------------------------------------
