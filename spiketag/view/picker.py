@@ -186,16 +186,22 @@ class ROI_time_series(Picker):
             mask = np.where(selected)[0]
 
         self.n_picked = len(mask)
-
-        self.roi_vertices = self._mapping.imap(self._vertices)[:,:2] # get the vertices in view (not scene where mouse coordinate happens)
+        self.roi_text.text = '{:.2f}s: {:d}'.format(self.roi_width, self.n_picked) if self.roi_width>0.1 else '{:.2f}ms: {:d}'.format(self.roi_width*1e3, self.n_picked)
         self.roi_line.set_data(self.roi_vertices)
-
-        self.roi_width = self.roi_vertices[:,0].max() - self.roi_vertices[:,0].min()
-
-        self.roi_text.text = '{:.2f} s: {:d}'.format(self.roi_width, self.n_picked) if self.roi_width>0.1 else '{:.2f} ms: {:d}'.format(self.roi_width*1e3, self.n_picked)
-        self.roi_text.pos  = self.roi_vertices[6] + np.array([0, .1])
-        self.roi_text.font_size = 6
-
         self.reset()
         return mask
 
+    def _cast_rectangle(self, pos):
+        width = pos[0] - self._origin[0]
+        height = self.view.rect.height  # cover the full height of the current view
+        if width and height:
+            center = (width/2. + self._origin[0],
+                      height/2.+ 0, 0)
+            self._vertices = self._gen_rectangle_vertice(center, abs(height), abs(width))
+            self._line.set_data(np.array(self._vertices))
+
+            self.roi_vertices = self._mapping.imap(self._vertices)[:,:2] # get the vertices in view (not scene where mouse coordinate happens)
+            self.roi_width = self.roi_vertices[:,0].max() - self.roi_vertices[:,0].min()
+            self.roi_text.text = '{:.2f}s'.format(self.roi_width) if self.roi_width>0.1 else '{:.2f}ms'.format(self.roi_width*1e3)
+            self.roi_text.pos  = self.roi_vertices[6] + np.array([0, .1])
+            self.roi_text.font_size = 6

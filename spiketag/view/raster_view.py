@@ -163,7 +163,7 @@ class raster_view(scatter_2d_view):
                 nunits = np.unique(self.selected[:, 1]).shape[0]
                 self.roi_selected_info.text = '{} spks from {} units are selected'.format(nspks, nunits)
                 self.roi_selected_info.pos  = [180,10]
-                self.roi_selected_info.font_size  = 10
+                self.roi_selected_info.font_size  = 8
 
 
     ### ----------------------------------------------
