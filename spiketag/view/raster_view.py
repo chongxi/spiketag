@@ -1,6 +1,6 @@
 import numpy as np
 from ..base.CLU import CLU
-from ..view import Picker, ROI
+from ..view import Picker, ROI_time_series
 from .color_scheme import palette
 from .scatter_2d_view import scatter_2d_view
 from vispy import scene, app, visuals
@@ -38,7 +38,7 @@ class raster_view(scatter_2d_view):
         if self._second_view:
             self.attach_yaxis()
             self._t_window = t_window
-        self.roi = ROI(self.scene, self._view, self._transform2view)
+        self.roi = ROI_time_series(self.scene, self._view, self._transform2view)
         self.key_option = 0
         self._control_transparency = False
 

@@ -154,10 +154,10 @@ class Picker(object):
 
 
 
-#------------------------------------------------------------------------------
-# ROI: Region Of Interset (A picker that lingers and can be put placed)
-#------------------------------------------------------------------------------
-class ROI(Picker):
+#--------------------------------------------------------------------------------------
+# ROI: Region Of Interset for time series (A picker that lingers and can be put placed)
+#--------------------------------------------------------------------------------------
+class ROI_time_series(Picker):
     def __init__(self, cur_scene, cur_view, mapping):
         '''
         Draw on cur_scene
