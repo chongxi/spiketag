@@ -146,7 +146,11 @@ class raster_view(scatter_2d_view):
 
 
     def on_mouse_move(self, e):
+
         if keys.CONTROL in e.modifiers and e.is_dragging:
+            '''
+            Interaction to set ROI
+            '''
             if self.key_option == '1':
                 self.roi.cast_net(e.pos, ptype='rectangle')
             elif self.key_option == '2':
@@ -158,22 +162,39 @@ class raster_view(scatter_2d_view):
 
     def on_mouse_release(self,e):
         if keys.CONTROL in e.modifiers and e.is_dragging:
-            # if self.key_option in ['1','2']:
-            self._selected_id = self.roi.pick(self._pos) # id ordered first by #neuron, then by #spike
-            if len(self._selected_id) > 0:
-                self._highlight(self._selected_id) # test shows this works interactively in notebook
-                self.selected = self._to_spike_dict(self._selected_id)
-                nspks  = self.selected.shape[0]
-                nunits = np.unique(self.selected[:, 1]).shape[0]
-                self.roi_selected_info.text = '{} spks from {} units are selected'.format(nspks, nunits)
-                self.roi_selected_info.pos  = [180,10]
-                self.roi_selected_info.font_size  = 8
+            self.pick()
 
 
+    def pick(self):
+        '''
+        Assuming we have a ROI, now we need to pick whatever inside
+        The picked is in self.selected
+        '''
+        self._selected_id = self.roi.pick(self._pos) # id ordered first by #neuron, then by #spike
+        if len(self._selected_id) > 0:
+            self._highlight(self._selected_id) # test shows this works interactively in notebook
+            self.selected = self._to_spike_dict(self._selected_id)
+            nspks  = self.selected.shape[0]
+            nunits = np.unique(self.selected[:, 1]).shape[0]
+            self.roi_selected_info.text = '{} spks from {} units are selected'.format(nspks, nunits)
+            self.roi_selected_info.pos  = [180,10]
+            self.roi_selected_info.font_size  = 8
+
+    def set_ROI(self, start, end):
+        self.roi.set_ROI(start, end)
+        self.pick()
+
+
+    def set_range(self, **kwargs):
+        self._view.camera.set_range(**kwargs)
+        if self._second_view:
+            self._view2.camera.set_range(**kwargs)
 
     ### ----------------------------------------------
     ###              private method 
     ### ----------------------------------------------
+
+
 
     def _to_spike_dict(self, _selected_id):
         '''
@@ -244,12 +265,6 @@ class raster_view(scatter_2d_view):
             self._view.events.mouse_wheel.connect(self._view.camera.viewbox_mouse_event)
             self._control_transparency = not self._control_transparency
         self.key_option = 0
-
-
-    def set_range(self):
-        self._view.camera.set_range()
-        if self._second_view:
-            self._view2.camera.set_range()
 
 
     def fromfile(self, filename='./fet.bin'):

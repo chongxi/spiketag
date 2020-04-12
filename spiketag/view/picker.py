@@ -191,6 +191,7 @@ class ROI_time_series(Picker):
         self.reset()
         return mask
 
+
     def _draw_roi(self, center, width, height):
         self._vertices = self._gen_rectangle_vertice(center, abs(height), abs(width))
         self._line.set_data(np.array(self._vertices))
@@ -216,11 +217,9 @@ class ROI_time_series(Picker):
         _last_vertices = self._mapping.map(self.roi_vertices)[:,:2]
         width  = _last_vertices[:,0].max() - _last_vertices[:,0].min()
         height = self.view.rect.height
-        print(width, height)
         if height and width:
             center = (pos[0] - width/2.,
                       height/2.+ 0, 0)
-            print(center)
             self._draw_roi(center, width, height)
 
 
@@ -243,3 +242,17 @@ class ROI_time_series(Picker):
         #     self._cast_lasso(pos)
         else:
             raise RuntimeError('not support yet!')
+
+
+    def set_ROI(self, start, end):
+        '''
+        Direct method to set ROI: from start to end
+        '''
+        pos = self._mapping.map([[start],[end]])[:,0]
+        self.origin_point([pos[0], 0])
+        self.cast_net([pos[1], self.view.rect.height])
+        
+
+    @property
+    def range(self):
+        return np.array([self.roi_vertices[:,0].min(), self.roi_vertices[:,0].max()])
