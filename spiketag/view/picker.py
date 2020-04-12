@@ -164,10 +164,14 @@ class ROI(Picker):
         Stay on cur_view and transform with it
         '''
         super().__init__(cur_scene, mapping)
-        self.roi_line = scene.visuals.Line(color='green')   
-        ### the below two lines allows roi_line to transform with self.view ###
         self.view = cur_view
+
+        ### this allows roi_line and roi_text to transform with self.view ###
+        self.roi_line = scene.visuals.Line(color='green')   
         self.view.add(self.roi_line)
+
+        self.roi_text = scene.visuals.Text(color='green')
+        self.view.add(self.roi_text)
 
 
     def pick(self, samples):
@@ -181,8 +185,16 @@ class ROI(Picker):
             selected = select_path.contains_points(data)
             mask = np.where(selected)[0]
 
+        self.n_picked = len(mask)
+
         self.roi_vertices = self._mapping.imap(self._vertices)[:,:2] # get the vertices in view (not scene where mouse coordinate happens)
         self.roi_line.set_data(self.roi_vertices)
+
+        self.roi_width = self.roi_vertices[:,0].max() - self.roi_vertices[:,0].min()
+
+        self.roi_text.text = '{:.2f} s: {:d}'.format(self.roi_width, self.n_picked) if self.roi_width>0.1 else '{:.2f} ms: {:d}'.format(self.roi_width*1e3, self.n_picked)
+        self.roi_text.pos  = self.roi_vertices[6] + np.array([0, .1])
+        self.roi_text.font_size = 6
 
         self.reset()
         return mask

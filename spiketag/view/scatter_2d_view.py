@@ -70,17 +70,16 @@ class scatter_2d_view(scene.SceneCanvas):
     @transparency.setter
     def transparency(self, t):
         self._transparency = t
-        # if self._transparency >= 0.9:
-        #     self._transparency = 0.9
-        # elif self._transparency <= 0.001:
-        #     self._transparency = 0.001
         self._transparency = np.clip(self._transparency, 0.001, 0.9)
 
         idx = np.setdiff1d(np.arange(self._pos.shape[0]), self._selected_id)
         self._colors[idx,-1] = self._transparency
         self._colour()
-        if self._clu.selectlist.shape[0]>0:
-            self.highlight(self._clu.selectlist)
+        try:
+            if self._clu.selectlist.shape[0]>0:
+                self.highlight(self._clu.selectlist)
+        except:
+            pass
 
     def set_data(self, pos=None, colors=None, delimit=True):
         self._pos = pos
