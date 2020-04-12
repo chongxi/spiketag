@@ -148,15 +148,19 @@ class raster_view(scatter_2d_view):
     def on_mouse_move(self, e):
         if keys.CONTROL in e.modifiers and e.is_dragging:
             if self.key_option == '1':
-                self.roi.cast_net(e.pos,ptype='rectangle')
-            if self.key_option == '2':
-                self.roi.cast_net(e.pos,ptype='lasso')
+                self.roi.cast_net(e.pos, ptype='rectangle')
+            elif self.key_option == '2':
+                self.roi.cast_net(e.pos, ptype='lasso')
+            else:
+                print('move to {}'.format(e.pos))
+                self.roi.move_net(e.pos, ptype='rectangle')
 
 
     def on_mouse_release(self,e):
         if keys.CONTROL in e.modifiers and e.is_dragging:
-            if self.key_option in ['1','2']:
-                self._selected_id = self.roi.pick(self._pos) # id ordered first by #neuron, then by #spike
+            # if self.key_option in ['1','2']:
+            self._selected_id = self.roi.pick(self._pos) # id ordered first by #neuron, then by #spike
+            if len(self._selected_id) > 0:
                 self._highlight(self._selected_id) # test shows this works interactively in notebook
                 self.selected = self._to_spike_dict(self._selected_id)
                 nspks  = self.selected.shape[0]
@@ -164,6 +168,7 @@ class raster_view(scatter_2d_view):
                 self.roi_selected_info.text = '{} spks from {} units are selected'.format(nspks, nunits)
                 self.roi_selected_info.pos  = [180,10]
                 self.roi_selected_info.font_size  = 8
+
 
 
     ### ----------------------------------------------

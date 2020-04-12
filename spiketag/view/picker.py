@@ -191,7 +191,6 @@ class ROI_time_series(Picker):
         self.reset()
         return mask
 
-
     def _draw_roi(self, center, width, height):
         self._vertices = self._gen_rectangle_vertice(center, abs(height), abs(width))
         self._line.set_data(np.array(self._vertices))
@@ -200,6 +199,7 @@ class ROI_time_series(Picker):
         self.roi_text.text = '{:.2f}s'.format(self.roi_width) if self.roi_width>0.1 else '{:.2f}ms'.format(self.roi_width*1e3)
         self.roi_text.pos  = self.roi_vertices[6] + np.array([0, .1])
         self.roi_text.font_size = 6
+
 
     def _cast_rectangle(self, pos):
         self._roi_width_scene = pos[0] - self._origin[0]
@@ -210,3 +210,34 @@ class ROI_time_series(Picker):
                       height/2.+ 0, 0)
             self._draw_roi(center, width, height)
 
+
+    def _move_rectangle(self, pos):
+        width  = self._roi_width_scene
+        height = self.view.rect.height
+        print(width, height)
+        if height and width:
+            center = (pos[0] - width/2.,
+                      height/2.+ 0, 0)
+            print(center)
+            self._draw_roi(center, width, height)
+
+
+    """
+        move a net by rectange
+
+        Parameters
+        ----------
+        pos :    array
+            2d, screen coordinate,usually the point when mouse moving.
+        ptype :  string
+            type of cast, rectangle or lasso
+    """
+    def move_net(self, pos, ptype='rectangle'):
+        self.origin_point(pos)  # this is necessary for building a new _line and _vertices
+
+        if ptype == 'rectangle':
+            self._move_rectangle(pos)
+        # elif ptype == 'lasso':
+        #     self._cast_lasso(pos)
+        else:
+            raise RuntimeError('not support yet!')
