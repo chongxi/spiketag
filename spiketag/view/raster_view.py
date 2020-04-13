@@ -40,6 +40,7 @@ class raster_view(scatter_2d_view):
             self._t_window = t_window
         self.roi = ROI_time_series(self.scene, self._view, self._transform2view)
         self.roi_selected_info = scene.visuals.Text(color='white', parent=self.scene)
+        self._rolling_view_len = 0.5 # view 0.5 seconds when rolling the ROI window
         self.key_option = 0
         self._control_transparency = False
 
@@ -251,6 +252,61 @@ class raster_view(scatter_2d_view):
         '''
         if e.text == 'r':
             self.set_range()
+
+        '''
+            h,l:     roll the ROI window (h:left, l:right)
+            =,-:     control the length of rolling window
+        '''
+        if e.text == 'h':
+            start, end = self.roi.range - self._t_window
+            self.set_ROI(start, end)
+            self.set_range(x=(start-self._rolling_view_len, end))
+
+        if e.text == 'l':
+            start, end = self.roi.range + self._t_window
+            self.set_ROI(start, end)
+            self.set_range(x=(start-self._rolling_view_len, end))
+
+        if e.text == '=':
+            start, end = self.roi.range
+            self._rolling_view_len += 0.05
+            self._rolling_view_len = np.clip(self._rolling_view_len, 0.05, 5)
+            self.set_range(x=(start-self._rolling_view_len, end))
+
+        if e.text == '-':
+            start, end = self.roi.range
+            self._rolling_view_len -= 0.05
+            self._rolling_view_len = np.clip(self._rolling_view_len, 0.05, 5)
+            self.set_range(x=(start-self._rolling_view_len, end))
+
+        if e.modifiers is not ():
+            print(e.text)
+            update_scale = 9 # update much faster if SHIFT is hold
+            if e.modifiers[0].name == 'Shift' and e.text == 'H':
+                start, end = self.roi.range - update_scale*self._t_window
+                self.set_ROI(start, end)
+                self.set_range(x=(start-self._rolling_view_len, end))
+
+            if e.modifiers[0].name == 'Shift' and e.text == 'L':
+                start, end = self.roi.range + update_scale*self._t_window
+                self.set_ROI(start, end)
+                self.set_range(x=(start-self._rolling_view_len, end))
+
+            if e.modifiers[0].name == 'Shift' and e.text == '+':
+                start, end = self.roi.range
+                self._rolling_view_len += update_scale*0.05
+                self._rolling_view_len = np.clip(self._rolling_view_len, 0.05, 5)
+                self.set_range(x=(start-self._rolling_view_len, end))
+
+            if e.modifiers[0].name == 'Shift' and e.text == '_':
+                start, end = self.roi.range
+                self._rolling_view_len -= update_scale*0.05
+                self._rolling_view_len = np.clip(self._rolling_view_len, 0.05, 5)
+                self.set_range(x=(start-self._rolling_view_len, end))      
+
+        '''
+            control the transparency
+        '''       
 
         if keys.CONTROL in e.modifiers and not self._control_transparency:
             self._view.events.mouse_wheel.disconnect(self._view.camera
