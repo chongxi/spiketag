@@ -254,9 +254,15 @@ class raster_view(scatter_2d_view):
             self.set_range()
 
         '''
+            o:       zoom into the ROI window
             h,l:     roll the ROI window (h:left, l:right)
             =,-:     control the length of rolling window
         '''
+        if e.text == 'o':
+            start, end = self.roi.range
+            self.set_ROI(start, end)
+            self.set_range(x=(start-self._rolling_view_len, end))
+
         if e.text == 'h':
             start, end = self.roi.range - self._t_window
             self.set_ROI(start, end)
