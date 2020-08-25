@@ -476,21 +476,22 @@ class place_field(object):
         pc.report()
         '''
         print('--------------- place cell object: load spktag dataframe ---------------\r\n')
-        try:
-            self.spike_df = pd.read_pickle(df_file)
-            self.spike_df['frame_id'] /= fs
-            self.spike_df.set_index('spike_id', inplace=True)
-            self.spike_df.index = self.spike_df.index.astype(int)
-            self.spike_df.index -= self.spike_df.index.min()
-            self.df['spk'] = self.spike_df
-            self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
-                                  for i in self.spike_df.index.unique().sort_values()}
-            self.df['spk'].reset_index(inplace=True)
-            self.n_units = np.sort(self.spike_df.spike_id.unique()).shape[0]
-            self.n_groups = np.sort(self.spike_df.group_id.unique()).shape[0]
-            print('1. Load the spktag dataframe\r\n    {} units are found in {} electrode-groups\r\n'.format(self.n_units, self.n_groups))
-        except:
-            print('! Fail to load spike dataframe')
+        # try:
+        self.spike_df = pd.read_pickle(df_file)
+        self.spike_df['frame_id'] /= fs
+        self.spike_df.set_index('spike_id', inplace=True)
+        self.spike_df.index = self.spike_df.index.astype(int)
+        self.spike_df.index -= self.spike_df.index.min()
+        self.spike_df.index.name = 'spike_id'
+        self.df['spk'] = self.spike_df
+        self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
+                              for i in self.spike_df.index.unique().sort_values()}
+        self.df['spk'].reset_index(inplace=True)
+        self.n_units = np.sort(self.spike_df.spike_id.unique()).shape[0]
+        self.n_groups = np.sort(self.spike_df.group_id.unique()).shape[0]
+        print('1. Load the spktag dataframe\r\n    {} units are found in {} electrode-groups\r\n'.format(self.n_units, self.n_groups))
+        # except:
+            # print('! Fail to load spike dataframe')
 
         start, end = self.spike_df.frame_id.iloc[0], self.spike_df.frame_id.iloc[-1]
         self.align_with_recording(start, end, replay_offset)
