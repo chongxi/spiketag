@@ -117,7 +117,7 @@ def spike_binning(spike_time, event_time, windows=np.array([[-0.5, 0.5]]), spike
 
 def spk_time_to_scv(spk_time_dict, ts, t_window=250e-3, sublist=None):
     if sublist is None:
-        spk_time_list=list(spk_time_dict.values())
+        spk_time_list = list(spk_time_dict.values())
     else:
         spk_time_list = [spk_time_dict.get(key) for key in sublist]
     suv = scv_from_spk_time_list(spk_time_list, ts, t_window)
@@ -131,11 +131,11 @@ def scv_from_spk_time_list(spk_time_list, ts, t_window=250e-3):
     '''
     N = len(spk_time_list)
     T = ts.shape[0]
-    suv = np.zeros((T,N))
+    suv = np.zeros((T, N))
     for i in prange(T):
-        for j in prange(N):    
-            suv[i, j] = np.sum(np.logical_and(spk_time_list[j] >= ts[i]-t_window, 
-                                              spk_time_list[j] <  ts[i]))
+        for j in prange(N):
+            suv[i, j] = np.sum(np.logical_and(spk_time_list[j] >= ts[i] - t_window,
+                                              spk_time_list[j] < ts[i]))
     return suv[1:]
 
 

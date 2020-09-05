@@ -164,3 +164,4 @@ def plot_unit_comparison(bmi_folder, model_foder, unit_No, bg=True, ms=2, ms_sca
     vq,label = param['vq'], param['label']
     fig = unit_comparison_all_dim(mod_units, bmi_units, vq, label, unit_No=unit_No, 
                                   bg=bg, ms=ms, ms_scale=ms_scale)
+    return fig
