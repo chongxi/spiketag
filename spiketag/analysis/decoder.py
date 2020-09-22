@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.metrics import r2_score
 from ..utils import plot_err_2d
 import copy
+import torch
+
 
 def mua_count_cut_off(X, y=None, minimum_spikes=1):
     '''
@@ -19,6 +21,9 @@ def mua_count_cut_off(X, y=None, minimum_spikes=1):
             y[idx] = y[idx-1]
     return X, y
 
+
+def load_decoder(filename):
+    return torch.load(filename)
 
 class Decoder(object):
     """Base class for the decoders for place prediction"""
@@ -78,7 +83,17 @@ class Decoder(object):
 
     def partition(self, training_range=[0.0, 0.5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0],
                         low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=None):
-  
+
+        self.train_range = training_range
+        self.valid_range = valid_range
+        self.test_range  = testing_range
+        self.low_speed_cutoff = low_speed_cutoff
+
+        if v_cutoff is None:
+            self.v_cutoff = self.pc.v_cutoff
+        else:
+            self.v_cutoff = v_cutoff
+
         self.train_time = [self.pc.ts[self._percent_to_time(training_range[0])], 
                            self.pc.ts[self._percent_to_time(training_range[1])]]
         self.valid_time = [self.pc.ts[self._percent_to_time(valid_range[0])], 
@@ -93,11 +108,6 @@ class Decoder(object):
         self.test_idx  = np.arange(self._percent_to_time(testing_range[0]),
                                    self._percent_to_time(testing_range[1]))
 
-        if v_cutoff is None:
-            self.v_cutoff = self.pc.v_cutoff
-
-        # Clearly wrong, test it!!! 
-
         if low_speed_cutoff['training'] is True:
             self.train_idx = self.train_idx[self.pc.v_smoothed[self.train_idx]>self.v_cutoff]
             self.valid_idx = self.valid_idx[self.pc.v_smoothed[self.valid_idx]>self.v_cutoff]
@@ -110,6 +120,8 @@ class Decoder(object):
                                                                                              self.valid_idx.shape[0],
                                                                                              self.test_idx.shape[0]))
 
+    def save(self, filename):
+        torch.save(self, filename)
 
     def get_data(self, minimum_spikes=2, first_unit_is_noise=True):
         '''
@@ -141,7 +153,7 @@ class Decoder(object):
         return (self.train_X, self.train_y), (self.valid_X, self.valid_y), (self.test_X, self.test_y) 
 
 
-    def evaluate(self, y_predict, y_true, multioutput=True):
+    def r2_score(self, y_predict, y_true, multioutput=True):
         if multioutput is True:
             self.score = r2_score(y_true, y_predict, multioutput='raw_values')
         else:
@@ -149,7 +161,6 @@ class Decoder(object):
         if self.verbose:
             print('r2 score: {}\n'.format(self.score))
         return self.score
-
 
     def auto_pipeline(self, smooth_sec=2):
         '''
@@ -168,8 +179,16 @@ class Decoder(object):
         self.predicted_y = self.predict(self.X_test)
         self.smooth_factor  = int(smooth_sec/self.pc.t_step) # 2 second by default
         self.sm_predicted_y = smooth(self.predicted_y, self.smooth_factor)
-        score = self.evaluate(self.sm_predicted_y, self.y_test)
+        score = self.r2_score(self.sm_predicted_y, self.y_test)
         return score
+
+    def score(self, smooth_sec=2):
+        '''
+        dec.score will first automatically train the decoder (fit) and then test it (predict). 
+        The training set and test set are also automatically saved in dec.X_train and dec.X_test
+        The training and test label are saved in dec.y_train and dec.y_test
+        '''
+        return self.auto_pipeline(smooth_sec=smooth_sec)
 
     def plot_decoding_err(self, dec_pos, real_pos, err_percentile = 90, N=None, err_max=None):
         err = abs(dec_pos - real_pos)
