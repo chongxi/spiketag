@@ -40,7 +40,7 @@ class BMI(object):
    
     C) Additional to the spike inference, the inferred spikes can be fed into `binner` and then to a decoder
     >>> bmi.set_binner(bin_size, B_bins) 
-    >>> bmi.set_decoder(dec, dec_result_file='./decoded_pos.bin')
+    >>> bmi.set_decoder(dec, dec_file='dec')
 
     D) Start bmi with or without a `gui_queue` for visualization
     >>> bmi.start(gui_queue=True)
@@ -112,7 +112,7 @@ class BMI(object):
                            testing_range=[0.0, 1.0], 
                            low_speed_cutoff={'training': True, 'testing': True})
         if dec_file is not None:
-            self.dec.save('dec_file')
+            self.dec.save(dec_file)
            # self.dec_result = os.open(dec_result_file, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
         print('------------------------------------------------------------------------')
 
