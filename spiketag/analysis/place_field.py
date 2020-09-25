@@ -618,7 +618,7 @@ class place_field(object):
         - testing_range: [0.7, 1.0]
         - low_speed_cutoff: {'training': True, 'testing': True}
         '''
-        if type == 'Bayesian'
+        if type == 'Bayesian':
             from spiketag.analysis import NaiveBayes
             dec = NaiveBayes(t_step=bin_size, t_window=t_window)
             dec.connect_to(pc)
