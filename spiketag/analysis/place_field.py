@@ -105,7 +105,6 @@ class place_field(object):
 
 
     def initialize(self, bin_size, v_cutoff):
-        self.dt = self.ts[1] - self.ts[0]
         self.v_cutoff = v_cutoff
         self.get_maze_range()
         self.get_speed() 
@@ -238,7 +237,7 @@ class place_field(object):
 
     @property
     def dt(self):
-        return np.diff(self.ts)[0]*1e3
+        return self.ts[1] - self.ts[0]
     
     @staticmethod
     def gkern(kernlen=21, std=2):
