@@ -32,7 +32,7 @@ class place_field(object):
     load_spktag for spike data
     get_fields for computing the representaions using spike and behavior data
     '''
-    def __init__(self, pos, v_cutoff=5, bin_size=2.5, ts=None, t_step=None):
+    def __init__(self, pos, v_cutoff=5, bin_size=2.5, ts=None, t_step=None, maze_range=None):
         '''
         resample the trajectory with new time interval
         reinitiallize with a new t_step (dt)
@@ -48,6 +48,7 @@ class place_field(object):
         # key parameters for initialization (before self.initialize we need to align behavior with ephys) 
         self.bin_size = bin_size
         self.v_cutoff = v_cutoff
+        self.maze_range = maze_range
         self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
 
     def __call__(self, t_step):
@@ -103,10 +104,10 @@ class place_field(object):
         self._ts_restore, self._pos_restore = self.ts, self.pos
 
 
-    def initialize(self, bin_size, v_cutoff, maze_range=None):
+    def initialize(self, bin_size, v_cutoff):
         self.dt = self.ts[1] - self.ts[0]
         self.v_cutoff = v_cutoff
-        self.get_maze_range(maze_range)
+        self.get_maze_range()
         self.get_speed() 
         self.occupation_map(bin_size)
         self.pos_df = pd.DataFrame(np.hstack((self.ts.reshape(-1,1), self.pos)),
@@ -114,8 +115,8 @@ class place_field(object):
         # self.binned_pos = (self.pos-self.maze_original)//self.bin_size
 
 
-    def get_maze_range(self, maze_range=None):
-        if maze_range is None:
+    def get_maze_range(self):
+        if self.maze_range is None:
             self.maze_range = np.vstack((self.pos.min(axis=0), self.pos.max(axis=0))).T
             self._maze_original = self.maze_range[:,0] # the left, down corner location
         else:
