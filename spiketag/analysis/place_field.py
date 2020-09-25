@@ -621,7 +621,7 @@ class place_field(object):
         if type == 'bayesian':
             from spiketag.analysis import NaiveBayes
             dec = NaiveBayes(t_step=t_step, t_window=t_window)
-            dec.connect_to(pc)
+            dec.connect_to(self)
             training_range = kwargs['training_range'] if 'training_range' in kwargs.keys() else [0.0, 0.65]
             valid_range    = kwargs['training_range'] if 'valid_range'    in kwargs.keys() else [0.5,  0.7]
             testing_range  = kwargs['training_range'] if 'testing_range'  in kwargs.keys() else [0.65, 1.0]
