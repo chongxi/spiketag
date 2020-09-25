@@ -608,3 +608,29 @@ class place_field(object):
     def to_file(self, filename):
         df_all_in_one = pd.concat([self.pos_df, self.spike_df], sort=True)
         df_all_in_one.to_pickle(filename+'.pd')
+
+
+    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=2, **kwargs):
+        '''
+        kwargs example:
+        - training_range: [0, 0.5]
+        - valid_range: [0.5, 0.7]
+        - testing_range: [0.7, 1.0]
+        - low_speed_cutoff: {'training': True, 'testing': True}
+        '''
+        if type == 'Bayesian'
+            from spiketag.analysis import NaiveBayes
+            dec = NaiveBayes(t_step=bin_size, t_window=t_window)
+            dec.connect_to(pc)
+            training_range = kwargs['training_range'] if 'training_range' in kwargs.keys() else [0.0, 0.65]
+            valid_range    = kwargs['training_range'] if 'valid_range'    in kwargs.keys() else [0.5,  0.7]
+            testing_range  = kwargs['training_range'] if 'testing_range'  in kwargs.keys() else [0.65, 1.0]
+            low_speed_cutoff = kwargs['low_speed_cutoff'] if 'low_speed_cutoff' in kwargs.keys() else {'training': True, 'testing': True}
+            dec.partition(training_range=training_range, valid_range=valid_range, testing_range=testing_range,
+                          low_speed_cutoff=low_speed_cutoff)
+            score = dec.score(smooth_sec=2)
+            return dec, score
+
+        if type == 'LSTM':
+            # TODO
+            pass
