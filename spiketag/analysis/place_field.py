@@ -618,9 +618,9 @@ class place_field(object):
         - testing_range: [0.7, 1.0]
         - low_speed_cutoff: {'training': True, 'testing': True}
         '''
-        if type == 'Bayesian':
+        if type == 'bayesian':
             from spiketag.analysis import NaiveBayes
-            dec = NaiveBayes(t_step=bin_size, t_window=t_window)
+            dec = NaiveBayes(t_step=t_step, t_window=t_window)
             dec.connect_to(pc)
             training_range = kwargs['training_range'] if 'training_range' in kwargs.keys() else [0.0, 0.65]
             valid_range    = kwargs['training_range'] if 'valid_range'    in kwargs.keys() else [0.5,  0.7]
@@ -628,7 +628,7 @@ class place_field(object):
             low_speed_cutoff = kwargs['low_speed_cutoff'] if 'low_speed_cutoff' in kwargs.keys() else {'training': True, 'testing': True}
             dec.partition(training_range=training_range, valid_range=valid_range, testing_range=testing_range,
                           low_speed_cutoff=low_speed_cutoff)
-            score = dec.score(smooth_sec=2)
+            score = dec.score(smooth_sec=t_smooth)
             return dec, score
 
         if type == 'LSTM':
