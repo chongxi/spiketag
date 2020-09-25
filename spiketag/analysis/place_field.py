@@ -60,7 +60,7 @@ class place_field(object):
         new_fs = 1/t_step
         self.t_step = t_step
         self.ts, self.pos = self.interp_pos(self.ts, self.pos, self.t_step)
-        self.get_speed()
+        self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
 
 
     def restore(self):
@@ -257,7 +257,7 @@ class place_field(object):
                                                            bins=self.nbins, range=self.maze_range)
         self.firing_map = self.firing_map.T
         np.seterr(divide='ignore', invalid='ignore')
-        self.FR = self.firing_map/self.O/self.dt
+        self.FR = self.firing_map/(self.O*self.dt)
         # self.FR = np.nan_to_num(self.FR)
         self.FR[np.isnan(self.FR)] = 0
         self.FR[np.isinf(self.FR)] = 0
