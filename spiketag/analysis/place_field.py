@@ -235,6 +235,10 @@ class place_field(object):
     @property
     def map_binned_size(self):
         return np.array(np.diff(self.maze_range)/self.bin_size, dtype=np.int).ravel()[::-1]
+
+    @property
+    def dt(self):
+        return np.diff(self.ts)[0]*1e3
     
     @staticmethod
     def gkern(kernlen=21, std=2):
@@ -500,7 +504,7 @@ class place_field(object):
         self.total_spike = len(self.spike_df)
         self.total_time = self.ts[-1] - self.ts[0]
         self.mean_mua_firing_rate = self.total_spike/self.total_time
-        self.dt = np.diff(self.ts)[0]*1e3
+
         print('2. Align the behavior and ephys data with {0} offset\r\n    starting at {1:.3f} secs, end at {2:.3f} secs, step at {3:.3f} ms\r\n    all units mount up to {4:.3f} spikes/sec\r\n'.format(replay_offset, start, end, self.dt, self.mean_mua_firing_rate))
 
         print('3. Calculate the place field during [{},{}] secs\r\n    spatially bin the maze, calculate speed and occupation_map with {}cm bin_size\r\n    dump spikes when speed is lower than {}cm/secs\r\n'.format(start, end, self.bin_size, self.v_cutoff))                      
