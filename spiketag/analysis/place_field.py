@@ -120,7 +120,7 @@ class place_field(object):
             self.maze_range = np.vstack((self.pos.min(axis=0), self.pos.max(axis=0))).T
             self._maze_original = self.maze_range[:,0] # the left, down corner location
         else:
-            self.maze_range = np.array(maze_range)
+            self.maze_range = np.array(self.maze_range)
             self._maze_original = self.maze_range[:,0] # the left, down corner location
 
     @property
