@@ -67,6 +67,10 @@ class place_field(object):
         self.ts, self.pos = self._ts_restore, self._pos_restore
 
     @property
+    def dt(self):
+        return self.ts[1] - self.ts[0]
+
+    @property
     def fs(self):
         self._fs = 1/(self.ts[1]-self.ts[0])
         return self._fs
@@ -235,10 +239,6 @@ class place_field(object):
     def map_binned_size(self):
         return np.array(np.diff(self.maze_range)/self.bin_size, dtype=np.int).ravel()[::-1]
 
-    @property
-    def dt(self):
-        return self.ts[1] - self.ts[0]
-    
     @staticmethod
     def gkern(kernlen=21, std=2):
         """Returns a 2D Gaussian kernel array."""
