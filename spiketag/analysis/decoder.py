@@ -54,6 +54,7 @@ class Decoder(object):
         '''
         # self.pc = pc
         self.pc = copy.deepcopy(pc)
+        self.pc.rank_fields('spatial_bit_spike') # rerank the field
         if self.t_step is not None:
             print('Link the decoder with the place cell object (pc):\r\n resample the pc according to current decoder input sampling rate {0:.4f} Hz'.format(1/self.t_step))
             self.pc(t_step=self.t_step)

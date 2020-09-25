@@ -519,11 +519,11 @@ class place_field(object):
         print('------------------------------------------------------------------------')   
 
 
-    def report(self):
+    def report(self, cmap='hot', order=False):
         print('occupation map from {0:.2f} to {1:.2f}, with speed cutoff:{2:.2f}'.format(self.ts[0], self.ts[-1], self.v_cutoff))
         self.plot_occupation_map();
         self.plot_speed(self.ts[0], self.ts[-1]//10, v_cutoff=self.v_cutoff);
-        self.plot_fields(N=10, cmap='hot', order=True);
+        self.plot_fields(N=10, cmap=cmap, order=order);
 
 
     def load_spktag(self, spktag_file, show=False):
@@ -622,6 +622,7 @@ class place_field(object):
             from spiketag.analysis import NaiveBayes
             dec = NaiveBayes(t_step=t_step, t_window=t_window)
             dec.connect_to(self)
+            dec.resample(t_step=t_step, t_window=t_window)
             training_range = kwargs['training_range'] if 'training_range' in kwargs.keys() else [0.0, 0.65]
             valid_range    = kwargs['training_range'] if 'valid_range'    in kwargs.keys() else [0.5,  0.7]
             testing_range  = kwargs['training_range'] if 'testing_range'  in kwargs.keys() else [0.65, 1.0]
