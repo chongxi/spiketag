@@ -156,12 +156,12 @@ class Decoder(object):
 
     def r2_score(self, y_predict, y_true, multioutput=True):
         if multioutput is True:
-            self.score = r2_score(y_true, y_predict, multioutput='raw_values')
+            score = r2_score(y_true, y_predict, multioutput='raw_values')
         else:
-            self.score = r2_score(y_true, y_predict)
+            score = r2_score(y_true, y_predict)
         if self.verbose:
-            print('r2 score: {}\n'.format(self.score))
-        return self.score
+            print('r2 score: {}\n'.format(score))
+        return score
 
     def auto_pipeline(self, smooth_sec=2):
         '''
