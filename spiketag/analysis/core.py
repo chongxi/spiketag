@@ -2,9 +2,10 @@ import numpy as np
 import torch
 from scipy import signal
 from numba import njit, prange
-from numba.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
+from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
 import warnings
 
+warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
