@@ -42,15 +42,16 @@ class Binner(EventEmitter):
         '''
         self.current_time = bmi_output.timestamp*self.dt
         self.current_bin = int(self.current_time//self.bin_size) # devided by [bin_size], current_bin is abosolute bin
+        spk_id = int(bmi_output.spk_id)
 
         if self.current_bin < self.B:                                                 # within B, no new bin
-            self.count_vec[self.current_bin, bmi_output.spk_id] += 1                  # update according to current_bin
+            self.count_vec[self.current_bin, spk_id] += 1                  # update according to current_bin
         elif self.current_bin >= self.B and self.current_bin==self.last_bin:          # current_bin 
-            self.count_vec[-1, bmi_output.spk_id] += 1
+            self.count_vec[-1, spk_id] += 1
         elif self.current_bin >= self.B and self.current_bin>self.last_bin:           # key: current_bin>last_bin means a input to decoder is completed 
             self.emit('decode', X=self.output)                                        # output count_vec for decoding
             self.count_vec = np.vstack((self.count_vec[1:], np.zeros((1, self.N))))   # roll and append new bin (last row)
-            self.count_vec[-1, bmi_output.spk_id] += 1                                # update the newly appended bin (last row)
+            self.count_vec[-1, spk_id] += 1                                # update the newly appended bin (last row)
 
         # print(self.count_vec.shape, self.current_bin, self.last_bin)
         self.last_bin = self.current_bin
