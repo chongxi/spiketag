@@ -333,7 +333,8 @@ def feature():
 
 @main.command()
 @click.option('--gui', prompt='raster/fet', default='raster')
-def bmi(gui):
+@click.option('--ttlport', prompt='/dev/ttyACM0 or COM3 or None', default='/dev/ttyACM0')
+def bmi(gui, ttlport):
     # import os
     # os.remove("./fet.bin")
 
@@ -343,7 +344,11 @@ def bmi(gui):
         '''
         from spiketag.res.GUI.BMI_RASTER_GUI import BMI_RASTER_GUI
         app = QApplication(sys.argv) 
-        gui = BMI_RASTER_GUI(fet_file='./fet.bin', t_window=10e-3, view_window=10)
+        if ttlport != 'None':
+            print(ttlport)
+            gui = BMI_RASTER_GUI(fet_file='./fet.bin', t_window=10e-3, view_window=10, ttlport=ttlport)
+        else:
+            gui = BMI_RASTER_GUI(fet_file='./fet.bin', t_window=10e-3, view_window=10)
         gui.show()
         sys.exit(app.exec_())
 
