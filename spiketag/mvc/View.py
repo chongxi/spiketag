@@ -102,7 +102,7 @@ class MainView(QMainWindow):
         except Exception as e:
             pass
 
-        # self.pfview.set_data(clu, mua.spk_times[group_id]/self.prb.fs)
+        self.pfview.set_data(clu, mua.spk_times[group_id]/self.prb.fs)
 
         self.traceview.locate_buffer = 1500
 
@@ -120,7 +120,7 @@ class MainView(QMainWindow):
         self.ampview.register_event()
         self.traceview.register_event()
         self.corview.register_event()
-        # self.pfview.register_event()  # make sure self.pfview already get pc
+        self.pfview.register_event()  # make sure self.pfview already get pc
         self.clu._event_reg_enable = False
 
 
