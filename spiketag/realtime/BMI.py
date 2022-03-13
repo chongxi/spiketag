@@ -38,19 +38,23 @@ class BMI(object):
     in this case, not only `bmi.fpga` can be used to configure FPGA, but also these parameters 
     should be read out to configure higher-level containers such as a BMI GUI
    
-    C) Additional to the spike inference, the inferred spikes can be fed into `binner` and then to a decoder
+    C) real-time spike inference mode:
+    >>> bmi = BMI(prb, fetfile, ttlport)
+    We can set the TTLport (a serial port, e.g. /dev/ttyACM0) to allow the PC to generate a TTL signal with customized trigger
+
+    D) Additional to the spike inference, the inferred spikes can be fed into `binner` and then to a decoder
     >>> bmi.set_binner(bin_size, B_bins) 
     >>> bmi.set_decoder(dec, dec_file='dec')
 
-    D) Start bmi with or without a `gui_queue` for visualization
+    E) Start bmi with or without a `gui_queue` for visualization
     >>> bmi.start(gui_queue=True)
     >>> bmi.stop() 
 
-    E) Read out the content in the bmi.gui_queue for visualization
+    F) Read out the content in the bmi.gui_queue for visualization
     >>> bmi.gui_queue.get()
     """
 
-    def __init__(self, prb=None, fetfile=None):
+    def __init__(self, prb=None, fetfile=None, ttlport=None):
         if prb is not None:
             self.prb = prb
             self.ngrp = prb.n_group
@@ -71,13 +75,21 @@ class BMI(object):
             self.fd = os.open(self.fetfile, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
             print('spike-id and feature is saved to {}\n'.format(self.fetfile)) 
 
+        if ttlport is not None:
+            import serial
+            self.TTLserial = serial.Serial(port=ttlport, baudrate=115200, timeout=0)
+            self.TTLserial.flushInput()
+            self.TTLserial.flushOutput()
+        else:
+            self.TTLserial = None
+
         self.binner = None
 
     def close(self):
         self.r32.close()
 
     def init_bmi_packet_channel(self):
-        self.r32 = io.open('/dev/xillybus_fet_clf_32', 'rb')
+        self.r32 = io.open('/dev/xillybus_fet_clf_32', 'rb', buffering=4)  # this buffer size is critical for performance
         self._size = 7*4  # 7 samples, 4 bytes/sample
         self.bmi_buf = None
         print('spike-id packet channel is opened\n')
@@ -149,6 +161,22 @@ class BMI(object):
         # bmi filter
         # if bmi_output.spk_id > 0:
             # filled=True
+
+        ###############################################################################
+        ##### Customized code for testing (comment out if not in test mode) ###########
+        # if bmi_output.grp_id == 39:
+        #     if self.TTLserial is not None and self.dec is not None:
+        #         # decoding
+        #         # y, post_2d = self.dec.predict_rt(self.binner.output)
+        #         # post_2d /= post_2d.sum()
+        #         # max_post = post_2d.max()
+
+        #         # output TTL
+        #         self.TTLserial.write(b'a')
+        #         self.TTLserial.flush()
+        ###############################################################################
+        ###############################################################################
+
         return bmi_output
 
 
@@ -160,7 +188,8 @@ class BMI(object):
         This process func starts when self.start()
                           it ends with self.stop()
         '''
-        
+        os.nice(-20) # makes this process almost real-time priority
+
         while True:
             with Timer('real-time decoding', verbose=False):
                 bmi_output = self.read_bmi()

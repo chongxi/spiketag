@@ -12,7 +12,7 @@ from ...utils import Timer
 
 
 class BMI_RASTER_GUI(QWidget):
-    def __init__(self, prb=None, fet_file='./fet.bin', t_window=5e-3, view_window=10):
+    def __init__(self, prb=None, fet_file='./fet.bin', t_window=5e-3, view_window=10, ttlport=None):
         '''
         t_window is used for estimating population firing count
         view_window decides how long we want to see in real-time
@@ -21,7 +21,7 @@ class BMI_RASTER_GUI(QWidget):
         self.view_timer = QtCore.QTimer(self)
         self.view_timer.timeout.connect(self.view_update)
         self.update_interval = 60
-        self.bmi = BMI(prb, fet_file)
+        self.bmi = BMI(prb, fet_file, ttlport)
 
         self.setAutoFillBackground(True)
         p = self.palette()

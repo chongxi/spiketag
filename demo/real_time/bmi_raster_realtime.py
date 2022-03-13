@@ -11,12 +11,12 @@ from spiketag.realtime import BMI
 
 
 class BMI_RASTER_GUI(QWidget):
-    def __init__(self, prb, fet_file):
+    def __init__(self, prb, fet_file, TTLport=None):
         QWidget.__init__(self)
         self.view_timer = QtCore.QTimer(self)
         self.view_timer.timeout.connect(self.view_update)
         self.update_interval = 60
-        self.bmi = BMI(prb, fet_file)
+        self.bmi = BMI(prb, fet_file, TTLport)
 
         self.setAutoFillBackground(True)
         p = self.palette()
