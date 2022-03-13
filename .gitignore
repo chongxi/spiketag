@@ -9,6 +9,7 @@ dist/*
 # python
 *.pyc
 *egg-info
+dask-worker-space/*
 *.py[cod]
 __pycache__/
 
