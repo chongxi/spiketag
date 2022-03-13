@@ -1,13 +1,15 @@
 import numpy as np
 import pandas as pd
+from sympy import binomial_coefficients
 
 
 class UNIT(object):
     """
-    neural units: could be single units or any other
+    bin_len: float (s) of bin length
     """
-    def __init__(self):
+    def __init__(self, bin_len=0.1):
         super(UNIT, self).__init__()
+        self._bin_len = bin_len
 
     def load_all(self, filename):
         pass
@@ -44,6 +46,30 @@ class UNIT(object):
             self.df['time'] /= 25000.
             self.df['group_id'] = self.df['group_id'].astype('int')
             self.df['spike_id'] = self.df['spike_id'].astype('int')
+
+        self.assign_bin()
+
+    @property
+    def bin_len(self):
+        return self._bin_len
+    
+    @bin_len.setter
+    def bin_len(self, value):
+        self._bin_len = value
+        self.assign_bin()
+
+    def assign_bin(self):
+        '''
+        critical function to 
+        1. assign bin (and end time of each bin) to each spike
+        2. assign bin_index to each bin
+        '''
+        # assign `bin` number to each spike 
+        self.df['bin'] = self.df.time.apply(lambda x: int(x//self.bin_len))
+        self.df['bin_end_time'] = self.df.time.apply(
+            lambda x: (int(x//self.bin_len)+1)*self.bin_len)
+        # assign bin_index to each bin (bin_index will be used to index scv.bin stored in BMI experiment)
+        self.bin_index = np.unique(self.df['bin'].to_numpy())[7:-1]
 
     def load_behavior(self, filename):
         pass
