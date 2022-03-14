@@ -7,9 +7,10 @@ class UNIT(object):
     """
     bin_len: float (s) of bin length
     """
-    def __init__(self, bin_len=0.1):
+    def __init__(self, bin_len=0.1, nbins=8):
         super(UNIT, self).__init__()
         self._bin_len = bin_len
+        self._nbins   = nbins
 
     def load_all(self, filename):
         pass
@@ -69,7 +70,11 @@ class UNIT(object):
         self.df['bin_end_time'] = self.df.time.apply(
             lambda x: (int(x//self.bin_len)+1)*self.bin_len)
         # assign bin_index to each bin (bin_index will be used to index scv.bin stored in BMI experiment)
-        self.bin_index = np.unique(self.df['bin'].to_numpy())[7:-1]
+        self.bin_index = self.df['bin'].unique() 
+        if self.df.bin.min() != 0 and self.df.bin.iloc[0] < self._nbins:
+            self.bin_index = np.insert(self.bin_index, 0, self._nbins-1) # insert 7 (if nbins==8) at 0 position
+        # We still need to remove the first 7 bins (if nbins==8) and the last bin was never trigger the binner to send out command
+        self.bin_index = self.bin_index[self._nbins-1:-1] 
 
     def load_behavior(self, filename):
         pass
