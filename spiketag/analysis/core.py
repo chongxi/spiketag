@@ -1,9 +1,12 @@
 import numpy as np
 import torch
+import torch.nn.functional as f
 from scipy import signal
+from scipy.signal import butter, lfilter, freqz
 from numba import njit, prange
 from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
 import warnings
+from ..base import mua_kernel
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
@@ -293,3 +296,53 @@ def get_hd(trajectory, speed_threshold, offset_hd=180):
     hd = (hd*180/np.pi + 360)    # radius to degrees
     hd = (hd+offset_hd)%360      # add the offset head direction
     return hd, speed
+
+
+############################################################################################
+# Get LFP segment from the MUA data
+# Wiener filter, low-pass filter, and downsampling to LFP
+# Example:
+# bf = bload()
+# bf.load('./mua.bin', dtype='int32')
+# ch, mua_fs, lfp_fs = 10, 25000, 1000
+# t0, t1 = 101.0, 102.0 # in seconds
+# tlfp, lfp = get_LFP(bf, t0, t1, ch, mua_fs, lfp_fs)
+############################################################################################
+
+def wiener_deconvolution_torch_gpu(signal, kernel):
+    import torch.nn.functional as f
+    signal = signal.cuda()/2**13  # FPGA used 13 bits for the fractional part
+    kernel = torch.from_numpy(kernel).cuda()
+    kernel = f.pad(kernel, (0, len(signal)-len(kernel)))
+    H = torch.fft.fft(kernel)
+    deconvolved = torch.fft.ifft(torch.fft.fft(
+        signal) * torch.conj(H)/(H*torch.conj(H)))
+    return deconvolved.real.cpu()
+
+
+def butter_lowpass(cutoff, fs=25000, order=5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    return b, a
+
+
+def get_LFP(bf, t0, t1, ch, mua_fs=25000, lfp_fs=1000, cutoff=300):
+    # step 1: wiener deconvolution (25000 Hz) to reconstruct raw waveform
+    offset = 10000
+    mua_wav = bf.data[int(t0*25000)-offset:int(t1*25000)+offset, ch]
+    raw_wav = wiener_deconvolution_torch_gpu(
+        mua_wav, mua_kernel)[:len(mua_wav)][offset:-offset]
+    raw_wav = signal.detrend(raw_wav)
+
+    # step 2: downsample raw waveform to 1000 (or 1500) Hz
+    raw_wav = signal.resample(raw_wav, int(raw_wav.shape[0]/mua_fs*lfp_fs))
+
+    # step 3: low-pass filter to get lfp (also remove the ultra-low frequency)
+    b, a = butter_lowpass(cutoff, fs=lfp_fs, order=5)
+    lfp = signal.filtfilt(b, a, raw_wav, padlen=1000)
+    tlfp = np.linspace(t0, t1, lfp.shape[0], endpoint=False)
+#     b, a = signal.iirnotch(1, 200, fs)
+#     lfp = signal.filtfilt(b, a, lfp, padlen=1000)
+    lfp = signal.detrend(lfp)
+    return tlfp, lfp
