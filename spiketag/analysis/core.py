@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-import torch.nn.functional as f
+import torch.nn.functional as F
 from scipy import signal
 from scipy.signal import butter, lfilter, freqz
 from numba import njit, prange
@@ -313,7 +313,7 @@ def wiener_deconvolution_torch_gpu(signal, kernel):
     import torch.nn.functional as f
     signal = signal.cuda()/2**13  # FPGA used 13 bits for the fractional part
     kernel = torch.from_numpy(kernel).cuda()
-    kernel = f.pad(kernel, (0, len(signal)-len(kernel)))
+    kernel = F.pad(kernel, (0, len(signal)-len(kernel)))
     H = torch.fft.fft(kernel)
     deconvolved = torch.fft.ifft(torch.fft.fft(
         signal) * torch.conj(H)/(H*torch.conj(H)))
@@ -346,3 +346,115 @@ def get_LFP(bf, t0, t1, ch, mua_fs=25000, lfp_fs=1000, cutoff=300):
 #     lfp = signal.filtfilt(b, a, lfp, padlen=1000)
     lfp = signal.detrend(lfp)
     return tlfp, lfp
+
+
+def affine_pivot(img, angle, pivot=None, scale=1, padding=0, grid_expansion=2, center_at_pivot=True, return_transformation=False):
+    """translate image to center at pivot, rotate angle degrees and then scale it
+
+    Args:
+    For just one image:
+        img: (H, W) 
+        angle: a float or int indicating the rotation degree, counter-clockwise 
+        pivot: (x, y), if no pivot is given, the center of the image will be used
+        padding: a float or int indicating the padding size, default is 0
+        grid_expansion: a scalar deciding the grid scaling size, default is 2
+        center_at_pivot: a boolean indicating whether to center the image at pivot
+        return_transformation: a boolean indicating whether to return the transformation matrix
+
+    For N images in img (a batch):
+        img (numpy array or torch tensor): (N, C, H, W)
+        angle (numpy array or torch tensor): (N,)
+        pivot (numpy array or torch tensor): (N, 2)
+        scale (numpy array or torch tensor): (N,)
+        padding (numpy array or torch tensor): a scalar value, same padding for all images in img batch
+
+    Variables:
+        R (torch tensor): (N, 2, 3) rotation/scaling matrix
+        r (torch tensor): (N,) angle to rotate (in radians) for N images
+        grid: (torch tensor): (N, C, grid_expansion*(H+2*padding), grid_expansion*(W+2*padding), 2) flow field of rotated/scaled coordinates
+
+    Note:
+        - Without `padding`, the transformed image can be cropped.
+        - Without `grid_expansion`, the transformed image can be distorted.
+        These two parameters should be tuned together.
+        Images are first padded to `H+2*padding`, `W+2*padding`, then sampled with a grid produced by a affine transformation (decided by angle, pivot and scale)
+        the grid is expanded by `grid_expansion`, so that the grid is not only a grid of coordinates, but also a grid of coordinates with a grid_expansion times larger size
+        the grid is then sampled with the original image, and the result is the transformed image
+        
+    Returns:
+        af_img: (torch tensor): (N, C, grid_expansion*(H+2*padding), grid_expansion*(W+2*padding)) rotated/scaled image
+    """
+    # before processing, check if img is a torch tensor or numpy array
+    # also check the shape of each input
+    if type(img) == np.ndarray:
+        img = torch.from_numpy(img).float()
+    if img.dim() == 2: # (H, W) -> (1, 1, H, W)
+        img = img.reshape(1,1,img.shape[0],img.shape[1]).float()
+    elif img.dim() == 3: # (N, H, W) -> (N, 1, H, W) 
+        img = img.reshape(-1, 1, img.shape[1], img.shape[2]).float()
+    else:
+        img = img.float()
+    
+    if type(angle) == np.ndarray:
+        angle = torch.from_numpy(angle).float()
+    if type(angle) == float or type(angle) == int:
+        angle = torch.tensor([angle]).float()
+    r = torch.deg2rad(angle).reshape(-1,)
+
+    if pivot is None:
+        pivot = torch.tensor([img.shape[2]//2, img.shape[3]//2], dtype=torch.float)
+    if type(pivot) == np.ndarray:
+        pivot = torch.from_numpy(pivot).float()
+    if type(pivot) == tuple:
+        pivot = torch.tensor(pivot, dtype=torch.float)
+    if pivot.shape == (2,):
+        pivot = pivot.reshape(1,2)
+
+    if type(scale) == np.ndarray:
+        scale = torch.from_numpy(scale).float()
+    if type(scale) == float or type(scale) == int:
+        scale = torch.tensor([scale]).float()
+
+    # step1: pad all images by padding
+    img = F.pad(img, [padding, padding, padding, padding], "constant", 0)
+    N, C, H, W = img.shape
+
+    # step2: construct the translation and scaling matrix 
+    tx = (padding+pivot[:, 0]-W//2)/(W//2)
+    ty = (padding+pivot[:, 1]-H//2)/(H//2)
+
+    # (manually inversed already to save computing)
+    T = torch.zeros((N, 3, 3))
+    T[:, 0, 0] = 1/scale*grid_expansion
+    T[:, 0, 2] = tx
+    T[:, 1, 1] = 1/scale*grid_expansion
+    T[:, 1, 2] = ty
+    T[:, 2, 2] = 1
+
+    # step3: construct the rotation matrix 
+    R = torch.zeros((N, 3, 3))
+    R[:, 0, 0] =  torch.cos(r)
+    R[:, 0, 1] = -torch.sin(r)
+    R[:, 1, 0] =  torch.sin(r)
+    R[:, 1, 1] =  torch.cos(r)
+    R[:, 2, 2] =  1
+
+    # step4: construct the affine matrix
+    if center_at_pivot:
+        # translate, scale, rotate == rotate around the pivot poisition and the pivot position is the center of the image
+        M = T@R
+    else:
+        # translate, scale, rotate and translate back == rotate around the pivot poisition (pivot position itself doesn't move)
+        M = T@R@torch.linalg.inv(T)
+
+    M = M[:, :2, :]
+
+    # step4: apply the transformation matrix to generate a flow grid
+    grid = F.affine_grid(M, size=(N, C, grid_expansion*H, grid_expansion*W), align_corners=True)
+    # step5: sample (bilinear interpolation) the image with the flow grid to produce the rotated and scaled image
+    af_img = F.grid_sample(img, grid, align_corners=True)
+
+    if return_transformation:
+        return M, grid, af_img
+    else:
+        return af_img
