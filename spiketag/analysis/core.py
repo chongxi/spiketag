@@ -458,3 +458,35 @@ def affine_pivot(img, angle, pivot=None, scale=1, padding=0, grid_expansion=2, c
         return M, grid, af_img
     else:
         return af_img
+
+
+def rotate_scale(img, start, pivot, padding=0, target_distance=30, autoscale=True):
+    """
+    Rotate and scale an image to a `target_distance` from the pivot position, while the pivot position will be translated to the center of the image.
+    The image will be rotated by the angle of the line connecting the start and the pivot position.
+    After transformation, the new_pivot will be the center of the image, the new_start will be at the left side of the new_pivot.
+    The image will be scaled such that the distance between the new_start and new_pivot is `target_distance`.
+    The image will be padded by `padding` to make sure the image is not cropped.
+
+    if autoscale is True, the image will be scaled such that the distance between the start and the pivot is `target_distance`.
+    if autoscale is False, the image will not be scaled (only rotated and translated). 
+
+    TODO: make it works for batch of images (N,C,H,W) and batch of start and pivot (N, 2)
+    """
+
+    vec = pivot - start
+    distance = np.linalg.norm(vec)
+    angle = np.array(np.angle(vec[0]+1j*vec[1], deg=True))
+
+    if autoscale:
+        scale = target_distance/distance
+        plot_distance = target_distance
+    else:
+        scale = 1
+        plot_distance = distance
+    rotated_img = affine_pivot(img.copy(), angle=angle, pivot=pivot,
+                               scale=scale, grid_expansion=1, padding=padding).squeeze().numpy()
+
+    new_start = (rotated_img.shape[0]//2-plot_distance, rotated_img.shape[1]//2)
+    new_pivot = (rotated_img.shape[0]//2, rotated_img.shape[1]//2)
+    return rotated_img, new_start, new_pivot 
