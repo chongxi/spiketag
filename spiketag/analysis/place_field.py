@@ -249,16 +249,24 @@ class place_field(object):
 
 
     def _get_field(self, spk_times):
-        spk_ts = np.searchsorted(self.ts, spk_times) - 1
-        idx = np.setdiff1d(spk_ts, self.low_speed_idx)
-        self.firing_ts  = self.ts[spk_ts] #[:,1]
+        '''
+        spk_times: spike times in seconds (an Numpy array), for example:
+        array([   1.38388,    1.6384 ,    1.7168 , ..., 2393.72648, 2398.52484, 2398.538  ])
+
+        Can be read out of spk_time_dict, which is loaded from pc.load_spktag() or pc.load_spkdf() methods.
+        spk_times = pc.spk_time_dict[2]
+
+        Used by `get_fields` method to calculate the place fields for all neurons in pc.spk_time_dict.
+        '''
+        spk_ts_idx = np.searchsorted(self.ts, spk_times)
+        idx = np.array([_ for _ in spk_ts_idx if _ not in self.low_speed_idx])
+        self.firing_ts  = self.ts[idx]
         self.firing_pos = self.pos[idx]        
         self.firing_map, x_edges, y_edges = np.histogram2d(x=self.firing_pos[:,0], y=self.firing_pos[:,1], 
                                                            bins=self.nbins, range=self.maze_range)
         self.firing_map = self.firing_map.T
         np.seterr(divide='ignore', invalid='ignore')
         self.FR = self.firing_map/(self.O*self.dt)
-        # self.FR = np.nan_to_num(self.FR)
         self.FR[np.isnan(self.FR)] = 0
         self.FR[np.isinf(self.FR)] = 0
         self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
@@ -291,18 +299,16 @@ class place_field(object):
 
     def get_field(self, spk_time_dict, neuron_id, start=None, end=None):
         '''
-        f, ax = plt.subplots(1,2,figsize=(20,9))
-        ax[0].plot(self.pos[:,0], self.pos[:,1])
-        ax[0].plot(self.firing_pos[:,0], self.firing_pos[:,1], 'mo', alpha=0.5)
-        # ax[0].pcolormesh(self.X, self.Y, self.FR, cmap=cm.hot)
-        pc = ax[1].pcolormesh(X, Y, FR_GAU, cmap=cm.hot)
-        colorbar(pc, ax=ax[1], label='Hz') 
+        wrapper of _get_field method
+        calculate the place field of a single neuron (neuron_id) in a dictionary of spike times (spk_time_dict)
+
+        Also, can restrict the time range of the place field by `start` and `end`.
         '''
         spk_times = spk_time_dict[neuron_id]
         ### for cross-validation and field stability check
         ### calculate representation from `start` to `end`
         if start is not None and end is not None:
-            spk_times = spk_times[np.logical_and(start<=spk_times, spk_times<end)]
+            spk_times = spk_times[np.logical_and(spk_times <= start, spk_times < end)]
         self._get_field(spk_times)
 
 
