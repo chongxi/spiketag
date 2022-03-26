@@ -197,12 +197,13 @@ class Decoder(object):
         >>>                   low_speed_cutoff={'training': True, 'testing': True})
         >>>     r_scores.append(dec.auto_pipeline(2))
         '''
-        (X_train, y_train), (X_valid, y_valid), (self.X_test, self.y_test) = self.get_data(minimum_spikes=2)
+        (X_train, y_train), (X_valid, y_valid), (self.X_test, self.y_test) = self.get_data(minimum_spikes=2, 
+                                                                                           first_unit_is_noise=remove_first_neuron)
         self.fit(X_train, y_train, remove_first_neuron=remove_first_neuron)
         self.predicted_y = self.predict(self.X_test)
         self.smooth_factor  = int(smooth_sec/self.pc.t_step) # 2 second by default
         self.sm_predicted_y = smooth(self.predicted_y, self.smooth_factor)
-        score = self.r2_score(self.sm_predicted_y, self.y_test)
+        score = self.r2_score(self.y_test, self.sm_predicted_y) # ! r2 score is not symmetric, needs to be (true, prediction)
         return score
 
     def score(self, smooth_sec=2, remove_first_neuron=False):
@@ -270,7 +271,7 @@ class NaiveBayes(Decoder):
         self.rt_post_2d, self.binned_pos = None, None  # these two variables can be used for real-time visualization in the playground
         self._disable_neuron_idx = None  # mask out neuron
         
-    def fit(self, X=None, y=None, remove_first_neuron=True):
+    def fit(self, X=None, y=None, remove_first_neuron=False):
         '''
         Naive Bayes place decoder fitting use precise spike timing to compute the representation 
         (Rather than using binned spike count vector in t_window)
@@ -278,8 +279,8 @@ class NaiveBayes(Decoder):
         '''
         if remove_first_neuron: # remove the first neuron (the one classified as noise)
             self.pc.spk_time_dict = {i: self.pc.spk_time_dict[i+1] for i in range(len(self.pc.spk_time_dict.keys())-1)}
-        # self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], v_cutoff=self.v_cutoff, rank=False)
-        self.pc.get_fields()
+        self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], v_cutoff=self.v_cutoff, rank=False)
+        # self.pc.get_fields()
         self.fields = self.pc.fields
         self.spatial_bin_size, self.spatial_origin = self.pc.bin_size, self.pc.maze_original
 
@@ -294,9 +295,14 @@ class NaiveBayes(Decoder):
             X_arr = X_arr.reshape(1,-1)
 
         if self._disable_neuron_idx is not None:
-            X_arr[:, self._disable_neuron_idx] = 0
+            self.neuron_idx = [_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx]
+            firing_bins = X_arr[:, self.neuron_idx]
+            place_fields = self.fields[self.neuron_idx]
+        else:
+            firing_bins = X_arr
+            place_fields = self.fields
 
-        self.post_2d = bayesian_decoding(self.fields, X_arr, t_window=self.t_window)
+        self.post_2d = bayesian_decoding(place_fields, firing_bins, t_window=self.t_window)
         binned_pos = argmax_2d_tensor(self.post_2d)
         y = binned_pos*self.spatial_bin_size + self.spatial_origin
         return y
@@ -317,6 +323,8 @@ class NaiveBayes(Decoder):
         return y, self.rt_post_2d/self.rt_post_2d.max()
 
     def drop_neuron(self, _disable_neuron_idx):
+        if type(_disable_neuron_idx) == int:
+            _disable_neuron_idx = [_disable_neuron_idx]
         self._disable_neuron_idx = _disable_neuron_idx
 
 
