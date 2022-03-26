@@ -23,7 +23,20 @@ def mua_count_cut_off(X, y=None, minimum_spikes=1):
 
 
 def load_decoder(filename):
-    return torch.load(filename)
+    # step 1: load the decoder from file
+    dec = torch.load(filename)
+
+    # step 2: assign place field to the place decoder
+    # call pc.get_fields() first to update pc.fields and then transfer to dec.fields
+    dec.pc.get_fields() # !critical to update pc.fields using this method first
+    dec.fields = dec.pc.fields[1:]  # remove the first field, which is the 'noise'
+
+    # step 3: store some reusable values in the decoder for fast online computing
+    # cached value for real-time decoding on incoming bin (N units by B bins) from BMI
+    dec.spatial_bin_size, dec.spatial_origin = dec.pc.bin_size, dec.pc.maze_original
+    dec.possion_matrix = dec.t_window*dec.fields.sum(axis=0) # one matrix reused in bayesian decoding
+    dec.log_fr = np.log(dec.fields)  # log fields, make sure Fr[Fr==0] = 1e-12
+    return dec
 
 class Decoder(object):
     """Base class for the decoders for place prediction"""
