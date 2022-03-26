@@ -164,11 +164,19 @@ class place_field(object):
     def get_speed(self):
         '''
         self.ts, self.pos is required
+
+        To consider that some/many place cells start firing before moving, and stop firing a few seconds after moving, we 
+        need a wider smoothing window. 
+
+        v_smoothed_wide is a larger window to calculate the low_speed_idx
+
+        The `low_speed_idx` are thos index of `ts` and `pos` that are too slow to be considered to calculate the place field. 
         '''
         self.v = np.linalg.norm(np.diff(self.pos, axis=0), axis=1)/np.diff(self.ts)
         self.v = np.hstack((self.v[0], self.v))
         self.v_smoothed = smooth(self.v.reshape(-1,1), int(np.round(self.fs))).ravel()
-        self.low_speed_idx = np.where(self.v_smoothed < self.v_cutoff)[0]
+        self.v_smoothed_wide = 2 * smooth(self.v.reshape(-1,1), 4*int(np.round(self.fs))).ravel()
+        self.low_speed_idx = np.where(self.v_smoothed_wide < self.v_cutoff)[0]
 
         self.df['pos'] = pd.DataFrame(data=np.hstack((self.pos, self.v_smoothed.reshape(-1,1))), index=self.ts, 
                                         columns=['x','y','v'])
@@ -350,10 +358,10 @@ class place_field(object):
         self.firing_pos_dict = {}
 
         if v_cutoff is None:
-            self.get_speed()
+            self.get_speed()    # ! critical for generating `low_speed_idx`
         else:
             self.v_cutoff = v_cutoff
-            self.get_speed()
+            self.get_speed()    # ! critical for generating `low_speed_idx`
 
         print(spk_time_dict.keys())
 
@@ -643,7 +651,8 @@ class place_field(object):
             low_speed_cutoff = kwargs['low_speed_cutoff'] if 'low_speed_cutoff' in kwargs.keys() else {'training': True, 'testing': True}
             dec.partition(training_range=training_range, valid_range=valid_range, testing_range=testing_range,
                           low_speed_cutoff=low_speed_cutoff)
-            score = dec.score(smooth_sec=t_smooth, remove_first_neuron=True)
+            dec.drop_neuron([0]) # drop the neuron with id 0 which is noise
+            score = dec.score(smooth_sec=t_smooth, remove_first_neuron=False)
             return dec, score
 
         if type == 'LSTM':
