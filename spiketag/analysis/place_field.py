@@ -101,8 +101,8 @@ class place_field(object):
         ts after alignment           |------------| 
         '''
         self.ts += replay_offset   # 0 if the ephys is not offset by replaying through neural signal generator
-        self.pos = self.pos[np.logical_and(self.ts>recording_start_time, self.ts<recording_end_time)]
-        self.ts  =  self.ts[np.logical_and(self.ts>recording_start_time, self.ts<recording_end_time)]
+        self.pos = self.pos[np.logical_and(self.ts>=recording_start_time, self.ts<=recording_end_time)]
+        self.ts  =  self.ts[np.logical_and(self.ts>=recording_start_time, self.ts<=recording_end_time)]
         self.t_start = self.ts[0]
         self.t_end   = self.ts[-1]
         self._ts_restore, self._pos_restore = self.ts, self.pos
