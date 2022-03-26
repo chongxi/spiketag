@@ -92,6 +92,9 @@ class place_field(object):
 
     def align_with_recording(self, recording_start_time, recording_end_time, replay_offset=0):
         '''
+        replay_offset should be 0 if and only if pc.ts[0] is the actual ephys start time 0
+        the ephys actual start time 0 = recording_start_time + replay_offset
+
         ts before alignment   |--------------------|
         behavior  start:      |
         behavior    end:                           |
