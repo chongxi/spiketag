@@ -258,8 +258,10 @@ class place_field(object):
 
         Used by `get_fields` method to calculate the place fields for all neurons in pc.spk_time_dict.
         '''
-        spk_ts_idx = np.searchsorted(self.ts, spk_times)
-        idx = np.array([_ for _ in spk_ts_idx if _ not in self.low_speed_idx])
+        spk_ts_idx = np.searchsorted(self.ts, spk_times) - 1
+        spk_ts_idx = spk_ts_idx[spk_ts_idx>0]
+        idx = np.array([_ for _ in spk_ts_idx if _ not in self.low_speed_idx], dtype=np.int)
+        # idx = np.setdiff1d(spk_ts_idx, self.low_speed_idx)
         self.firing_ts  = self.ts[idx]
         self.firing_pos = self.pos[idx]        
         self.firing_map, x_edges, y_edges = np.histogram2d(x=self.firing_pos[:,0], y=self.firing_pos[:,1], 
@@ -308,7 +310,7 @@ class place_field(object):
         ### for cross-validation and field stability check
         ### calculate representation from `start` to `end`
         if start is not None and end is not None:
-            spk_times = spk_times[np.logical_and(spk_times <= start, spk_times < end)]
+            spk_times = spk_times[np.logical_and(start<=spk_times, spk_times < end)]
         self._get_field(spk_times)
 
 
@@ -632,13 +634,13 @@ class place_field(object):
             dec = NaiveBayes(t_step=t_step, t_window=t_window)
             dec.connect_to(self)
             dec.resample(t_step=t_step, t_window=t_window)
-            training_range = kwargs['training_range'] if 'training_range' in kwargs.keys() else [0.0, 0.65]
-            valid_range    = kwargs['training_range'] if 'valid_range'    in kwargs.keys() else [0.5,  0.7]
-            testing_range  = kwargs['training_range'] if 'testing_range'  in kwargs.keys() else [0.65, 1.0]
+            training_range = kwargs['training_range'] if 'training_range' in kwargs.keys() else [0.0, 1.0]
+            valid_range    = kwargs['training_range'] if 'valid_range'    in kwargs.keys() else [0.0, 1.0]
+            testing_range  = kwargs['training_range'] if 'testing_range'  in kwargs.keys() else [0.0, 1.0]
             low_speed_cutoff = kwargs['low_speed_cutoff'] if 'low_speed_cutoff' in kwargs.keys() else {'training': True, 'testing': True}
             dec.partition(training_range=training_range, valid_range=valid_range, testing_range=testing_range,
                           low_speed_cutoff=low_speed_cutoff)
-            score = dec.score(smooth_sec=t_smooth)
+            score = dec.score(smooth_sec=t_smooth, remove_first_neuron=True)
             return dec, score
 
         if type == 'LSTM':
