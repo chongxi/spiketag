@@ -36,6 +36,15 @@ def load_decoder(filename):
     dec.spatial_bin_size, dec.spatial_origin = dec.pc.bin_size, dec.pc.maze_original
     dec.possion_matrix = dec.t_window*dec.fields.sum(axis=0) # one matrix reused in bayesian decoding
     dec.log_fr = np.log(dec.fields)  # log fields, make sure Fr[Fr==0] = 1e-12
+
+    dec.partition(training_range=[0.0, 1.0], valid_range=[0.0, 1.0], testing_range=[0.0, 1.0], 
+                  low_speed_cutoff={'training': True, 'testing': True})
+    (X_train, y_train), (X_valid, y_valid), (X_test, y_test) = dec.get_data(minimum_spikes=2)
+    predicted_y = dec.predict(X_test)
+    smooth_factor  = int(2/dec.pc.t_step) # 2 second by default
+    sm_predicted_y = smooth(predicted_y, smooth_factor)
+    score = dec.r2_score(sm_predicted_y, y_test)
+    print(f'decoder uses {dec.fields.shape[0]} neurons, R2 score: {score}')
     return dec
 
 class Decoder(object):
@@ -176,7 +185,7 @@ class Decoder(object):
             print('r2 score: {}\n'.format(score))
         return score
 
-    def auto_pipeline(self, smooth_sec=2):
+    def auto_pipeline(self, smooth_sec=2, remove_first_neuron=False):
         '''
         example for evaluate the funciton of acc[partition]:
         >>> dec = NaiveBayes(t_window=500e-3, t_step=60e-3)
@@ -189,20 +198,20 @@ class Decoder(object):
         >>>     r_scores.append(dec.auto_pipeline(2))
         '''
         (X_train, y_train), (X_valid, y_valid), (self.X_test, self.y_test) = self.get_data(minimum_spikes=2)
-        self.fit(X_train, y_train)
+        self.fit(X_train, y_train, remove_first_neuron=remove_first_neuron)
         self.predicted_y = self.predict(self.X_test)
         self.smooth_factor  = int(smooth_sec/self.pc.t_step) # 2 second by default
         self.sm_predicted_y = smooth(self.predicted_y, self.smooth_factor)
         score = self.r2_score(self.sm_predicted_y, self.y_test)
         return score
 
-    def score(self, smooth_sec=2):
+    def score(self, smooth_sec=2, remove_first_neuron=False):
         '''
         dec.score will first automatically train the decoder (fit) and then test it (predict). 
         The training set and test set are also automatically saved in dec.X_train and dec.X_test
         The training and test label are saved in dec.y_train and dec.y_test
         '''
-        return self.auto_pipeline(smooth_sec=smooth_sec)
+        return self.auto_pipeline(smooth_sec=smooth_sec, remove_first_neuron=remove_first_neuron)
 
     def plot_decoding_err(self, dec_pos, real_pos, err_percentile = 90, N=None, err_max=None):
         err = abs(dec_pos - real_pos)
@@ -261,15 +270,16 @@ class NaiveBayes(Decoder):
         self.rt_post_2d, self.binned_pos = None, None  # these two variables can be used for real-time visualization in the playground
         self._disable_neuron_idx = None  # mask out neuron
         
-    def fit(self, X=None, y=None, first_unit_is_noise=True):
+    def fit(self, X=None, y=None, remove_first_neuron=True):
         '''
         Naive Bayes place decoder fitting use precise spike timing to compute the representation 
         (Rather than using binned spike count vector in t_window)
         Therefore the X and y is None for the consistency of the decoder API
         '''
-        if first_unit_is_noise:
+        if remove_first_neuron: # remove the first neuron (the one classified as noise)
             self.pc.spk_time_dict = {i: self.pc.spk_time_dict[i+1] for i in range(len(self.pc.spk_time_dict.keys())-1)}
-        self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], v_cutoff=self.v_cutoff, rank=False)
+        # self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], v_cutoff=self.v_cutoff, rank=False)
+        self.pc.get_fields()
         self.fields = self.pc.fields
         self.spatial_bin_size, self.spatial_origin = self.pc.bin_size, self.pc.maze_original
 
