@@ -166,7 +166,7 @@ class controller(object):
                 vchs = np.hstack((self.prb[self.current_group-1], self.prb[self.current_group], self.prb[self.current_group+1]))
             elif self.current_group == min(self.prb.grp_dict.keys()):
                 vchs = np.hstack((self.prb[self.current_group], self.prb[self.current_group+1]))
-            elif self.current_group == max(prb.grp_dict.keys()):
+            elif self.current_group == max(self.prb.grp_dict.keys()):
                 vchs = np.hstack((self.prb[self.current_group-1], self.prb[self.current_group]))
             if len(self.view.spkview.selected_spk) == 1:
                 current_time = self.model.mua.spk_times[self.current_group][self.view.spkview.selected_spk]/self.model.mua.fs
