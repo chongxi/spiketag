@@ -112,7 +112,7 @@ class FET(object):
         self.fet[group] = np.delete(self.fet[group], ids, axis=0)
  
 
-    def toclu(self, method, group_id='all', **kwargs):
+    def toclu(self, method='dpgmm', group_id='all', **kwargs):
         
         # clu_dict = {}
 
@@ -120,11 +120,15 @@ class FET(object):
         1. When group_id is not provided, means parallel sorting on all groups
         '''
         if group_id is 'all':
-            info('clustering for all groups with {} cpus'.format(njobs))
-            tic = time()
-            ### TODO ###
-            toc = time()
-            info('clustering finished, used {} sec'.format(toc-tic))
+            for i in range(len(self.group)):
+                group_id = self.group[i]
+                self.toclu(method, group_id, **kwargs)
+                # clu_dict[group_id] = self.clu[group_id]
+            # info('clustering for all groups with {} cpus'.format(njobs))
+            # tic = time()
+            # ### TODO ###
+            # toc = time()
+            # info('clustering finished, used {} sec'.format(toc-tic))
 
         ## 2. When group_id is provided, and background sorting (async and non-blocking) is required
         else:
