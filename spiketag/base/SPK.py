@@ -115,7 +115,12 @@ def _to_fet(_spk_array, _weight_vector, method='weighted-pca', ncomp=6, whiten=F
 
 
 class SPK():
-    def __init__(self, spkdict):
+    def __init__(self, spkdict=None):
+        if spkdict is not None:
+            self.spkdict = spkdict
+            self(self.spkdict)
+    
+    def __call__(self, spkdict):
         self.__spk = spkdict.copy() 
         self.spk = spkdict
         self.n_group = len(spkdict)
@@ -128,9 +133,7 @@ class SPK():
         weight_channel = self.weight_channel_saw(np.arange(self.ch_span))
         W = weight_channel * weight_vector.reshape(-1,1)
         self.W = W.T.ravel()
-
         self.W = np.ones((self.spklen*self.ch_span,)).astype(np.float32) # for tetrode
-
 
     @property
     def nspk(self):
@@ -167,13 +170,24 @@ class SPK():
             fet = np.zeros((spk.shape[0], ncomp), dtype=np.float32)
         return fet
 
-    def tofet(self, group_id=None, method='pca', ncomp=6, whiten=False):
+    def load_spkwav(self, file='./spk_wav.bin'):
+        '''
+        spk = SPK()
+        spk.load_spkwav('./spk_wav.bin')        
+        '''
+        spk = np.fromfile(file, dtype=np.int32).reshape(-1, 20, 4)
+        ch, spk_time, electrode_group = spk[..., 0, 1], spk[..., 0, 2], spk[..., 0, 3]
+        group_list = np.sort(np.unique(electrode_group))
+        self.spk_dict = {}
+        for group in group_list:
+            self.spk_dict[group] = spk[electrode_group == group][:, 1:, :]/(2**14)
+        self(self.spk_dict)
 
+    def tofet(self, group_id=None, method='pca', ncomp=6, whiten=False):
         fet = {}
-        pca_comp = {}
-        shift = {}
-        scale = {}
-        
+        # pca_comp = {}
+        # shift = {}
+        # scale = {}
         if group_id is not None:
             return self._tofet(group_id, method, ncomp, whiten)
         else:
@@ -184,7 +198,6 @@ class SPK():
             info('----------------success------------------')
             info(' ')
             return FET(fet)
-
 
     # def show(self, group_id):
     #     self.spk_view = spike_view()
