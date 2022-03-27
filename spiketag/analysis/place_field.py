@@ -271,7 +271,8 @@ class place_field(object):
         '''
         spk_ts_idx = np.searchsorted(self.ts, spk_times) - 1
         spk_ts_idx = spk_ts_idx[spk_ts_idx>0]
-        idx = np.array([_ for _ in spk_ts_idx if _ not in self.low_speed_idx], dtype=np.int)
+        # idx = np.array([_ for _ in spk_ts_idx if _ not in self.low_speed_idx], dtype=np.int)
+        idx = spk_ts_idx[~np.in1d(spk_ts_idx, self.low_speed_idx)]
         # idx = np.setdiff1d(spk_ts_idx, self.low_speed_idx)
         self.firing_ts  = self.ts[idx]
         self.firing_pos = self.pos[idx]        
