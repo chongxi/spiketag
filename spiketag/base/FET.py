@@ -149,3 +149,34 @@ class FET(object):
         @clu.connect
         def on_cluster(*args, **kwargs):
             print(clu._id, clu.membership)
+
+    @property
+    def nclus(self):
+        self._nclus = []
+        for i in self.group:
+            n = self.clu[i].nclu
+            self._nclus.append(n)
+        self._nclus = np.array(self._nclus) - 1
+        return self._nclus
+
+    def assign_clu_global_labels(self):
+        '''
+        assign global labels to each clu (fet.clu[group_id].membership_global)
+        while return a look up table {group_id: {local_label:global_label}}
+        '''
+        base = 0
+        global_label_lut = {} # a look up table {local label : global label} 
+        for g in self.group:
+            label_dict = {}
+            old_labels = np.unique(self.clu[g].membership)
+            new_labels = np.unique(self.clu[g].membership) + base
+            base = max(max(new_labels), base)
+            new_labels[new_labels == new_labels.min()] = 0  # 0 won't change
+    #         print(g, new_labels)
+            for i, j in zip(old_labels, new_labels):
+                label_dict[i] = j
+            global_label_lut[g] = label_dict
+            # assign global labels
+            self.clu[g].membership_global = np.vectorize(
+                label_dict.get)(self.clu[g].membership)
+        return global_label_lut

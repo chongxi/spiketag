@@ -379,6 +379,9 @@ class place_field(object):
         if rank is True:
             self.rank_fields(metric_name='spatial_bit_smoothed_spike')
 
+    @property
+    def max_firing_rate(self):
+        return np.array([self.fields[i].max() for i in range(self.fields.shape[0])])
 
     def plot_fields(self, idx=None, nspks=None, N=10, size=3, cmap='hot', marker=False, markersize=1, alpha=0.8, order=False):
         '''
@@ -508,8 +511,10 @@ class place_field(object):
         self.spike_df.index -= self.spike_df.index.min()
         self.spike_df.index.name = 'spike_id'
         self.df['spk'] = self.spike_df
-        self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
-                              for i in self.spike_df.index.unique().sort_values()}
+        # self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
+        #                       for i in self.spike_df.index.unique().sort_values()}
+        self.spk_time_dict = {i: self.spike_df.frame_id.to_numpy()[self.spike_df.index.to_numpy() == i]
+                              for i in self.spike_df.index.unique().sort_values().to_numpy()}
         self.df['spk'].reset_index(inplace=True)
         self.n_units = np.sort(self.spike_df.spike_id.unique()).shape[0]
         self.n_groups = np.sort(self.spike_df.group_id.unique()).shape[0]

@@ -193,10 +193,10 @@ class SPK():
         else:
             for group in self.spk.keys():
                 fet[group] = self._tofet(group, method, ncomp, whiten)
-                info('group[{}]:{} spikes'.format(group, fet[group].shape[0]))
-                info('spk._tofet(group_id={}, method={}, ncomp={}, whiten={})'.format(group, method, ncomp, whiten))
-            info('----------------success------------------')
-            info(' ')
+            #     info('group[{}]:{} spikes'.format(group, fet[group].shape[0]))
+            #     info('spk._tofet(group_id={}, method={}, ncomp={}, whiten={})'.format(group, method, ncomp, whiten))
+            # info('----------------success------------------')
+            # info(' ')
             return FET(fet)
 
     # def show(self, group_id):
