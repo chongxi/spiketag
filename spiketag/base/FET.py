@@ -16,10 +16,10 @@ class cluster():
         self.client = ipp.Client()
         self.cpu = self.client.load_balanced_view()
         self.clu_func = {'hdbscan': self._hdbscan,
-                         'dpgmm':   self._dpgmm }
+                         'dpgmm':   self._dpgmm,
+                         'kmeans':  self._kmeans }
         self.clu_status = clu_status
     
-
     ############### Backend Engine Func ####################
     def fit(self, clu_method, fet, clu, **kwargs):
         self.fet = fet
@@ -49,6 +49,16 @@ class cluster():
         label = dpgmm.predict(fet)
         return label
     
+    @staticmethod
+    def _kmeans(fet, n_comp=8, max_iter=400):
+        from sklearn.cluster import MiniBatchKMeans
+        kmeans = MiniBatchKMeans(n_clusters=n_comp,
+                                 max_no_improvement=20,
+                                 random_state=0,
+                                 batch_size=6)
+        label = kmeans.fit_predict(fet)
+        return label    
+
     @staticmethod
     def _hdbscan(fet, min_cluster_size=18, leaf_size=40, eom_or_leaf='eom'):
         import hdbscan
@@ -111,8 +121,7 @@ class FET(object):
     def remove(self, group, ids):
         self.fet[group] = np.delete(self.fet[group], ids, axis=0)
  
-
-    def toclu(self, method='dpgmm', group_id='all', **kwargs):
+    def toclu(self, method='dpgmm', group_id='all', mode='non_blocking', **kwargs):
         
         # clu_dict = {}
 
@@ -134,7 +143,6 @@ class FET(object):
         else:
             self.backend.append(cluster(self.clu_status))
             self.backend[-1].fit(method, self.fet[group_id], self.clu[group_id], **kwargs)
-
 
     def _reset(self, group_id):
         '''
@@ -177,6 +185,5 @@ class FET(object):
                 label_dict[i] = j
             global_label_lut[g] = label_dict
             # assign global labels
-            self.clu[g].membership_global = np.vectorize(
-                label_dict.get)(self.clu[g].membership)
+            self.clu[g].membership_global = np.vectorize(label_dict.get)(self.clu[g].membership)
         return global_label_lut
