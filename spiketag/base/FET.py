@@ -21,21 +21,29 @@ class cluster():
         self.clu_status = clu_status
     
     ############### Backend Engine Func ####################
-    def fit(self, clu_method, fet, clu, **kwargs):
+    def fit(self, method, fet, clu, mode, minimum_spks=80, **kwargs):
         self.fet = fet
         self.clu = clu
-        func = self.clu_func[clu_method]
-        print(func)
-        print(kwargs)
-        self.clu.emit('report', state='BUSY')                   # state report --- before async non-blocking clustering 
-        ar = self.cpu.apply_async(func, fet=fet, **kwargs)
-        def get_result(ar):
-            labels = ar.get()
-            group_id = self.clu.fill(labels)
-            self.clu.emit('report', state='READY')              # state report --- before async non-blocking clustering 
-            print(group_id, 'cluster finished')
-            self.clu_status[group_id] = True
-        ar.add_done_callback(get_result)
+        if self.fet.shape[0] >= minimum_spks:
+            func = self.clu_func[method]
+            self.clu.emit('report', state='BUSY')                   # state report --- before async non-blocking clustering 
+            if mode == 'blocking':
+                self.cpu.block = True
+                labels = self.cpu.apply(func, fet=fet, **kwargs)
+                group_id = self.clu.fill(labels)
+                self.clu.emit('report', state='READY') 
+                self.clu_status[group_id] = True
+            elif mode == 'non-blocking':
+                ar = self.cpu.apply_async(func, fet=fet, **kwargs)
+                def get_result(ar):
+                    labels = ar.get()
+                    group_id = self.clu.fill(labels)
+                    self.clu.emit('report', state='READY')              # state report --- before async non-blocking clustering 
+                    # print(group_id, 'cluster finished')
+                    self.clu_status[group_id] = True
+                ar.add_done_callback(get_result)
+        else:
+            self.clu.emit('report', state='NONE')
     ########################################################    
         
     @staticmethod
@@ -120,29 +128,21 @@ class FET(object):
 
     def remove(self, group, ids):
         self.fet[group] = np.delete(self.fet[group], ids, axis=0)
- 
-    def toclu(self, method='dpgmm', group_id='all', mode='non_blocking', **kwargs):
-        
-        # clu_dict = {}
 
-        '''
-        1. When group_id is not provided, means parallel sorting on all groups
-        '''
-        if group_id is 'all':
-            for i in range(len(self.group)):
-                group_id = self.group[i]
-                self.toclu(method, group_id, **kwargs)
-                # clu_dict[group_id] = self.clu[group_id]
-            # info('clustering for all groups with {} cpus'.format(njobs))
-            # tic = time()
-            # ### TODO ###
-            # toc = time()
-            # info('clustering finished, used {} sec'.format(toc-tic))
+    def toclu(self, method='dpgmm', mode='non_blocking', minimum_spks=80, **kwargs):
+        self.clustering_mode = mode
+        for i in range(len(self.group)):
+            group_id = self.group[i]
+            self._toclu(method, group_id, mode, minimum_spks, **kwargs)
 
-        ## 2. When group_id is provided, and background sorting (async and non-blocking) is required
-        else:
-            self.backend.append(cluster(self.clu_status))
-            self.backend[-1].fit(method, self.fet[group_id], self.clu[group_id], **kwargs)
+    def _toclu(self, method, group_id, mode, minimum_spks=80, **kwargs):
+        self.backend.append(cluster(self.clu_status))
+        self.backend[-1].fit(method = method, 
+                             fet = self.fet[group_id], 
+                             clu = self.clu[group_id], 
+                             mode = mode,
+                             minimum_spks = minimum_spks,
+                             **kwargs)
 
     def _reset(self, group_id):
         '''
