@@ -217,11 +217,20 @@ class SPK():
             self.fet = FET(fet)
             return self.fet
     
-    def sort(self, minimum_spks=50, cluster_method='dpgmm', file=None):
+    def auto_sort(self, cluster_method='kmeans', minimum_spks=50, n_comp=20, file=None):
+        '''
+        auto sort for clusterless decoding
+
+        Inputs:
+            minimum_spks: minimum number of spikes in a group for start clustering
+            n_comp: number of clusters aimed for each group
+        '''
         self.tofet(method='pca', ncomp=4, whiten=False);
-        ### todo: 1. add blocking mode    2. kmeans for clusterless sort
-        self.fet.to_clu(method=cluster_method, mode='blocking')
-        ### todo: 3. merge all low spike number cluster ( < minimum_spks(e.g., 50) spikes ) to 0 cluster (noise)
+        self.fet.toclu(method=cluster_method,
+                       mode='blocking',
+                       minimum_spks=minimum_spks,
+                       n_comp=n_comp)
+        ### TODO: merge all low spike number cluster ( < minimum_spks(e.g., 50) spikes ) to 0 cluster (noise)
         self.fet.assign_clu_global_labels()
         self.to_spikedf(file)
 
@@ -243,7 +252,7 @@ class SPK():
         self.spike_df = self.spike_df.sort_values('frame_id')
 
         if file is not None:
-            self.spike_df.to_pickle(file, index=False)
+            self.spike_df.to_pickle(file)
 
         return self.spike_df
 
