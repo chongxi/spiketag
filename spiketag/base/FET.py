@@ -144,6 +144,10 @@ class FET(object):
                              minimum_spks = minimum_spks,
                              **kwargs)
 
+    def reset(self):
+        for g in self.group:
+            self._reset(g)
+
     def _reset(self, group_id):
         '''
         A new CLU is generated for targeted group, with all membership set to 0
