@@ -151,12 +151,11 @@ class FET(object):
         clu = CLU(np.zeros((self.fet[group_id].shape[0], )).astype(np.int64))
         self.clu[group_id]     = clu
         self.clu[group_id]._id = group_id
-        '''
-        The first registraion after born for every clu
-        ''' 
-        @clu.connect
-        def on_cluster(*args, **kwargs):
-            print(clu._id, clu.membership)
+        ### The first registraion after born for every clu
+        # ! uncomment below three lines if you want to use the first registration for debugging
+        # @clu.connect
+        # def on_cluster(*args, **kwargs):
+        #     print(clu._id, clu.membership)
 
     @property
     def nclus(self):
