@@ -34,7 +34,7 @@ def load_decoder(filename):
     # step 3: store some reusable values in the decoder for fast online computing
     # cached value for real-time decoding on incoming bin (N units by B bins) from BMI
     dec.spatial_bin_size, dec.spatial_origin = dec.pc.bin_size, dec.pc.maze_original
-    dec.possion_matrix = dec.t_window*dec.fields.sum(axis=0) # one matrix reused in bayesian decoding
+    dec.poisson_matrix = dec.t_window*dec.fields.sum(axis=0) # one matrix reused in bayesian decoding
     dec.log_fr = np.log(dec.fields)  # log fields, make sure Fr[Fr==0] = 1e-12
 
     dec.partition(training_range=[0.0, 1.0], valid_range=[0.0, 1.0], testing_range=[0.0, 1.0], 
@@ -285,7 +285,7 @@ class NaiveBayes(Decoder):
         self.spatial_bin_size, self.spatial_origin = self.pc.bin_size, self.pc.maze_original
 
         # for real-time decoding on incoming bin from BMI   
-        self.possion_matrix = self.t_window*self.fields.sum(axis=0)
+        self.poisson_matrix = self.t_window*self.fields.sum(axis=0)
         self.log_fr = np.log(self.fields) # make sure Fr[Fr==0] = 1e-12
 
     def predict(self, X):
@@ -317,7 +317,7 @@ class NaiveBayes(Decoder):
             X[self._disable_neuron_idx] = 0
 
         suv_weighted_log_fr = licomb_Matrix(X, self.log_fr)
-        self.rt_post_2d = np.exp(suv_weighted_log_fr - self.possion_matrix)
+        self.rt_post_2d = np.exp(suv_weighted_log_fr - self.poisson_matrix)
         self.binned_pos = argmax_2d_tensor(self.rt_post_2d)
         y = self.binned_pos*self.spatial_bin_size + self.spatial_origin
         return y, self.rt_post_2d/self.rt_post_2d.max()
@@ -326,42 +326,3 @@ class NaiveBayes(Decoder):
         if type(_disable_neuron_idx) == int:
             _disable_neuron_idx = [_disable_neuron_idx]
         self._disable_neuron_idx = _disable_neuron_idx
-
-
-
-class Maxout_ring(Decoder):
-    """
-    Maxout Decoder for BMI control (input X, output y) where y is the angle calculated by softmax of the (B,N) firing count matrix.
-    """
-    def __init__(self, t_window=None, t_step=None):
-        super(Maxout_ring, self).__init__(t_window, t_step)
-        self.name = 'Maxout_ring'
-        
-    def fit(self, X=None, y=None):
-        '''
-        Naive Bayes place decoder fitting use precise spike timing to compute the representation 
-        (Rather than using binned spike count vector in t_window)
-        Therefore the X and y is None for the consistency of the decoder API
-        '''
-        self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], rank=False)
-        self.fields = self.pc.fields
-        self.spatial_bin_size, self.spatial_origin = self.pc.bin_size, self.pc.maze_original
-
-        # for real-time decoding on incoming bin from BMI   
-        self.possion_matrix = self.t_window*self.fields.sum(axis=0)
-        self.log_fr = np.log(self.fields) # make sure Fr[Fr==0] = 1e-12
-
-    # def predict(self, X):
-    #     if len(X.shape) == 1:
-    #         X = X.reshape(1,-1)
-    #     self.post_2d = bayesian_decoding(self.fields, X, t_window=self.t_window)
-    #     binned_pos = argmax_2d_tensor(self.post_2d)
-    #     y = binned_pos*self.spatial_bin_size + self.spatial_origin
-    #     return y
-
-    def predict_rt(self, X):
-        X = np.sum(X, axis=0)  # X is (B_bins, N_neurons) spike count matrix, we need to sum up B bins to decode the full window
-        N = len(X) # N neurons (has to be >10 to make sense), the #features of the input vector for decoding
-        y = np.argmax(softmax(X.reshape(1,-1)))
-        hd = 360/N * y
-        return hd
