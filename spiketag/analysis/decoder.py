@@ -314,13 +314,19 @@ class NaiveBayes(Decoder):
             X = X.ravel()
 
         if self._disable_neuron_idx is not None:
-            X[self._disable_neuron_idx] = 0
+            self.neuron_idx = [_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx]
+            firing_bins = X[:, self.neuron_idx]
+            place_fields = self.fields[self.neuron_idx]
+        else:
+            firing_bins = X
+            place_fields = self.fields
 
-        suv_weighted_log_fr = licomb_Matrix(X, self.log_fr)
-        self.rt_post_2d = np.exp(suv_weighted_log_fr - self.poisson_matrix)
-        self.binned_pos = argmax_2d_tensor(self.rt_post_2d)
-        y = self.binned_pos*self.spatial_bin_size + self.spatial_origin
-        return y, self.rt_post_2d/self.rt_post_2d.max()
+        suv_weighted_log_fr = licomb_Matrix(firing_bins, np.log(place_fields))
+        self.rt_post_2d = np.exp(suv_weighted_log_fr - self.t_window*place_fields.sum(axis=0))
+        self.rt_post_2d /= self.rt_post_2d.sum()
+        self.rt_pred_binned_pos = argmax_2d_tensor(self.rt_post_2d)
+        y = self.rt_pred_binned_pos*self.spatial_bin_size + self.spatial_origin
+        return y, self.rt_post_2d
 
     def drop_neuron(self, _disable_neuron_idx):
         if type(_disable_neuron_idx) == int:
