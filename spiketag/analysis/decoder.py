@@ -288,7 +288,11 @@ class NaiveBayes(Decoder):
         self.poisson_matrix = self.t_window*self.fields.sum(axis=0)
         self.log_fr = np.log(self.fields) # make sure Fr[Fr==0] = 1e-12
 
-    def predict(self, X):
+    def predict(self, X, two_steps=False):
+        '''
+        # TODO: #2 Add two_steps decoding method to cope with erratic jumps 
+        zhang et al., 1995 (https://journals.physiology.org/doi/full/10.1152/jn.1998.79.2.1017)
+        '''
         X_arr = X.copy()
 
         if len(X_arr.shape) == 1:
@@ -307,7 +311,9 @@ class NaiveBayes(Decoder):
         y = binned_pos*self.spatial_bin_size + self.spatial_origin
         return y
 
-    def predict_rt(self, X):
+    def predict_rt(self, X, two_steps=False):
+        # TODO: #1 Test this new update
+        # TODO: #3 Add two_steps decoding method to cope with erratic jumps
         if X.shape[0]>1:
             X = np.sum(X, axis=0)  # X is (B_bins, N_neurons) spike count matrix, we need to sum up B bins to decode the full window
         else:
