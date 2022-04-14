@@ -288,7 +288,7 @@ class bload(object):
             self.data = self.data.numpy().reshape(-1, self._nCh)
         rows, cols = self.data.shape
         new_data = np.zeros((rows, cols), dtype=dtype)
-        for col in xrange(cols):
+        for col in range(cols):
             new_data[:,col] = np.floor(self.data[:,col])/abs(self.data[:,col]).max()*absmax
             new_data[:,col] = new_data[:,col].astype(dtype)
         self.data = new_data
