@@ -1,7 +1,7 @@
 import numpy as np
 import numexpr as ne
 import pandas as pd
-# from spiketag.view import spike_view
+from ..view import spike_view, scatter_3d_view
 from .FET import FET
 from ..utils.conf import info
 
@@ -128,8 +128,8 @@ class SPK():
             spk.ch, 
             spk.spk_time, 
             spk.electrode_group, 
-            spk.spk_dict, 
-            spk_spk_time_dict
+            spk.spk_dict[group_id], 
+            spk_spk_time_dict[group_id]
         '''
         if spkdict is not None:
             self.spkdict = spkdict
@@ -195,11 +195,26 @@ class SPK():
         group_list = np.sort(np.unique(self.electrode_group))
         self.spk_dict = {}
         self.spk_time_dict = {}
+        self.spk_max_dict = {}
         for group in group_list:
-            self.spk_dict[group] = spk[self.electrode_group == group][:, 1:, :]/(2**14) # grouped spike waveforms
+            self.spk_dict[group] = spk[self.electrode_group == group][:, 1:, :]/(2**13) # grouped spike waveforms
             self.spk_time_dict[group] = spk[self.electrode_group == group][:, 0, 2]
+            self.spk_max_dict[group] = abs(self.spk_dict[group].reshape(-1, self.spk_dict[group].shape[1]*self.spk_dict[group].shape[2])).max(axis=1)
+            self.remove_outliers(group, spk_max_threshold=7000)
         self(self.spk_dict)
 
+    def remove_outliers(self, group, spk_max_threshold=7000, exclude_first_ten_spks=True):
+        '''
+        remove outliers (too big of absolute amplitude) in the electrode group
+        '''
+        # spk_max_threshold = np.percentile(self.spk_max_dict[group], quantile_threshold)
+        ids = np.where(self.spk_max_dict[group]>spk_max_threshold)[0]
+        if exclude_first_ten_spks:
+            ids = np.append(ids, np.arange(10))
+        self.spk_dict[group] = np.delete(self.spk_dict[group], ids, axis=0)
+        self.spk_time_dict[group] = np.delete(self.spk_time_dict[group], ids)
+        self.spk_max_dict[group] = np.delete(self.spk_max_dict[group], ids)
+        
     def tofet(self, group_id=None, method='pca', ncomp=4, whiten=False):
         fet = {}
         # pca_comp = {}
@@ -256,7 +271,21 @@ class SPK():
 
         return self.spike_df
 
-    # def show(self, group_id):
-    #     self.spk_view = spike_view()
-    #     self.spk_view.set_data(self.spk[group_id])
-    #     self.spk_view.show()
+    def show(self, group_id=0, interact=False):
+        self.spk_view = spike_view()
+        self.spk_view.show()
+        self.fet_view = scatter_3d_view()
+        self.fet_view.show()
+        if interact is False:
+            self.spk_view.set_data(self.spk[group_id])
+            self.spk_view.title = f'group {group_id}: {self[group_id].shape[0]} spikes'
+            self.fet_view.set_data(self.fet[group_id])
+            self.fet_view.title = f'group {group_id}: {self[group_id].shape[0]} spikes'
+        elif interact is True:
+            from ipywidgets import interact
+            @interact(g=(0, self.n_group-1, 1))
+            def update_spkview(g=0):
+                self.spk_view.set_data(self[g], self.fet.clu[g])
+                self.spk_view.title = f'group {g}: {self[g].shape[0]} spikes'
+                self.fet_view.set_data(self.fet[g])
+                self.fet_view.title = f'group {g}: {self[g].shape[0]} spikes'
