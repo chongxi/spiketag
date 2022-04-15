@@ -1,16 +1,14 @@
 # from .spiketag import check_fpga
 
 __version__ = '0.1.0'
-# from .mvc.Control import Sorter
 import mkl
 mkl.set_num_threads(1) #prevent the conflicts on the multicore computing (numba, pytorch and ipyparallel)
 
+import warnings
+warnings.filterwarnings("ignore")
 
 
 from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic)
-
-# def load_ipython_extension(ipython):
-#     ipython.register_magics(SPIKETAG_MAGIC)
 
 def load_ipython_extension(ipython, *args):
     # print('cool')
