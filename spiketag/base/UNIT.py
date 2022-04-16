@@ -3,6 +3,7 @@ import pandas as pd
 from sympy import binomial_coefficients
 from .FET import FET
 from .CLU import CLU
+from ..view import scatter_3d_view, grid_scatter3d
 
 class UNIT(object):
     """
@@ -32,6 +33,7 @@ class UNIT(object):
         Both follows table structure:
         ['time', 'group_id', 'fet0', 'fet1', 'fet2', 'fet3', 'spike_id']
         '''
+        self.filename = filename
         if filename.split('.')[-1]=='pd':
             self.df = pd.read_pickle(filename)
             self.df['frame_id'] /= 25000.
@@ -93,6 +95,17 @@ class UNIT(object):
             self.bin_index = np.insert(self.bin_index, 0, self._nbins-1) # insert 7 (if nbins==8) at 0 position
         # We still need to remove the first 7 bins (if nbins==8) and the last bin was never trigger the binner to send out command
         self.bin_index = self.bin_index[self._nbins-1:-1] 
+
+    def show(self, g=0):
+        if g is None:
+            gd = grid_scatter3d()
+            gd.from_file(self.filename)
+            gd.show()
+        else:
+            fet_view = scatter_3d_view()
+            fet_view.show()
+            fet_view.set_data(self.fet[g])
+            fet_view.title = f'group {g}: {self.fet[g].shape[0]} spikes'
 
     def load_behavior(self, filename):
         pass
