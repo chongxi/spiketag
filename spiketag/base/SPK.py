@@ -209,11 +209,12 @@ class SPK():
         '''
         # spk_max_threshold = np.percentile(self.spk_max_dict[group], quantile_threshold)
         ids = np.where(self.spk_max_dict[group]>spk_max_threshold)[0]
-        if exclude_first_ten_spks:
+        if exclude_first_ten_spks and len(ids)>10:
             ids = np.append(ids, np.arange(10))
-        self.spk_dict[group] = np.delete(self.spk_dict[group], ids, axis=0)
-        self.spk_time_dict[group] = np.delete(self.spk_time_dict[group], ids)
-        self.spk_max_dict[group] = np.delete(self.spk_max_dict[group], ids)
+        if len(ids) > 0:
+            self.spk_dict[group] = np.delete(self.spk_dict[group], ids, axis=0)
+            self.spk_time_dict[group] = np.delete(self.spk_time_dict[group], ids)
+            self.spk_max_dict[group] = np.delete(self.spk_max_dict[group], ids)
         
     def tofet(self, group_id=None, method='pca', ncomp=4, whiten=False):
         fet = {}
