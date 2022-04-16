@@ -15,6 +15,15 @@ from ..view import scatter_3d_view
 from ..utils import Timer
 
 class grid_scatter3d(QtGui.QWidget):
+    '''
+    Show all feature spaces using fet.bin
+    
+    Example:
+    from spiketag.view import grid_scatter3d
+    gd = grid_scatter3d()
+    gd.from_file('./fet.bin')
+    gd.show()
+    '''
     def __init__(self, rows=5, cols=8):
         # QtGui.QMainWindow.__init__(self)
         super(grid_scatter3d, self).__init__()
