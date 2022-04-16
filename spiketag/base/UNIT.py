@@ -1,11 +1,20 @@
 import numpy as np
 import pandas as pd
 from sympy import binomial_coefficients
-
+from .FET import FET
+from .CLU import CLU
 
 class UNIT(object):
     """
-    bin_len: float (s) of bin length
+    UNIT class load, visualize and analyze unit structured data
+    unit structure in which each unit is: {time, group_id, fet0, fet1, fet2, fet3, spike_id}, each section uses a 32-bit integer to represent.
+
+    - UNIT class bins the unit data.
+    - UNIT class convert the feature part of the unit data to Spike FET, which can call sorting, and spiketag feature view. 
+
+    Inputs:
+        bin_len: float (s) of bin length
+        nbins: int of number of bins
     """
     def __init__(self, bin_len=0.1, nbins=8):
         super(UNIT, self).__init__()
@@ -48,7 +57,16 @@ class UNIT(object):
             self.df['group_id'] = self.df['group_id'].astype('int')
             self.df['spike_id'] = self.df['spike_id'].astype('int')
 
+        self.assign_fet()
         self.assign_bin()
+
+    def assign_fet(self):
+        fet_dict = {}
+        self.groups = self.df.group_id.sort_values().unique()
+        self.n_grp = len(self.groups)
+        for g in range(self.n_grp):
+            fet_dict[g] = self.df[self.df.group_id==g][['fet0', 'fet1', 'fet2', 'fet3']].to_numpy()
+        self.fet = FET(fet_dict)
 
     @property
     def bin_len(self):
