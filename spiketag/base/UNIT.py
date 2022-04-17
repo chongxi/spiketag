@@ -16,11 +16,14 @@ class UNIT(object):
     Inputs:
         bin_len: float (s) of bin length
         nbins: int of number of bins
+        binpoint: bits used to encode the interger part of a 32-bit number (default 13)
     """
-    def __init__(self, bin_len=0.1, nbins=8):
+    def __init__(self, bin_len=0.1, nbins=8, binpoint=13, sampling_rate=25000.0):
         super(UNIT, self).__init__()
         self._bin_len = bin_len
         self._nbins   = nbins
+        self.binpoint = binpoint
+        self.sampling_rate = sampling_rate
 
     def load_all(self, filename):
         pass
@@ -36,7 +39,7 @@ class UNIT(object):
         self.filename = filename
         if filename.split('.')[-1]=='pd':
             self.df = pd.read_pickle(filename)
-            self.df['frame_id'] /= 25000.
+            self.df['frame_id'] /= self.sampling_rate
             self.df.rename(columns={'frame_id':'time'}, inplace=True)
             self.df['group_id'] = self.df['group_id'].astype('int')
             self.df['spike_id'] = self.df['spike_id'].astype('int')
@@ -52,10 +55,10 @@ class UNIT(object):
 
         elif filename.split('.')[-1]=='bin':
             fet = np.fromfile(filename, dtype=np.int32).reshape(-1, 7).astype(np.float32)
-            fet[:, 2:6] /= float(2**16)
+            fet[:, 2:6] /= float(2**self.binpoint)
             self.df = pd.DataFrame(fet,
                       columns=['time', 'group_id', 'fet0', 'fet1', 'fet2', 'fet3', 'spike_id'])
-            self.df['time'] /= 25000.
+            self.df['time'] /= self.sampling_rate
             self.df['group_id'] = self.df['group_id'].astype('int')
             self.df['spike_id'] = self.df['spike_id'].astype('int')
 
