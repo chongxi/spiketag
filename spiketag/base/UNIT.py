@@ -61,17 +61,22 @@ class UNIT(object):
             self.df['time'] /= self.sampling_rate
             self.df['group_id'] = self.df['group_id'].astype('int')
             self.df['spike_id'] = self.df['spike_id'].astype('int')
+        
+        self.labels = self.df.spike_id.sort_values().unique()
 
         self.assign_fet()
         self.assign_bin()
 
     def assign_fet(self):
         fet_dict = {}
+        clu_dict = {}
         self.groups = self.df.group_id.sort_values().unique()
         self.n_grp = len(self.groups)
         for g in range(self.n_grp):
             fet_dict[g] = self.df[self.df.group_id==g][['fet0', 'fet1', 'fet2', 'fet3']].to_numpy()
+            clu_dict[g] = CLU(self.df[self.df.group_id==g]['spike_id'].to_numpy())
         self.fet = FET(fet_dict)
+        self.fet.clu = clu_dict
 
     @property
     def bin_len(self):
@@ -107,7 +112,7 @@ class UNIT(object):
         else:
             fet_view = scatter_3d_view()
             fet_view.show()
-            fet_view.set_data(self.fet[g])
+            fet_view.set_data(self.fet[g], self.fet.clu[g])
             fet_view.title = f'group {g}: {self.fet[g].shape[0]} spikes'
 
     def load_behavior(self, filename):
