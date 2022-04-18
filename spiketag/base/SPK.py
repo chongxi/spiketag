@@ -11,7 +11,7 @@ def _transform(X, P, shift, scale):
     y = scale*((PX)+shift) 
     check the range of X, it has to be float32, if not, use X /= float(2**13)
     '''
-    y = (np.dot(X,P) + shift)/scale 
+    y = (np.dot(X,P) + shift)*scale 
     return y
 
 
@@ -29,8 +29,13 @@ def _construct_transformer(x, ncomp=6):
     shift = -np.dot(x.mean(axis=0), pca.components_.T)
     temp_fet += shift
     # step 3
-    scale = temp_fet.max()-temp_fet.min()
-    temp_fet /= scale
+    if temp_fet.max() - temp_fet.min() == 0:  # usually this should be > 1000
+        scale = 0 # if scale is 0, it means no feature value, transformation is disabled
+    else:
+        scale = 1 / (temp_fet.max()-temp_fet.min())
+    temp_fet *= scale
+    # scale = temp_fet.max()-temp_fet.min()
+    # temp_fet /= scale
     # quantization for FPGA
     fet = temp_fet
     return pca_comp, shift, scale

@@ -99,13 +99,13 @@ class shift_hash(object):
     def __setitem__(self, chNo, shift):
         ch = chNo*self.dim + self.base
         for i, _shift in enumerate(shift):
-            write_tat_32(ch+i, _shift, dtype='<i', binpoint=13) 
+            write_tat_32(ch+i, _shift, dtype='<i', binpoint=19)
 
     def __getitem__(self, chNo):
         ch = chNo*self.dim + self.base
         x = []
         for i in range(self.dim):
-            x.append(read_tat_32(ch+i, dtype='<i', binpoint=13))
+            x.append(read_tat_32(ch+i, dtype='<i', binpoint=19))
         return np.array(x)
 
     def __repr__(self):
@@ -136,11 +136,11 @@ class scale_hash(object):
 
     def __setitem__(self, chNo, _scale):
         ch = chNo + self.base
-        write_tat_32(ch, _scale, dtype='<i', binpoint=13) 
+        write_tat_32(ch, _scale, dtype='<i', binpoint=19) 
 
     def __getitem__(self, chNo):
         ch = chNo + self.base
-        x0 = read_tat_32(ch, dtype='<i', binpoint=13) 
+        x0 = read_tat_32(ch, dtype='<i', binpoint=19) 
         return x0
 
     def __repr__(self):
