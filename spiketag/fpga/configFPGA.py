@@ -96,7 +96,7 @@ class xike_config(object):
         8. vq
         9. label 
         --- additional memory ---
-        10. mem_16  {0: n_units ....  8: target_unit}
+        10. mem_16  {0: sync_pulse .... 6:n_unit ...  8: target_unit ... }
             '''
         return s
 
@@ -130,12 +130,12 @@ class xike_config(object):
 
     @property
     def n_units(self):
-        self._n_units = read_mem_16(0)
+        self._n_units = read_mem_16(6)
         return self._n_units
 
     @n_units.setter
     def n_units(self, val):
-        write_mem_16(0, val)
+        write_mem_16(6, val)
 
     @property
     def target_unit(self):
@@ -221,12 +221,14 @@ class xike_config(object):
     ------------------------------------------------------------------------------------
     '''
 
-    @property
-    def transformer_status(self):
-        for i in range(self.probe.n_group):
-            self._transformer_status[i] = self.scale[i] != 0
-        return self._transformer_status
+    # @property
+    # def transformer_status(self):
+    #     for i in range(self.probe.n_group):
+    #         self._transformer_status[i] = self.scale[i] != 0
+    #     return self._transformer_status
 
     @property
     def configured_groups(self):
-        return np.where(self.transformer_status)[0]
+        self._configured_groups = np.array([g for g in range(self.probe.n_group) if np.unique(self.label[g]).shape[0]>1])
+        return self._configured_groups
+        # return np.where(self.transformer_status)[0]
