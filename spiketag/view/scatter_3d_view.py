@@ -72,8 +72,12 @@ class scatter_3d_view(scene.SceneCanvas):
             self.scatter.update()
 
     def set_data(self, fet, clu=None, rho=None):
-        # only run in the beginning, init the clu
-        # and connect clu change to _render()
+        '''
+        fet are features and clu are labels
+
+        fet: ndarray, shape=(n_samples, n_features)  
+        clu: ndarray, shape=(n_samples, )
+        '''
 
         self.fet = fet
 
@@ -81,11 +85,27 @@ class scatter_3d_view(scene.SceneCanvas):
             self.clu = CLU(np.zeros(fet.shape[0],).astype(np.int64))
         elif type(clu) is np.ndarray:
             self.clu = CLU(clu)
+            self.label = clu
         else:
             self.clu = clu  # CLU type
 
         self.rho = rho
 
+        self._n = fet.shape[0]
+        self._render()
+
+
+    def add_data(self, fet, clu=None, rho=None):
+        '''
+        fet are features and clu are labels
+        
+        fet: ndarray, shape=(n_samples, n_features)  
+        clu: ndarray, shape=(n_samples, )
+        '''
+        self.fet = np.vstack((self.fet, fet))
+        self.label = np.concatenate((self.label, clu), axis=0)
+        
+        self.set_data(self.fet, self.label)
         self._n = fet.shape[0]
         self._render()
 
