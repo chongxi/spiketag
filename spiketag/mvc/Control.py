@@ -593,7 +593,6 @@ class controller(object):
         _fpga_labels = np.array([self.fpga.label[i] for i in self.fpga.configured_groups]).ravel()
         _noverlap_labels = np.arange(self.fpga.n_units+1)
         return np.array_equal(np.unique(_fpga_labels), _noverlap_labels)
-
         
     def _validate_vq(self, grp_id, n_dim=4):
         from sklearn.neighbors import KNeighborsClassifier as KNN
@@ -635,10 +634,9 @@ class controller(object):
     def reset_vq(self):
         # step 1: set FPGA transfomer
         for grp_id in range(self.prb.n_group):
-            self.fpga.scale[grp_id] = 0  # this will ban the tranformer and check fpga.transformer status
+            self.fpga.label[grp_id] = np.zeros((500,))
             if self.model.gtimes[grp_id].shape[0] > 100:
                 self.set_transformer(group_id=grp_id)
-                self.fpga.label[grp_id] = np.zeros((500,))
 
     def compile(self, vq_method='proportional'):
         self.reset_vq()
