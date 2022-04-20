@@ -71,7 +71,7 @@ class scatter_3d_view(scene.SceneCanvas):
             self.scatter._vbo.set_data(self.scatter._data)
             self.scatter.update()
 
-    def set_data(self, fet, clu=None, rho=None):
+    def set_data(self, fet, clu=None, rho=None, size=None):
         '''
         fet are features and clu are labels
 
@@ -92,10 +92,14 @@ class scatter_3d_view(scene.SceneCanvas):
         self.rho = rho
 
         self._n = fet.shape[0]
+
+        if size is not None:
+            size = np.ones(self._n) * size
+            self._size = size
         self._render()
 
 
-    def add_data(self, fet, clu=None, rho=None):
+    def add_data(self, fet, clu=None, size=None, rho=None):
         '''
         fet are features and clu are labels
         
@@ -104,9 +108,16 @@ class scatter_3d_view(scene.SceneCanvas):
         '''
         self.fet = np.vstack((self.fet, fet))
         self.label = np.concatenate((self.label, clu), axis=0)
-        
-        self.set_data(self.fet, self.label)
-        self._n = fet.shape[0]
+        self.clu = CLU(self.label)
+        self._n = self.fet.shape[0] + fet.shape[0]
+
+        if size is not None:
+            size = np.ones(fet.shape[0]) * size
+            self._size = np.concatenate((self._size, size))
+        else:
+            size = np.ones(fet.shape[0]) * 5
+            self._size = np.concatenate((self._size, size))      
+     
         self._render()
 
 
