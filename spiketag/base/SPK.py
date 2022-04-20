@@ -156,9 +156,13 @@ class SPK():
         self.W = np.ones((self.spklen*self.ch_span,)).astype(np.float32) # for tetrode
 
     @property
+    def groups(self):
+        return np.unique(self.electrode_group)
+
+    @property
     def nspk(self):
         nspk = 0
-        for i in range(self.n_group):
+        for i in self.groups:
             nspk += self.spk[i].shape[0]
         return nspk
 
@@ -197,6 +201,7 @@ class SPK():
         '''
         spk = np.fromfile(file, dtype=np.int32).reshape(-1, 20, 4)
         self.ch, self.spk_time, self.electrode_group = spk[..., 0, 1], spk[..., 0, 2], spk[..., 0, 3]
+        self.spk_info = np.vstack((self.spk_time, self.electrode_group))
         group_list = np.sort(np.unique(self.electrode_group))
         self.spk_dict = {}
         self.spk_time_dict = {}
@@ -284,15 +289,20 @@ class SPK():
         self.fet_view = scatter_3d_view()
         self.fet_view.show()
         if interact is False:
-            self.spk_view.set_data(self.spk[group_id])
+            self.spk_view.set_data(self.spk[group_id], self.fet.clu[group_id])
             self.spk_view.title = f'group {group_id}: {self[group_id].shape[0]} spikes'
-            self.fet_view.set_data(self.fet[group_id])
+            self.fet_view.set_data(self.fet[group_id], self.fet.clu[group_id])
             self.fet_view.title = f'group {group_id}: {self[group_id].shape[0]} spikes'
         elif interact is True:
             from ipywidgets import interact
-            @interact(g=(0, self.n_group-1, 1))
-            def update_spkview(g=0):
-                self.spk_view.set_data(self[g], self.fet.clu[g])
-                self.spk_view.title = f'group {g}: {self[g].shape[0]} spikes'
-                self.fet_view.set_data(self.fet[g])
-                self.fet_view.title = f'group {g}: {self[g].shape[0]} spikes'
+            @interact(i=(0, self.n_group-1, 1))
+            def update_spkview(i=0):
+                g = self.groups[i]  # g is the ith group_id in self.groups
+                if self.spk[g].shape[0] > 0:
+                    self.spk_view.set_data(self.spk[g], self.fet.clu[g])
+                    self.spk_view.title = f'group {g}: {self[g].shape[0]} spikes'
+                    self.fet_view.set_data(self.fet[g], self.fet.clu[g])
+                    self.fet_view.title = f'group {g}: {self[g].shape[0]} spikes'
+                else:
+                    self.spk_view.title = f'group {g}: {self[g].shape[0]} spikes'
+                    self.fet_view.title = f'group {g}: {self[g].shape[0]} spikes'

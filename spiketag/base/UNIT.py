@@ -73,10 +73,11 @@ class UNIT(object):
         label = {}
         self.groups = self.df.group_id.sort_values().unique()
         self.n_grp = len(self.groups)
-        for g in range(self.n_grp):
+        for g in self.groups:
             fet_dict[g] = self.df[self.df.group_id==g][['fet0', 'fet1', 'fet2', 'fet3']].to_numpy()
             label[g] = self.df[self.df.group_id==g]['spike_id'].to_numpy()
-            clu_dict[g] = CLU(label[g])
+            if len(label[g])>0:
+                clu_dict[g] = CLU(label[g])
         self.fet = FET(fet_dict)
         self.fet.clu = clu_dict
         self.label = label
