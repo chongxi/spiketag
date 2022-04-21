@@ -81,7 +81,6 @@ class MainModel(object):
         self._model_init_(self.spktag_filename)
 
 
-
     def _model_init_(self, spktag_filename=None):
         '''
         If spktag_filename is given, Model will generate spk,fet,clu from
@@ -106,6 +105,8 @@ class MainModel(object):
 
             self.get_spk(amp_cutoff=True, speed_cutoff=True, time_cutoff=True)
             self.get_fet()
+            self.get_clu()
+            self.init_clu_manager()
 
         # After first time
         else:
@@ -151,13 +152,21 @@ class MainModel(object):
 
     def get_spk(self, amp_cutoff=True, speed_cutoff=True, time_cutoff=True):
         info('extract spikes from pivital meta data')
-        self.spk = self.mua.tospk(amp_cutoff=amp_cutoff,
-                                  speed_cutoff=speed_cutoff,
-                                  time_cutoff=time_cutoff)
-
-        info('grouping spike time')
+        # self.spk = self.mua.tospk(amp_cutoff=amp_cutoff,
+        #                           speed_cutoff=speed_cutoff,
+        #                           time_cutoff=time_cutoff)
+        self.spk = SPK()
+        self.spk.load_spkwav('./spk_wav.bin')
+        self.mua.spkdict = {} #self.spk.spk_dict
+        self.mua.spk_times = {} #self.spk.spk_time_dict
+        for g in self.probe.grp_dict.keys():
+            if g in self.spk.spk_dict.keys():
+                self.mua.spkdict[g] = self.spk.spk_dict[g]
+                self.mua.spk_times[g] = self.spk.spk_time_dict[g]
+            elif g not in self.spk.spk_dict.keys(): 
+                self.mua.spkdict[g] = np.random.randn(1, self.mua.spklen, len(self.probe[g]))
+                self.mua.spk_times[g] = np.array([0]) 
         self.gtimes = self.mua.spk_times
-
 
     def get_fet(self):
         info('extract features with {}'.format(self.fet_method))
@@ -165,12 +174,24 @@ class MainModel(object):
                                   whiten=self._fet_whiten,
                                   ncomp=self._fetlen)
         # all clu are zeroes when fets are initialized
-        self.clu = self.fet.clu
 
+    def get_clu(self):
+        self.clu = {}
+        for g in self.probe.grp_dict.keys():
+            if g in self.spk.spk_dict.keys():
+                self.clu[g] = self.fet.clu[g]
+            elif g not in self.spk.spk_dict.keys():
+                _dummy_clu = CLU(np.array([0]))
+                _dummy_clu._id = g
+                self.clu[g] = _dummy_clu
+
+    def init_clu_manager(self):
+        '''
+        assume run get_clu() first
+        '''
         self.clu_manager = status_manager()
-        for _clu in self.clu.values():
-            self.clu_manager.append(_clu)
-
+        for g in self.clu.keys():
+            self.clu_manager.append(self.clu[g])
 
     def sort(self, clu_method, group_id='all', **kwargs):
         # info('removing high corr noise from spikes pool')

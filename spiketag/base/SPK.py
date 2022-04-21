@@ -267,12 +267,13 @@ class SPK():
         sorted by timestamps
         '''
         spk_matrix = np.array([]).reshape(-1, 7)
-        for g in self.fet.group:
-            h = np.hstack((self.spk_time_dict[g].reshape(-1,1),                         # spike frame_id (time stamps in #samples)
-                           self.electrode_group[self.electrode_group==g].reshape(-1,1), # spike group_id (electrode group)
-                           self.fet[g][:,:4],                                           # spike features (multichannel waveform 4d feature)
-                           self.fet.clu[g].membership_global.reshape(-1,1)))            # spike spike_id (assigned unit id)
-            spk_matrix = np.append(spk_matrix, h, axis=0)
+        for g in self.fet.group:  # fet.group can be virtual groups (e.g., 0, 1, 2,... 38, 39)
+            if g in self.groups:  # must be also in the unique electrode groups
+                h = np.hstack((self.spk_time_dict[g].reshape(-1,1),                      # spike frame_id (time stamps in #samples)
+                            self.electrode_group[self.electrode_group==g].reshape(-1,1), # spike group_id (electrode group)
+                            self.fet[g][:,:4],                                           # spike features (multichannel waveform 4d feature)
+                            self.fet.clu[g].membership_global.reshape(-1,1)))            # spike spike_id (assigned unit id)
+                spk_matrix = np.append(spk_matrix, h, axis=0)
 
         self.spike_df = pd.DataFrame(spk_matrix)
         self.spike_df.columns = ['frame_id', 'group_id', 'fet0', 'fet1', 'fet2', 'fet3', 'spike_id']

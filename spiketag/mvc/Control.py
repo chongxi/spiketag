@@ -340,7 +340,13 @@ class controller(object):
             self.model.sort(clu_method='reset')
             self.run_bg_clustering()
         else:
-            self.model.sort(clu_method=clu_method)            
+            self.model.sort(clu_method=clu_method)   
+
+    def clusterless_sort(self, N=15):
+        self.model.fet.toclu(method='kmeans',
+                             mode='blocking',
+                             minimum_spks=10,
+                             n_comp=N)
 
     def show(self, group_id=None):
         if group_id is None:
@@ -605,7 +611,7 @@ class controller(object):
         self.model.construct_kdtree(grp_id, n_dim)
         d = []
         for _kd in self.model.kd.keys():
-            tmp = _kd.query(points, 10)[0]
+            tmp = _kd.query(points, k=2)[0]
             d.append(tmp.mean(axis=1))
         d = np.vstack(np.asarray(d))
         labels = np.asarray(list(self.model.kd.values()))[np.argmin(d, axis=0)]
