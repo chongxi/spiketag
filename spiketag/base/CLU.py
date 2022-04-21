@@ -136,7 +136,10 @@ class CLU(EventEmitter):
     @property
     def nclu(self):
         return self._nclu
-    
+
+    @property
+    def nspks_per_clu(self):
+        return np.bincount(self.membership)
 
     @property
     def state(self):
