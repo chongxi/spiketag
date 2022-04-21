@@ -144,6 +144,7 @@ class xike_config(object):
     @target_unit.setter
     def target_unit(self, target_unit_id):
         '''
+        ! Important Note: if you are using FPGA for > 100 units then don't use this function
         after ctrl.compile(), the target_unit is set to 0 by default
         '''
         if target_unit_id != 0:   # set the target_unit

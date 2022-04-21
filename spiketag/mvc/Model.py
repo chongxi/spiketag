@@ -224,12 +224,13 @@ class MainModel(object):
         b: _shift
         a: _scale
         '''
-        # concateated spike waveforms from one channel group
+        # concateated spike waveforms from one channel group in such an order: [spkch0, spkch1, ...]
         r = self.spk[group_id]
-        x = r.transpose(0,2,1).ravel().reshape(-1, r.shape[1]*r.shape[2])
+        x = r.transpose(0,2,1).ravel().reshape(-1, r.shape[1]*r.shape[2])  # (nspk, 76) important to transpose first to concateate waveforms without interleaving
         # construct transfomer params
         _pca_comp, _shift, _scale = _construct_transformer(x, ncomp=ndim)
-        return _pca_comp, _shift, _scale
+        y = _scale * (x @ _pca_comp + _shift)
+        return _pca_comp, _shift, _scale, y
 
 
     def construct_kdtree(self, group_id, global_ids=None, n_dim=4):

@@ -55,6 +55,7 @@ class controller(object):
             self.fields[group_id] = {}
 
         # vq
+        self.transformed_fet = {}
         self.vq = {}
         self.vq['points'] = {}
         self.vq['labels'] = {}
@@ -342,10 +343,10 @@ class controller(object):
         else:
             self.model.sort(clu_method=clu_method)   
 
-    def clusterless_sort(self, N=15):
+    def clusterless_sort(self, N=15, minimum_spks=300):
         self.model.fet.toclu(method='kmeans',
                              mode='blocking',
-                             minimum_spks=10,
+                             minimum_spks=minimum_spks,
                              n_comp=N)
 
     def show(self, group_id=None):
@@ -506,12 +507,13 @@ class controller(object):
         return _transform(x, P, shift, scale) 
 
     def construct_transformer(self, group_id, ndim=4):
-        _pca_comp, _shift, _scale = self.model.construct_transformer(group_id, ndim)
-        return _pca_comp, _shift, _scale      
+        _pca_comp, _shift, _scale, y = self.model.construct_transformer(group_id, ndim)
+        return _pca_comp, _shift, _scale, y
 
     def set_transformer(self, group_id, random=False):
-        _pca_comp, _shift, _scale = self.construct_transformer(group_id=group_id, ndim=4)
+        _pca_comp, _shift, _scale, y = self.construct_transformer(group_id=group_id, ndim=4)
         self.fpga._config_FPGA_transformer(grpNo=group_id, P=_pca_comp, b=_shift, a=_scale) 
+        self.transformed_fet[group_id] = y
         # assert(np.allclose(self.fpga.pca[i], _pca_comp, atol=1e-3))
         # assert(np.allclose(self.fpga.shift[i], _shift,  atol=1e-3))
         # assert(np.allclose(self.fpga.scale[i], _scale,  atol=1e-3))
@@ -526,7 +528,7 @@ class controller(object):
         _fetview.set_data(_fet)
         _fetview.show()
 
-    def build_vq(self, grp_id=None, n_dim=4, n_vq=None, show=True, method='proportional', fpga=False):
+    def build_vq(self, grp_id=None, n_dim=4, n_vq=None, show=True, method='proportional'):
         import warnings
         warnings.filterwarnings('ignore')
         # get the vq and vq labels
@@ -538,18 +540,20 @@ class controller(object):
         vq = []
         if n_vq is None:
             if method == 'proportional':
-                k = self.model.nspk_per_clu[grp_id].sum() / self._vq_npts
-                n_vq = np.around(self.model.nspk_per_clu[grp_id] / k).astype(np.int32)
+                avg_nvq = 500/self.model.clu[grp_id].nclu
+                n_vq = np.array([int(npts) if npts<avg_nvq else int(avg_nvq) for npts in self.model.clu[grp_id].nspks_per_clu])
+                # n_vq += np.round((500-np.array(n_vq).sum()) * ((self.model.clu[grp_id].nspks_per_clu / np.array(n_vq)) - 1) / ((self.model.clu[grp_id].nspks_per_clu / np.array(n_vq)) - 1).sum())
+                n_vq = n_vq.astype(np.int)
             elif method == 'equal':
                 k = int(self._vq_npts/self.model.clu[grp_id].nclu)
                 n_vq = np.ones((self.model.clu[grp_id].nclu,)).astype(np.int32) * k
-            err = n_vq.sum() - self._vq_npts
-            n_vq[-1] -= err
-            assert(n_vq.sum()==500)
+                err = n_vq.sum() - self._vq_npts
+                n_vq[-1] -= err
+            assert(n_vq.sum()<=500)
 
         for _clu_id in tqdm(self.model.clu[grp_id].index_id):
             km = MiniBatchKMeans(n_vq[_clu_id])
-            X = self.model.fet[grp_id][self.model.clu[grp_id].index[_clu_id]][:,:n_dim]
+            X = self.transformed_fet[grp_id][self.model.clu[grp_id].index[_clu_id]][:,:n_dim]   # Note: use transformed_fet rather than original model.fet
             km.fit(X)
             vq.append(km.cluster_centers_)
 
@@ -566,19 +570,8 @@ class controller(object):
                                   self.vq['labels'][grp_id])
             self.vq_view.transparency = 0.9
             self.vq_view.show()
-        
-        if fpga and self.fpga is not None:
-            self.fpga.vq[grp_id] = self.vq['points'][grp_id]
-            self._update_FPGA_labels()
-            for grpNo in tqdm(self.vq['fpga_labels'].keys(), desc='compile to fpga'):
-                self.fpga.label[grpNo] = self.vq['fpga_labels'][grpNo]
-            if self._check_FPGA_labels():
-                print('{} units are ready for real-time spike assignment'.format(self.fpga.n_units))
-            else:
-                info('check vq and labels, something went wrong') 
+
                 
-
-
     def _update_FPGA_labels(self):
         '''
         This update the global labels after each time the vq['labels'] is updated by any group
@@ -604,14 +597,14 @@ class controller(object):
         from sklearn.neighbors import KNeighborsClassifier as KNN
         knn = KNN(n_neighbors=1)
         knn.fit(self.vq['points'][grp_id], self.vq['labels'][grp_id])
-        _score = knn.score(self.model.fet[grp_id][:,:n_dim], self.model.clu[grp_id].membership)
+        _score = knn.score(self.transformed_fet[grp_id][:,:n_dim], self.model.clu[grp_id].membership)
         return _score
 
-    def _predict(self, grp_id, points, n_dim=4):
+    def _predict(self, grp_id, vq_points, n_dim=4):
         self.model.construct_kdtree(grp_id, n_dim)
         d = []
         for _kd in self.model.kd.keys():
-            tmp = _kd.query(points, k=2)[0]
+            tmp = _kd.query(vq_points, k=1)[0]
             d.append(tmp.mean(axis=1))
         d = np.vstack(np.asarray(d))
         labels = np.asarray(list(self.model.kd.values()))[np.argmin(d, axis=0)]
@@ -620,35 +613,33 @@ class controller(object):
     def set_vq(self, vq_method='proportional'):
         # step 1: set FPGA transfomer and build vq 
         for grp_id in range(self.prb.n_group):  # set_vq condition for a group: at least 500 spikes and in a `done` state
-            if self.model.gtimes[grp_id].shape[0] > 500 and self.model.clu_manager.state_list[grp_id]==3:
+            if self.model.clu_manager.state_list[grp_id]==3:
                 self.set_transformer(group_id=grp_id)
                 self.build_vq(grp_id=grp_id, show=False, method=vq_method)
             else:
                 pass
 
         # step 2: change labels such that each group has a different range that no overlapping
-        self._update_FPGA_labels()
+        # self._update_FPGA_labels()
+        self.global_label_lut = self.model.fet.assign_clu_global_labels()
 
         # step 3: set FPGA vq
         for grpNo in tqdm(self.vq['points'].keys(), desc='compile to fpga'):
-            x = self.vq['points'][grpNo]
-            y = self.vq['fpga_labels'][grpNo]
-            self.fpga.vq[grpNo]    = x
-            self.fpga.label[grpNo] = y
-            # print('group {} vq configured with shape {}'.format(grpNo, x.shape))
+            self.fpga.vq[grpNo]    = self.vq['points'][grpNo]
+            self.vq['fpga_labels'][grpNo] = np.vectorize(self.global_label_lut[grpNo].get)(self.vq['labels'][grpNo]) 
+            self.fpga.label[grpNo] = self.vq['fpga_labels'][grpNo]
 
     def reset_vq(self):
         # step 1: set FPGA transfomer
         for grp_id in range(self.prb.n_group):
             self.fpga.label[grp_id] = np.zeros((500,))
-            if self.model.gtimes[grp_id].shape[0] > 100:
+            if self.model.clu_manager.state_list[grp_id] == 3:
                 self.set_transformer(group_id=grp_id)
 
     def compile(self, vq_method='proportional'):
         self.reset_vq()
         self.set_vq(vq_method)
         self.fpga.n_units = self.unit_done
-        self.fpga.target_unit = 0
         print('FPGA is compiled')
         if self._check_FPGA_labels():
             print('{} units are ready for real-time spike assignment'.format(self.fpga.n_units))

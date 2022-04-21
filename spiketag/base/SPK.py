@@ -30,10 +30,12 @@ def _construct_transformer(x, ncomp=6):
     temp_fet += shift
     # step 3
     if temp_fet.max() - temp_fet.min() == 0:  # usually this should be > 1000
-        scale = 0 # if scale is 0, it means no feature value, transformation is disabled
+        scale = 1e-6 # if scale is 0, it means no feature value, transformation is disabled
     else:
         scale = 1 / (temp_fet.max()-temp_fet.min())
     temp_fet *= scale
+
+    shift -= 0.016/scale  # compensate for the shift caused by the quantization
     # scale = temp_fet.max()-temp_fet.min()
     # temp_fet /= scale
     # quantization for FPGA
