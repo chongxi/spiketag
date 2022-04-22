@@ -188,7 +188,7 @@ class BMI(object):
         This process func starts when self.start()
                           it ends with self.stop()
         '''
-        os.nice(-20) # makes this process almost real-time priority
+        # os.nice(-20) # makes this process almost real-time priority
 
         while True:
             with Timer('real-time decoding', verbose=False):
