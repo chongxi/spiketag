@@ -3,7 +3,7 @@ import pandas as pd
 from sympy import binomial_coefficients
 from .FET import FET
 from .CLU import CLU
-from ..view import scatter_3d_view, grid_scatter3d
+from ..view import scatter_3d_view, grid_scatter3d, raster_view
 
 class UNIT(object):
     """
@@ -118,6 +118,11 @@ class UNIT(object):
             fet_view.show()
             fet_view.set_data(self.fet[g], self.fet.clu[g])
             fet_view.title = f'group {g}: {self.fet[g].shape[0]} spikes'
+
+    def show_raster(self):
+        rasview = raster_view()
+        rasview.fromfile(self.filename)
+        rasview.show()
 
     def load_behavior(self, filename):
         pass
