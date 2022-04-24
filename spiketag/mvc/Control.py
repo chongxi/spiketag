@@ -217,6 +217,14 @@ class controller(object):
     def selected_spk_times(self):
         return self.model.gtimes[self.current_group][self.clu.selectlist]/self.model.mua.fs
 
+    @property
+    def selected_mua_around_spk_time(self, span=20):
+        '''
+        select one spike, and return the mua around that spike time, span is in #pts
+        '''
+        muadata = self.model.mua.bf.data[int(self.selected_spk_times*25000)-span:int(self.selected_spk_times*25000)+span, :]
+        return muadata
+
     def get_spk_times(self, group_id=-1, cluster_id=1):
         if group_id==-1:
             group_id = self.current_group
