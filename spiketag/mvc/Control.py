@@ -192,6 +192,11 @@ class controller(object):
         return self.model.spk[self.current_group]   # spk ndarray
 
     @property
+    def spk_spurious_score(self):
+        return np.mean(self.model.spk[self.current_group].max(axis=-1) - 
+                       self.model.spk[self.current_group].min(axis=-1), axis=1) / (2**13)
+
+    @property
     def fet(self):
         return self.model.fet[self.current_group]   # fet ndarray
 
@@ -372,6 +377,11 @@ class controller(object):
     #####################################
     ####  sorting improvement
     #####################################
+    def select_spurious(self, threshold=0.01):
+        group_id = self.current_group
+        idx = np.where(self.spk_spurious_score < threshold)[0]
+        self.clu.select(idx)
+
     def select_noise(self, thres=0.3):
         noise_leve = []
         group_id = self.current_group
@@ -381,7 +391,6 @@ class controller(object):
         noise_leve = np.array(noise_leve)
         idx = np.where(abs(noise_leve)>thres)[0]
         self.clu.select(idx)
-
 
     def refine(self, method, args):
         # method is time_threshold, used to find burst
