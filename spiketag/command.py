@@ -307,7 +307,7 @@ def raster():
     from spiketag.view import raster_view
     rasview = raster_view()
     try:
-        rasview.fromfile('./fet.bin')
+        rasview.fromfile(filename='./fet.bin', n_items=8)
         rasview.show()
         rasview.title='spike raster'
         rasview.app.run()

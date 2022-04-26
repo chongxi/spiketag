@@ -17,8 +17,8 @@ class bmi_stream(object):
     def __init__(self, buf):
         super(bmi_stream, self).__init__()
         self.buf = buf
-        self.output = struct.unpack('<7i', self.buf)        
-        self.timestamp, self.grp_id, self.fet0, self.fet1, self.fet2, self.fet3, self.spk_id = self.output
+        self.output = struct.unpack('<8i', self.buf)        
+        self.timestamp, self.grp_id, self.fet0, self.fet1, self.fet2, self.fet3, self.spk_id, self.spk_energy = self.output
 
 
 class BMI(object):
@@ -90,7 +90,7 @@ class BMI(object):
 
     def init_bmi_packet_channel(self):
         self.r32 = io.open('/dev/xillybus_fet_clf_32', 'rb', buffering=4)  # this buffer size is critical for performance
-        self._size = 7*4  # 7 samples, 4 bytes/sample
+        self._size = 8*4  # 8 samples, 4 bytes/sample
         self.bmi_buf = None
         print('spike-id packet channel is opened\n')
 

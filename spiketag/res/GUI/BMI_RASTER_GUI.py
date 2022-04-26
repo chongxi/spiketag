@@ -65,7 +65,7 @@ class BMI_RASTER_GUI(QWidget):
 
     def view_update(self):
         with Timer('update', verbose=False):
-            self.rsview.update_fromfile('./fet.bin', last_N=20000)
+            self.rsview.update_fromfile('./fet.bin', n_items=8, last_N=20000)
 
     # def keyPressEvent(self, e):
     #     print("event",e)
