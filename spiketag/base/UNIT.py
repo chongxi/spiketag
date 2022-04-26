@@ -24,7 +24,7 @@ class UNIT(object):
     >>> from spiketag.base import *
     >>> unit = UNIT()
     >>> unit.load_ephys()
-    
+
     """
     def __init__(self, bin_len=0.1, nbins=8, binpoint=13, sampling_rate=25000.0):
         super(UNIT, self).__init__()
@@ -146,8 +146,18 @@ class UNIT(object):
             self.fet_view.set_data(self.fet[g], self.fet.clu[g])
             self.fet_view.title = f'group {g}: {self.fet[g].shape[0]} spikes'
 
-    def show_raster(self):
+    def show_raster(self, unit_id='spike_id'):
         self.rasview = raster_view()
-        self.rasview.fromfile(self.filename)
+        # self.rasview.fromfile(self.filename)
         self.rasview.show()
+        spkid_packet = self.df[['time', unit_id]].to_numpy()
+        spkid_packet[:,0] *= self.sampling_rate
+        self.rasview.set_data(spkid_packet.astype(np.int32))
+        self.rasview.set_range()
 
+    def highlight_low_energy_spike(self, threshold=0.3):
+        '''
+        specific to raster_view
+        '''
+        low_energy_idx = self.df[self.df.spike_energy < threshold].index.to_numpy()
+        self.rasview.highlight(low_energy_idx)
