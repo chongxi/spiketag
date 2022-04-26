@@ -18,6 +18,13 @@ class UNIT(object):
         bin_len: float (s) of bin length
         nbins: int of number of bins
         binpoint: bits used to encode the interger part of a 32-bit number (default 13)
+
+
+    Usage: make sure that `spk_wav.bin` and `fet.bin` are in the same directory.
+    >>> from spiketag.base import *
+    >>> unit = UNIT()
+    >>> unit.load_ephys()
+    
     """
     def __init__(self, bin_len=0.1, nbins=8, binpoint=13, sampling_rate=25000.0):
         super(UNIT, self).__init__()
@@ -26,10 +33,16 @@ class UNIT(object):
         self.binpoint = binpoint
         self.sampling_rate = sampling_rate
 
-    def load_all(self, n_items=8):
+    def load_ephys(self, n_items=8):
         self.spk = SPK()
         self.spk.load_spkwav()
         self.load_unitpacket('./fet.bin', n_items=n_items)
+
+    def load_playground_log(self, log_filename):
+        '''
+        This method is specific to playground user
+        '''
+        pass
 
     def load_unitpacket(self, filename, n_items=8):
         '''
@@ -124,19 +137,17 @@ class UNIT(object):
     def show(self, g=0):
         self.current_group = g
         if g is None:
-            gd = grid_scatter3d()
-            gd.from_file(self.filename)
-            gd.show()
+            self.gd = grid_scatter3d()
+            self.gd.from_file(self.filename)
+            self.gd.show()
         else:
-            fet_view = scatter_3d_view()
-            fet_view.show()
-            fet_view.set_data(self.fet[g], self.fet.clu[g])
-            fet_view.title = f'group {g}: {self.fet[g].shape[0]} spikes'
+            self.fet_view = scatter_3d_view()
+            self.fet_view.show()
+            self.fet_view.set_data(self.fet[g], self.fet.clu[g])
+            self.fet_view.title = f'group {g}: {self.fet[g].shape[0]} spikes'
 
     def show_raster(self):
-        rasview = raster_view()
-        rasview.fromfile(self.filename)
-        rasview.show()
+        self.rasview = raster_view()
+        self.rasview.fromfile(self.filename)
+        self.rasview.show()
 
-    def load_behavior(self, filename):
-        pass

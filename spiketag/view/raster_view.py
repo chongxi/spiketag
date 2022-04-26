@@ -329,13 +329,13 @@ class raster_view(scatter_2d_view):
         self.key_option = 0
 
 
-    def fromfile(self, filename='./fet.bin'):
+    def fromfile(self, filename='./fet.bin', n_items=8):
         '''
         load and interact with spike rasters
         filename: the file that contains BMI feature-spike packet
         '''
-        fet_packet = np.memmap(filename, dtype=np.int32).reshape(-1,7)
-        spkid_packet = fet_packet[:, [0,-1]]
+        fet_packet = np.memmap(filename, dtype=np.int32).reshape(-1,n_items)
+        spkid_packet = fet_packet[:, [0, 6]]
         spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0)
         self.set_data(spkid_packet)
         self.set_range()
