@@ -61,7 +61,7 @@ class raster_view(scatter_2d_view):
         if self._n_units is None: # if not given from user (user can read from fpga.n_units), will use what's there in the data
             self._n_units = len(np.unique(self._spike_id)) + 1
             print('load {} units'.format(self._n_units))
-        # self._clu = CLU(spkid_matrix[:,1].astype(np.int64))
+        self._clu = CLU(spkid_matrix[:,1].astype(np.int64))
 
         if self._second_view:
             self._pfr = get_population_firing_count(self._spike_time, self._fs, self._t_window)
@@ -100,7 +100,7 @@ class raster_view(scatter_2d_view):
         # find the intersect cluster between other view and amplitude view
         local_idx = self._clu.global2local(global_idx)
         current_clus = self._clu.select_clus
-        common_clus = np.intersect1d(current_clus, np.array(local_idx.keys()))
+        common_clus = np.intersect1d(current_clus, np.array(list(local_idx.keys())))
         
         # the spike idx in parent-class is |cluster1|cluster2|cluster3|....|,
         # so the local idx in cluster2 is need to plus len(cluster1)
@@ -335,27 +335,27 @@ class raster_view(scatter_2d_view):
         filename: the file that contains BMI feature-spike packet
         '''
         fet_packet = np.memmap(filename, dtype=np.int32).reshape(-1,n_items)
-        spkid_packet = fet_packet[:, [0, 6]]
-        spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0)
+        spkid_packet = fet_packet[:-2, [0, 6]]
+        # spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0)
         self.set_data(spkid_packet)
         self.set_range()
 
 
-    def update_fromfile(self, filename='./fet.bin', last_N=8000):
+    def update_fromfile(self, filename='./fet.bin', n_items=8, last_N=8000):
         '''
         filename:    the file that contains BMI feature-spike packet
         last_N:      only set_data for the last_N spikes in the file
         view_window: x second for visualization
         '''
         try:
-            fet_packet = np.memmap(filename, dtype=np.int32).reshape(-1,7)
+            fet_packet = np.memmap(filename, dtype=np.int32).reshape(-1,n_items)
             # print(fet_packet.shape)
             N = last_N
-            if fet_packet.shape[0]>N:
-                spkid_packet = fet_packet[-N:, [0,-1]]
+            if fet_packet.shape[0]>N:  # fet_packet: [0:time, 1:group_id, 2:fet0, 3:fet1, 4:fet2, 5:fet3, 6:spike_id, 7:spike_energy]
+                spkid_packet = fet_packet[-N:, [0, 6]]   # spkid_packet: [0:time, 1:spike_id]
                 spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0) 
             else:
-                spkid_packet = fet_packet[:, [0,-1]]
+                spkid_packet = fet_packet[:, [0, 6]]
                 spkid_packet = np.delete(spkid_packet, np.where(spkid_packet[:,1]==0), axis=0)                 
             self.set_data(spkid_packet)
             xmin = (spkid_packet[-1, 0]-self._view_window*self._fs)/self._fs
