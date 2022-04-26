@@ -201,16 +201,16 @@ class SPK():
         spk = SPK()
         spk.load_spkwav('./spk_wav.bin')        
         '''
-        spk = np.fromfile(file, dtype=np.int32).reshape(-1, 20, 4)
-        self.ch, self.spk_time, self.electrode_group = spk[..., 0, 1], spk[..., 0, 2], spk[..., 0, 3]
+        self._spk = np.fromfile(file, dtype=np.int32).reshape(-1, 20, 4)
+        self.ch, self.spk_time, self.electrode_group = self._spk[..., 0, 1], self._spk[..., 0, 2], self._spk[..., 0, 3]
         self.spk_info = np.vstack((self.spk_time, self.electrode_group))
         group_list = np.sort(np.unique(self.electrode_group))
         self.spk_dict = {}
         self.spk_time_dict = {}
         self.spk_max_dict = {}
         for group in group_list:
-            self.spk_dict[group] = spk[self.electrode_group == group][:, 1:, :]/(2**13) # grouped spike waveforms
-            self.spk_time_dict[group] = spk[self.electrode_group == group][:, 0, 2]
+            self.spk_dict[group] = self._spk[self.electrode_group == group][:, 1:, :]/(2**13) # grouped spike waveforms
+            self.spk_time_dict[group] = self._spk[self.electrode_group == group][:, 0, 2]
             self.spk_max_dict[group] = abs(self.spk_dict[group].reshape(-1, self.spk_dict[group].shape[1]*self.spk_dict[group].shape[2])).max(axis=1)
             if spk_max_threshold is not None:
                 self.remove_outliers(group, spk_max_threshold=7000, exclude_first_ten_spks=False)

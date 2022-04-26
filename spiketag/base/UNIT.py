@@ -28,13 +28,17 @@ class UNIT(object):
     def load_all(self, filename):
         pass
 
-    def load_unitpacket(self, filename):
+    def load_unitpacket(self, filename, n_items=7):
         '''
         1. pd dataframe
         2. fet.bin
 
         Both follows table structure:
+        when n_items=7:
         ['time', 'group_id', 'fet0', 'fet1', 'fet2', 'fet3', 'spike_id']
+
+        when n_items=8:
+        ['time', 'group_id', 'fet0', 'fet1', 'fet2', 'fet3', 'spike_id', 'mean_spk_range']
         '''
         self.filename = filename
         if filename.split('.')[-1]=='pd':
@@ -54,10 +58,16 @@ class UNIT(object):
             # self.n_groups = np.sort(self.df.group_id.unique()).shape[0]
 
         elif filename.split('.')[-1]=='bin':
-            fet = np.fromfile(filename, dtype=np.int32).reshape(-1, 7).astype(np.float32)
+            fet = np.fromfile(filename, dtype=np.int32).reshape(-1, n_items).astype(np.float32)
             fet[:, 2:6] /= float(2**self.binpoint)
-            self.df = pd.DataFrame(fet,
-                      columns=['time', 'group_id', 'fet0', 'fet1', 'fet2', 'fet3', 'spike_id'])
+            if n_items == 7:
+                self.df = pd.DataFrame(fet,
+                        columns=['time', 'group_id', 'fet0', 'fet1', 'fet2', 'fet3', 'spike_id'])
+            elif n_items == 8:
+                fet[:, -1] /= float(2**self.binpoint)
+                fet[:, -1][fet[:, -1]<0] = 0.0
+                self.df = pd.DataFrame(fet,
+                        columns=['time', 'group_id', 'fet0', 'fet1', 'fet2', 'fet3', 'spike_id', 'spike_energy'])
             self.df['time'] /= self.sampling_rate
             self.df['group_id'] = self.df['group_id'].astype('int')
             self.df['spike_id'] = self.df['spike_id'].astype('int')
@@ -109,6 +119,7 @@ class UNIT(object):
         self.bin_index = self.bin_index[self._nbins-1:-1] 
 
     def show(self, g=0):
+        self.current_group = g
         if g is None:
             gd = grid_scatter3d()
             gd.from_file(self.filename)
