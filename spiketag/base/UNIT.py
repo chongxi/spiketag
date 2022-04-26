@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from sympy import binomial_coefficients
+from .SPK import SPK
 from .FET import FET
 from .CLU import CLU
 from ..view import scatter_3d_view, grid_scatter3d, raster_view
@@ -25,10 +26,12 @@ class UNIT(object):
         self.binpoint = binpoint
         self.sampling_rate = sampling_rate
 
-    def load_all(self, filename):
-        pass
+    def load_all(self, n_items=8):
+        self.spk = SPK()
+        self.spk.load_spkwav()
+        self.load_unitpacket('./fet.bin', n_items=n_items)
 
-    def load_unitpacket(self, filename, n_items=7):
+    def load_unitpacket(self, filename, n_items=8):
         '''
         1. pd dataframe
         2. fet.bin
