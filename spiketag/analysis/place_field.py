@@ -491,7 +491,7 @@ class place_field(object):
         return fig
 
 
-    def load_spkdf(self, df_file, fs=25000., replay_offset=0, show=False):
+    def load_spkdf(self, df_file, fs=25000., start=None, end=None, replay_offset=0, show=False):
         '''
         core function: load spike dataframe in spktag folder (to get Spikes)
         This function also align ephys with behavior and compute the place fields of each found units in the `df_file`
@@ -503,7 +503,6 @@ class place_field(object):
         pc.report()
         '''
         print('--------------- place cell object: load spktag dataframe ---------------\r\n')
-        # try:
         self.spike_df = pd.read_pickle(df_file)
         self.spike_df['frame_id'] /= fs
         self.spike_df.set_index('spike_id', inplace=True)
@@ -511,19 +510,19 @@ class place_field(object):
         self.spike_df.index -= self.spike_df.index.min()
         self.spike_df.index.name = 'spike_id'
         self.df['spk'] = self.spike_df
-        # self.spk_time_dict = {i: self.spike_df.loc[i]['frame_id'].to_numpy() 
-        #                       for i in self.spike_df.index.unique().sort_values()}
         self.spk_time_dict = {i: self.spike_df.frame_id.to_numpy()[self.spike_df.index.to_numpy() == i]
                               for i in self.spike_df.index.unique().sort_values().to_numpy()}
         self.df['spk'].reset_index(inplace=True)
         self.n_units = np.sort(self.spike_df.spike_id.unique()).shape[0]
         self.n_groups = np.sort(self.spike_df.group_id.unique()).shape[0]
         print('1. Load the spktag dataframe\r\n    {} units are found in {} electrode-groups\r\n'.format(self.n_units, self.n_groups))
-        # except:
-            # print('! Fail to load spike dataframe')
 
-        start, end = self.spike_df.frame_id.iloc[0], self.spike_df.frame_id.iloc[-1]
+        if start is None:
+            start = self.spike_df.frame_id.iloc[0]
+        if end is None:
+            end = self.spike_df.frame_id.iloc[-1]
         self.align_with_recording(start, end, replay_offset)
+        
         # after align_with_recording we have the correct self.ts and self.pos
         self.total_spike = len(self.spike_df)
         self.total_time = self.ts[-1] - self.ts[0]
@@ -533,7 +532,7 @@ class place_field(object):
 
         print('3. Calculate the place field during [{},{}] secs\r\n    spatially bin the maze, calculate speed and occupation_map with {}cm bin_size\r\n    dump spikes when speed is lower than {}cm/secs\r\n'.format(start, end, self.bin_size, self.v_cutoff))                      
         self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
-        self.get_fields(self.spk_time_dict, rank=True)
+        self.get_fields(self.spk_time_dict, start=start, end=end, rank=True)
 
         try:
             self.df['spk']['x'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,0])
