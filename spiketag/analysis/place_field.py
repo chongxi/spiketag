@@ -637,7 +637,7 @@ class place_field(object):
         df_all_in_one.to_pickle(filename+'.pd')
 
 
-    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=2, **kwargs):
+    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=2, first_unit_is_noise=True, **kwargs):
         '''
         kwargs example:
         - training_range: [0, 0.5]
@@ -654,10 +654,13 @@ class place_field(object):
             valid_range    = kwargs['training_range'] if 'valid_range'    in kwargs.keys() else [0.0, 1.0]
             testing_range  = kwargs['training_range'] if 'testing_range'  in kwargs.keys() else [0.0, 1.0]
             low_speed_cutoff = kwargs['low_speed_cutoff'] if 'low_speed_cutoff' in kwargs.keys() else {'training': True, 'testing': True}
-            dec.partition(training_range=training_range, valid_range=valid_range, testing_range=testing_range,
+            dec.partition(training_range=training_range, 
+                          valid_range=valid_range, 
+                          testing_range=testing_range,
                           low_speed_cutoff=low_speed_cutoff)
-            dec.drop_neuron([0]) # drop the neuron with id 0 which is noise
-            score = dec.score(smooth_sec=t_smooth, remove_first_neuron=False)
+            if first_unit_is_noise:
+                dec.drop_neuron([0]) # drop the neuron with id 0 which is noise
+            score = dec.score(smooth_sec=t_smooth)
             return dec, score
 
         if type == 'LSTM':
