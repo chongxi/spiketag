@@ -146,7 +146,7 @@ class Decoder(object):
     def save(self, filename):
         torch.save(self, filename)
 
-    def get_data(self, minimum_spikes=2, first_unit_is_noise=True):
+    def get_data(self, minimum_spikes=2, remove_first_unit=False):
         '''
         Connect to pc first and then set the partition parameter. After these two we can get data
         The data strucutre is different for RNN and non-RNN decoder
@@ -168,7 +168,7 @@ class Decoder(object):
             self.valid_X, self.valid_y = mua_count_cut_off(self.valid_X, self.valid_y, minimum_spikes)
             self.test_X,  self.test_y  = mua_count_cut_off(self.test_X,  self.test_y,  minimum_spikes)
 
-        if first_unit_is_noise:
+        if remove_first_unit:
             self.train_X = self.train_X[:,1:]
             self.valid_X = self.valid_X[:,1:]
             self.test_X  = self.test_X[:,1:]
@@ -176,7 +176,11 @@ class Decoder(object):
         return (self.train_X, self.train_y), (self.valid_X, self.valid_y), (self.test_X, self.test_y) 
 
 
-    def r2_score(self, y_predict, y_true, multioutput=True):
+    def r2_score(self, y_true, y_predict, multioutput=True):
+        '''
+        use sklearn.metrics.r2_score(y_true, y_pred, multioutput=True)
+        Note: r2_score is not symmetric, r2(y_true, y_pred) != r2(y_pred, y_true)
+        '''
         if multioutput is True:
             score = r2_score(y_true, y_predict, multioutput='raw_values')
         else:
@@ -185,7 +189,7 @@ class Decoder(object):
             print('r2 score: {}\n'.format(score))
         return score
 
-    def auto_pipeline(self, smooth_sec=2, remove_first_neuron=False):
+    def auto_pipeline(self, smooth_sec=2, remove_first_unit=False):
         '''
         example for evaluate the funciton of acc[partition]:
         >>> dec = NaiveBayes(t_window=500e-3, t_step=60e-3)
@@ -198,21 +202,21 @@ class Decoder(object):
         >>>     r_scores.append(dec.auto_pipeline(2))
         '''
         (X_train, y_train), (X_valid, y_valid), (self.X_test, self.y_test) = self.get_data(minimum_spikes=2, 
-                                                                                           first_unit_is_noise=remove_first_neuron)
-        self.fit(X_train, y_train, remove_first_neuron=remove_first_neuron)
+                                                                                           remove_first_unit=remove_first_unit)
+        self.fit(X_train, y_train, remove_first_unit=remove_first_unit)
         self.predicted_y = self.predict(self.X_test)
         self.smooth_factor  = int(smooth_sec/self.pc.t_step) # 2 second by default
         self.sm_predicted_y = smooth(self.predicted_y, self.smooth_factor)
         score = self.r2_score(self.y_test, self.sm_predicted_y) # ! r2 score is not symmetric, needs to be (true, prediction)
         return score
 
-    def score(self, smooth_sec=2, remove_first_neuron=False):
+    def score(self, smooth_sec=2, remove_first_unit=False):
         '''
         dec.score will first automatically train the decoder (fit) and then test it (predict). 
         The training set and test set are also automatically saved in dec.X_train and dec.X_test
         The training and test label are saved in dec.y_train and dec.y_test
         '''
-        return self.auto_pipeline(smooth_sec=smooth_sec, remove_first_neuron=remove_first_neuron)
+        return self.auto_pipeline(smooth_sec=smooth_sec, remove_first_unit=remove_first_unit)
 
     def plot_decoding_err(self, dec_pos, real_pos, err_percentile = 90, N=None, err_max=None):
         err = abs(dec_pos - real_pos)
@@ -271,13 +275,13 @@ class NaiveBayes(Decoder):
         self.rt_post_2d, self.binned_pos = None, None  # these two variables can be used for real-time visualization in the playground
         self._disable_neuron_idx = None  # mask out neuron
         
-    def fit(self, X=None, y=None, remove_first_neuron=False):
+    def fit(self, X=None, y=None, remove_first_unit=False):
         '''
         Naive Bayes place decoder fitting use precise spike timing to compute the representation 
         (Rather than using binned spike count vector in t_window)
         Therefore the X and y is None for the consistency of the decoder API
         '''
-        if remove_first_neuron: # remove the first neuron (the one classified as noise)
+        if remove_first_unit: # remove the first neuron (the one classified as noise)
             self.pc.spk_time_dict = {i: self.pc.spk_time_dict[i+1] for i in range(len(self.pc.spk_time_dict.keys())-1)}
         self.pc.get_fields(self.pc.spk_time_dict, self.train_time[0], self.train_time[1], v_cutoff=self.v_cutoff, rank=False)
         # self.pc.get_fields()
