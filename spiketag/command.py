@@ -282,7 +282,10 @@ def fpga(probefile):
     prb.load(probefile)    
     prb.show()
     fpga = xike_config(prb)
-    click.echo('init FPGA success, check fpga with "spiketag fpga-check"')
+    fpga.ch_ref[:] = 160
+    fpga.thres[:] = -360
+    click.echo('FPGA-NSP initiates, load fpga in ipython via `%load_ext spiketag` then check variable `fpga`')
+    click.echo('FPGA-NSP initiates with reference channel 160 and threshold -360')
 
 
 @main.command()
