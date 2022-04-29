@@ -4,6 +4,7 @@ from sympy import binomial_coefficients
 from .SPK import SPK
 from .FET import FET
 from .CLU import CLU
+from spiketag.analysis import spk_time_to_scv
 from ..view import scatter_3d_view, grid_scatter3d, raster_view
 
 class UNIT(object):
@@ -116,6 +117,27 @@ class UNIT(object):
     def bin_len(self, value):
         self._bin_len = value
         self.assign_bin()
+
+    @property
+    def nbins(self):
+        return self._nbins
+
+    @nbins.setter
+    def nbins(self, value):
+        self._nbins = value
+        self.assign_bin()
+
+    @property
+    def ts(self):
+        t_step = self.bin_len
+        ts = np.arange(self.df.bin_end_time.iloc[0] - t_step, self.df.bin_end_time.iloc[-1], t_step)
+        return ts
+    
+    def get_scv(self):
+        spk_dict = {i: self.df[self.df.spike_id == i].time.to_numpy()
+              for i in np.sort(self.df.spike_id.unique())}
+        self.scv = spk_time_to_scv(spk_dict, ts=self.ts, t_window = self.bin_len*self.nbins)
+        return self.scv
 
     def assign_bin(self):
         '''
