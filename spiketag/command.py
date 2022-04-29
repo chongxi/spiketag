@@ -236,6 +236,22 @@ def sort(probefile):
     ctrl.show()
     sys.exit(app.exec_())
 
+@main.command()
+@click.argument('group_id')
+def spk(group_id):
+    '''
+    view spk and fet at the target group
+    '''
+    from PyQt5.QtWidgets import QApplication
+    app  = QApplication(sys.argv)
+    from spiketag.base import SPK
+    spk = SPK()
+    spk.load_spkwav('./spk_wav.bin')
+    print(spk.spk_info)
+    print(spk.spk_info.shape)
+    fet = spk.tofet()
+    spk.show(int(group_id))
+    sys.exit(app.exec_())
 
 @main.command()
 @click.option('--var', prompt='ch_grpNo, ch_hash, ch_ref, thres, scale, shift, pca, vq')
