@@ -211,15 +211,12 @@ def report(binaryfile, probefile, nbits=32):
 
 # @click.option('--time_cutoff', prompt='time_cutoff', default='0')
 @main.command()
-@click.argument('binaryfile', nargs=-1)
 @click.argument('probefile')
-def sort(binaryfile, probefile):
+def sort(probefile):
     '''
     sort without notebook:
-    `spiketag sort mua.bin spk.bin prb.json`
+    `spiketag sort prb.json`
     '''
-    mua_filename, spk_filename = binaryfile
-    click.echo('spiketag-sort: loadding {} and {}'.format(mua_filename, spk_filename))
     import sys
     from PyQt5.QtWidgets import QApplication
     from spiketag.mvc.Control import controller
@@ -229,8 +226,8 @@ def sort(binaryfile, probefile):
     app  = QApplication(sys.argv)
     ctrl = controller(
                       probe = prb,
-                      mua_filename=mua_filename, 
-                      spk_filename=spk_filename, 
+                      mua_filename='./mua.bin', 
+                      spk_filename='./spk.bin', 
                       binary_radix=13, 
                       scale=False
                       # time_segs=[[0,320]]
