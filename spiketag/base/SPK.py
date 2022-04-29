@@ -141,6 +141,7 @@ class SPK():
         if spkdict is not None:
             self.spkdict = spkdict
             self(self.spkdict)
+            self._spike_energy = None
     
     def __call__(self, spkdict):
         self.__spk = spkdict.copy() 
@@ -216,6 +217,8 @@ class SPK():
                 self.remove_outliers(group, spk_max_threshold=7000, exclude_first_ten_spks=False)
         self(self.spk_dict)
 
+        self.calculate_spike_energy()
+
     def remove_outliers(self, group, spk_max_threshold=7000, exclude_first_ten_spks=False):
         '''
         remove outliers (too big of absolute amplitude) in the electrode group
@@ -228,6 +231,21 @@ class SPK():
             self.spk_dict[group] = np.delete(self.spk_dict[group], ids, axis=0)
             self.spk_time_dict[group] = np.delete(self.spk_time_dict[group], ids)
             self.spk_max_dict[group] = np.delete(self.spk_max_dict[group], ids)
+
+    def calculate_spike_energy(self):
+        self._spike_energy = {}
+        for group in self.groups:
+            spk = self[group]  # (spk.shape[0], spk.shape[1], spk.shape[2]): (nspk, spklen, ch_span)
+            spk_range = np.sum(spk.max(axis=-1) - spk.min(axis=-1), axis=-1)
+            spk_abs = np.sum(np.abs(spk).reshape(spk.shape[0], -1), axis=-1)/spk.shape[2]
+            self._spike_energy[group] = spk_range/spk_abs
+        return self._spike_energy
+    
+    @property
+    def spike_energy(self):
+        if self._spike_energy is None:
+            self.calculate_spike_energy()
+        return self._spike_energy
         
     def tofet(self, group_id=None, method='pca', ncomp=4, whiten=False):
         fet = {}
