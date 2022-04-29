@@ -6,7 +6,6 @@ from scipy.signal import butter, lfilter, freqz
 from numba import njit, prange
 from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
 import warnings
-from ..base import mua_kernel
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
@@ -138,8 +137,8 @@ def scv_from_spk_time_list(spk_time_list, ts, t_window=250e-3):
     suv = np.zeros((T, N))
     for i in prange(T):
         for j in prange(N):
-            suv[i, j] = np.sum(np.logical_and(spk_time_list[j] >= ts[i] - t_window,
-                                              spk_time_list[j] < ts[i]))
+            suv[i, j] = np.sum(np.logical_and(spk_time_list[j] >  ts[i] - t_window,
+                                              spk_time_list[j] <= ts[i]))
     return suv[1:]
 
 
@@ -328,6 +327,7 @@ def butter_lowpass(cutoff, fs=25000, order=5):
 
 
 def get_LFP(bf, t0, t1, ch, mua_fs=25000, lfp_fs=1000, cutoff=300):
+    from ..base import mua_kernel
     # step 1: wiener deconvolution (25000 Hz) to reconstruct raw waveform
     offset = 10000
     mua_wav = bf.data[int(t0*25000)-offset:int(t1*25000)+offset, ch]
