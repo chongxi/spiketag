@@ -203,8 +203,8 @@ class SPK():
         spk.load_spkwav('./spk_wav.bin')        
         '''
         self._spk = np.fromfile(file, dtype=np.int32).reshape(-1, 20, 4)
-        self.ch, self.spk_time, self.electrode_group = self._spk[..., 0, 1], self._spk[..., 0, 2], self._spk[..., 0, 3]
-        self.spk_info = np.vstack((self.spk_time, self.electrode_group))
+        self.spk_peak_ch, self.spk_time, self.electrode_group = self._spk[..., 0, 1], self._spk[..., 0, 2], self._spk[..., 0, 3]
+        self.spk_info = np.vstack((self.spk_time, self.electrode_group, self.spk_peak_ch))
         group_list = np.sort(np.unique(self.electrode_group))
         self.spk_dict = {}
         self.spk_time_dict = {}
