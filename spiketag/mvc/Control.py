@@ -374,6 +374,11 @@ class controller(object):
             self.view.show()
 
     def save(self, filename, including_noise=True):
+        '''
+        update spktag object in the model
+        and save all files including sorted result and fpga pamrameters
+        '''
+        self.model.update_spktag()
         self.model.tofile(filename, including_noise)
         self.fpga.save(filename+'.param')
 
