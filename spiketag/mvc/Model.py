@@ -173,11 +173,11 @@ class MainModel(object):
                 self.mua.spkdict[g] = self.spk.spk_dict[g]
                 self.mua.spk_times[g] = self.spk.spk_time_dict[g]
 
-            elif g not in self.spk.spk_dict.keys(): 
+            if self.mua.spk_times[g].shape[0] == 0: 
                 self.mua.spkdict[g] = np.random.randn(1, self.mua.spklen, len(self.probe[g]))
                 self.mua.spk_times[g] = np.array([0])
-                # if time_cutoff and self._time_segs is not None:
-                    # self.mua.spk_times[g] = np.array(self._time_segs[0])
+                self.spk.spk_dict[g] = self.mua.spkdict[g]
+                self.spk.spk_time_dict[g] = np.array([0])
         
         self.gtimes = self.mua.spk_times
 
@@ -216,6 +216,16 @@ class MainModel(object):
         info('clustering with {}'.format(clu_method))
         self.fet.toclu(method=clu_method, group_id=group_id, **kwargs)
 
+        self.spktag = SPKTAG(self.probe,
+                             self.spk, 
+                             self.fet, 
+                             self.clu,
+                             self.clu_manager,
+                             self.gtimes)
+        info('Model.spktag is generated, nspk:{}'.format(self.spktag.nspk))
+
+    
+    def update_spktag(self):
         self.spktag = SPKTAG(self.probe,
                              self.spk, 
                              self.fet, 
