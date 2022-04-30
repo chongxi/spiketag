@@ -289,6 +289,7 @@ class controller(object):
     def delete_spk(self, spk_idx):
         i = self.current_group
         self.model.mua.spk_times[i] = np.delete(self.model.mua.spk_times[i], spk_idx, axis=0)
+        self.model.spk.spk_time_dict[i] = np.delete(self.model.spk.spk_time_dict[i], spk_idx, axis=0)
         self.model.spk[i] = np.delete(self.model.spk[i], spk_idx, axis=0)
         self.model.fet[i] = self.model.spk.tofet(i, method=self.model.fet_method, ncomp=self.model._fetlen)
         self.model.clu[i].delete(spk_idx)

@@ -21,8 +21,8 @@ class MainModel(object):
        -> clu: dict, every item is a CLU on that channel; clu.merge, clu.split, clu.move  etc..
     """
 
-    def __init__(self, mua_filename, spk_filename, probe=None, spktag_filename=None, 
-                 numbytes=4, binary_radix=13, scale=True, spklen=19, corr_cutoff=0.9, amp_cutoff=[-15000, 1000],
+    def __init__(self, mua_filename='./mua.bin', spk_filename='./spk.bin', probe=None, spktag_filename=None, 
+                 numbytes=4, binary_radix=13, scale=False, spklen=19, corr_cutoff=0.9, amp_cutoff=[-15000, 1000],
                  fet_method='pca', fetlen=4, fet_whiten=False,
                  clu_method='hdbscan', fall_off_size=18, n_jobs=24,
                  time_segs=None,
@@ -163,9 +163,21 @@ class MainModel(object):
             if g in self.spk.spk_dict.keys():
                 self.mua.spkdict[g] = self.spk.spk_dict[g]
                 self.mua.spk_times[g] = self.spk.spk_time_dict[g]
+                if time_cutoff and self._time_segs is not None:
+                    time_in_seg = (self.mua.spk_times[g] > self._time_segs[0] * self.probe.fs) & (self.mua.spk_times[g] <= self._time_segs[1] * self.probe.fs)
+                    self.mua.spkdict[g] = self.mua.spkdict[g][time_in_seg]
+                    self.mua.spk_times[g] = self.mua.spk_times[g][time_in_seg]
+                if speed_cutoff:
+                    pass # ! TODO
+                if amp_cutoff:
+                    pass # ! TODO
+
             elif g not in self.spk.spk_dict.keys(): 
                 self.mua.spkdict[g] = np.random.randn(1, self.mua.spklen, len(self.probe[g]))
-                self.mua.spk_times[g] = np.array([0]) 
+                self.mua.spk_times[g] = np.array([0])
+                # if time_cutoff and self._time_segs is not None:
+                    # self.mua.spk_times[g] = np.array(self._time_segs[0])
+        
         self.gtimes = self.mua.spk_times
 
     def get_fet(self):
