@@ -160,17 +160,18 @@ class MainModel(object):
         self.mua.spkdict = {} #self.spk.spk_dict
         self.mua.spk_times = {} #self.spk.spk_time_dict
         for g in self.probe.grp_dict.keys():
+
             if g in self.spk.spk_dict.keys():
-                self.mua.spkdict[g] = self.spk.spk_dict[g]
-                self.mua.spk_times[g] = self.spk.spk_time_dict[g]
                 if time_cutoff and self._time_segs is not None:
-                    time_in_seg = (self.mua.spk_times[g] > self._time_segs[0] * self.probe.fs) & (self.mua.spk_times[g] <= self._time_segs[1] * self.probe.fs)
-                    self.mua.spkdict[g] = self.mua.spkdict[g][time_in_seg]
-                    self.mua.spk_times[g] = self.mua.spk_times[g][time_in_seg]
+                    time_in_seg = (self.spk.spk_time_dict[g] > self._time_segs[0] * self.probe.fs) & (self.spk.spk_time_dict[g] <= self._time_segs[1] * self.probe.fs)
+                    self.spk.spk_dict[g] = self.spk.spk_dict[g][time_in_seg]
+                    self.spk.spk_time_dict[g] = self.spk.spk_time_dict[g][time_in_seg]
                 if speed_cutoff:
                     pass # ! TODO
                 if amp_cutoff:
                     pass # ! TODO
+                self.mua.spkdict[g] = self.spk.spk_dict[g]
+                self.mua.spk_times[g] = self.spk.spk_time_dict[g]
 
             elif g not in self.spk.spk_dict.keys(): 
                 self.mua.spkdict[g] = np.random.randn(1, self.mua.spklen, len(self.probe[g]))
