@@ -105,16 +105,16 @@ class controller(object):
             if content == 'ephys_full':
                 if self.clu.selectlist.shape[0] == 1:
                     _time = self.model.gtimes[self.current_group][self.clu.selectlist[0]]/self.prb.fs
-                    _span = 0.4
+                    _span = 0.1
                     self.model.mua.show(self.prb.chs, span=_span, time=_time)
-                    _highlight_point = int(_span*self.prb.fs)
-                    #  chs, timelist, colorlist=None, mask_others=False
-                    _cluNo = self.clu.membership[self.clu.selectlist][0]
-                    _highlight_color = np.array(self.view.spkview.palette[_cluNo])
-                    _highlight_color = np.append(_highlight_color, 1)
-                    self.model.mua.wview.highlight(chs=self.prb[self.current_group], 
-                                                   timelist=[[_highlight_point-10, _highlight_point+15]],
-                                                   colorlist=_highlight_color, mask_others=True)
+                    # _highlight_point = int(_span*self.prb.fs)
+                    # #  chs, timelist, colorlist=None, mask_others=False
+                    # _cluNo = self.clu.membership[self.clu.selectlist][0]
+                    # _highlight_color = np.array(self.view.spkview.palette[_cluNo])
+                    # _highlight_color = np.append(_highlight_color, 1)
+                    # self.model.mua.wview.highlight(chs=self.prb[self.current_group], 
+                    #                                timelist=[[_highlight_point-10, _highlight_point+15]],
+                    #                                colorlist=_highlight_color, mask_others=True)
 
 
         @self.view.spkview.event.connect
@@ -173,7 +173,7 @@ class controller(object):
                 vchs = np.hstack((self.prb[self.current_group-1], self.prb[self.current_group]))
             if len(self.view.spkview.selected_spk) == 1:
                 current_time = self.model.mua.spk_times[self.current_group][self.view.spkview.selected_spk]/self.model.mua.fs
-                self.model.mua.show(time = current_time, chs=vchs)
+                self.model.mua.show(time = current_time, chs=self.prb.chs, span=0.1)
 
     @property
     def current_group(self):
