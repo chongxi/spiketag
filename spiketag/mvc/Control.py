@@ -1,6 +1,8 @@
 import numpy as np
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
+from ipywidgets import interact
+import matplotlib.pyplot as plt
 from .Model import MainModel
 from ..analysis import spk_time_to_scv 
 from .View import MainView
@@ -375,8 +377,21 @@ class controller(object):
         self.fpga.save(filename+'.param')
 
     #####################################
-    ####  sorting improvement
+    ####  plot useful information  ######
     #####################################
+
+    def plot_low_spike_energy(self):
+        @interact(i=(0, 39, 1))
+        def show_low_spike_energy(i=0):
+            fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+            ax.plot(self.model.spk.spk_time_dict[i]/self.model.mua.fs, self.model.spk.spike_energy[i], ',', c='k', alpha=0.5);
+            ax.set_ylim([0,0.7]);
+            plt.show()
+
+    #####################################
+    #####    sorting improvement    #####
+    #####################################
+
     def select_spurious(self, threshold=0.01):
         group_id = self.current_group
         idx = np.where(self.spk_spurious_score < threshold)[0]
