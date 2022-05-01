@@ -1,4 +1,4 @@
-from .core import softmax, licomb_Matrix, bayesian_decoding, bayesian_decoding_rt, argmax_2d_tensor, smooth
+from .core import softmax, licomb_Matrix, bayesian_decoding, argmax_2d_tensor, smooth
 import numpy as np
 from sklearn.metrics import r2_score
 from ..utils import plot_err_2d
@@ -77,6 +77,7 @@ class Decoder(object):
         # self.pc = pc
         self.pc = copy.deepcopy(pc)
         self.pc.rank_fields('spatial_bit_spike') # rerank the field
+        self.fields = self.pc.fields
         if self.t_step is not None:
             print('Link the decoder with the place cell object (pc):\r\n resample the pc according to current decoder input sampling rate {0:.4f} Hz'.format(1/self.t_step))
             self.pc(t_step=self.t_step)
@@ -291,6 +292,10 @@ class NaiveBayes(Decoder):
         # for real-time decoding on incoming bin from BMI   
         self.poisson_matrix = self.t_window*self.fields.sum(axis=0)
         self.log_fr = np.log(self.fields) # make sure Fr[Fr==0] = 1e-12
+        self.neuron_idx = np.arange(self.fields.shape[0])
+
+        if self._disable_neuron_idx is not None:
+            self.neuron_idx = np.array([_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
 
     def predict(self, X, two_steps=False):
         '''
@@ -303,7 +308,6 @@ class NaiveBayes(Decoder):
             X_arr = X_arr.reshape(1,-1)
 
         if self._disable_neuron_idx is not None:
-            self.neuron_idx = [_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx]
             firing_bins = X_arr[:, self.neuron_idx]
             place_fields = self.fields[self.neuron_idx]
         else:
@@ -324,7 +328,6 @@ class NaiveBayes(Decoder):
             X = X.ravel()
 
         if self._disable_neuron_idx is not None:
-            self.neuron_idx = [_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx]
             firing_bins = X[:, self.neuron_idx]
             place_fields = self.fields[self.neuron_idx]
         else:
@@ -342,3 +345,5 @@ class NaiveBayes(Decoder):
         if type(_disable_neuron_idx) == int:
             _disable_neuron_idx = [_disable_neuron_idx]
         self._disable_neuron_idx = _disable_neuron_idx
+        if self._disable_neuron_idx is not None:
+            self.neuron_idx = np.array([_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
