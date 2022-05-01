@@ -133,10 +133,16 @@ class UNIT(object):
         ts = np.arange(self.df.bin_end_time.iloc[0] - t_step, self.df.bin_end_time.iloc[-1], t_step)
         return ts
     
-    def get_scv(self):
-        spk_dict = {i: self.df[self.df.spike_id == i].time.to_numpy()
-              for i in np.sort(self.df.spike_id.unique())}
-        self.scv = spk_time_to_scv(spk_dict, ts=self.ts, t_window = self.bin_len*self.nbins)
+    def get_scv(self, start_time=None, end_time=None):
+        if start_time is None and end_time is None:
+            start_time, end_time = self.df.bin_end_time.iloc[0], self.df.bin_end_time.iloc[-1]
+        self.spk_time_dict = {i: self.df[ (self.df.spike_id == i) & 
+                                          (self.df.time >  start_time) & 
+                                          (self.df.time <= end_time) ].time.to_numpy() 
+                for i in np.sort(self.df.spike_id.unique())} 
+        t_step = self.bin_len
+        ts = np.arange(start_time - t_step, end_time, t_step)
+        self.scv = spk_time_to_scv(self.spk_time_dict, ts=ts, t_window = self.bin_len*self.nbins)
         return self.scv
 
     def assign_bin(self):
