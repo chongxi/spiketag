@@ -1,3 +1,4 @@
+from sklearn.covariance import log_likelihood
 from .core import softmax, licomb_Matrix, bayesian_decoding, argmax_2d_tensor, smooth
 import numpy as np
 from sklearn.metrics import r2_score
@@ -322,20 +323,23 @@ class NaiveBayes(Decoder):
     def predict_rt(self, X, two_steps=False):
         # TODO: #1 Test this new update
         # TODO: #3 Add two_steps decoding method to cope with erratic jumps
-        if X.shape[0]>1:
+        if X.ndim == 1:
+            X = X.reshape(1,-1)
+        elif X.ndim>1 and X.shape[0]>1:
             X = np.sum(X, axis=0)  # X is (B_bins, N_neurons) spike count matrix, we need to sum up B bins to decode the full window
-        else:
-            X = X.ravel()
+
+        X = X.ravel()
 
         if self._disable_neuron_idx is not None:
-            firing_bins = X[:, self.neuron_idx]
+            firing_bins = X[self.neuron_idx]
             place_fields = self.fields[self.neuron_idx]
         else:
             firing_bins = X
             place_fields = self.fields
 
         suv_weighted_log_fr = licomb_Matrix(firing_bins, np.log(place_fields))
-        self.rt_post_2d = np.exp(suv_weighted_log_fr - self.t_window*place_fields.sum(axis=0))
+        self.log_likelihood = suv_weighted_log_fr - self.t_window*place_fields.sum(axis=0)
+        self.rt_post_2d = np.exp(self.log_likelihood)
         self.rt_post_2d /= self.rt_post_2d.sum()
         self.rt_pred_binned_pos = argmax_2d_tensor(self.rt_post_2d)
         y = self.rt_pred_binned_pos*self.spatial_bin_size + self.spatial_origin
@@ -347,3 +351,51 @@ class NaiveBayes(Decoder):
         self._disable_neuron_idx = _disable_neuron_idx
         if self._disable_neuron_idx is not None:
             self.neuron_idx = np.array([_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
+
+
+def gaussian_inhibition_field(coord, size_x=32, size_y=32):
+    xy  = np.stack(np.meshgrid(np.arange(0,size_x), np.arange(0,size_y)), axis=-1)
+    coord_xy = np.ones((size_x,size_y,2)) * np.array(coord)
+    constraint_field = coord_xy - xy
+    return -np.linalg.norm(constraint_field, axis=-1)
+
+
+def predict_rt(dec, X, two_steps=False, mean_firing_rate=0.547, gamma=1):
+    # Ponential update (performance improved when using with 3 seconds moving average window)
+    if X.ndim == 1:
+        X = X.reshape(1,-1)
+    elif X.ndim>1 and X.shape[0]>1:
+        X = np.sum(X, axis=0)  # X is (B_bins, N_neurons) spike count matrix, we need to sum up B bins to decode the full window
+
+    X = X.ravel()
+
+    if dec._disable_neuron_idx is not None:
+        firing_bins = X[dec.neuron_idx]
+        place_fields = dec.fields[dec.neuron_idx]
+    else:
+        firing_bins = X
+        place_fields = dec.fields
+        
+    firing_rate_ratio = X.mean()/mean_firing_rate
+    
+    suv_weighted_log_fr = licomb_Matrix(firing_bins, np.log(place_fields))
+
+    if dec.rt_pred_binned_pos is not None and two_steps == True:
+        dec.constraint_field = gaussian_inhibition_field(coord=dec.last_max_bin, 
+                                                         size_x=suv_weighted_log_fr.shape[0], 
+                                                         size_y=suv_weighted_log_fr.shape[1])
+    else:
+        dec.constraint_field = np.zeros_like(suv_weighted_log_fr)
+    dec.log_likelihood = suv_weighted_log_fr - dec.t_window*place_fields.sum(axis=0) + gamma * dec.constraint_field / (firing_rate_ratio)**0.5
+    
+    if two_steps:
+        dec.rt_post_2d_two_step = np.exp(dec.log_likelihood)
+        dec.rt_post_2d_two_step /= dec.rt_post_2d_two_step.sum()
+        dec.rt_pred_binned_pos = argmax_2d_tensor(dec.rt_post_2d_two_step)
+    else:
+        dec.rt_post_2d = np.exp(dec.log_likelihood)
+        dec.rt_post_2d /= dec.rt_post_2d.sum()
+        dec.rt_pred_binned_pos = argmax_2d_tensor(dec.rt_post_2d)
+    dec.last_max_bin = dec.rt_pred_binned_pos
+    y = dec.rt_pred_binned_pos*dec.spatial_bin_size + dec.spatial_origin
+    return y, dec.rt_post_2d
