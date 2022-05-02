@@ -7,6 +7,17 @@ import copy
 import torch
 
 
+def gaussian_inhibition_field(coord, size_x=32, size_y=32):
+    '''
+    Genearte a gassian inhibition field with center at coord and size of size_x by size_y
+    for two-step bayesian decoding: https://journals.physiology.org/doi/epdf/10.1152/jn.1998.79.2.1017 (eq. 43)
+    - ||x_last - x||^2 
+    '''
+    xy  = np.stack(np.meshgrid(np.arange(0,size_x), np.arange(0,size_y)), axis=-1)
+    coord_xy = np.ones((size_x,size_y,2)) * np.array(coord)
+    constraint_field = coord_xy - xy
+    return -np.linalg.norm(constraint_field, axis=-1)**2
+
 def mua_count_cut_off(X, y=None, minimum_spikes=1):
     '''
     temporary solution to cut the frame that too few spikes happen
@@ -276,6 +287,8 @@ class NaiveBayes(Decoder):
         self.name = 'NaiveBayes'
         self.rt_post_2d, self.binned_pos = None, None  # these two variables can be used for real-time visualization in the playground
         self._disable_neuron_idx = None  # mask out neuron
+        self.last_max_bin = None  # real-time prediction binned position (keep last_max_bin for two-step prediction)
+        
         
     def fit(self, X=None, y=None, remove_first_unit=False):
         '''
@@ -301,7 +314,7 @@ class NaiveBayes(Decoder):
     def predict(self, X, two_steps=False):
         '''
         # TODO: #2 Add two_steps decoding method to cope with erratic jumps 
-        zhang et al., 1995 (https://journals.physiology.org/doi/full/10.1152/jn.1998.79.2.1017)
+        zhang et al., 1998 (https://journals.physiology.org/doi/full/10.1152/jn.1998.79.2.1017)
         '''
         X_arr = X.copy()
 
@@ -320,9 +333,8 @@ class NaiveBayes(Decoder):
         y = binned_pos*self.spatial_bin_size + self.spatial_origin
         return y
 
-    def predict_rt(self, X, two_steps=False):
-        # TODO: #1 Test this new update
-        # TODO: #3 Add two_steps decoding method to cope with erratic jumps
+    def predict_rt(self, X, two_steps=False, mean_firing_rate=0.547, gamma=0.06):
+        # Ponential update (performance improved when using with 3 seconds moving average window)
         if X.ndim == 1:
             X = X.reshape(1,-1)
         elif X.ndim>1 and X.shape[0]>1:
@@ -336,14 +348,30 @@ class NaiveBayes(Decoder):
         else:
             firing_bins = X
             place_fields = self.fields
-
+            
+        firing_rate_ratio = firing_bins.mean()/mean_firing_rate # eq.44 (Zhang et al., 1998) change speed to firing rate
+        
         suv_weighted_log_fr = licomb_Matrix(firing_bins, np.log(place_fields))
-        self.log_likelihood = suv_weighted_log_fr - self.t_window*place_fields.sum(axis=0)
+
+        if self.last_max_bin is not None and two_steps == True:
+            self.two_step_constraint_field = gaussian_inhibition_field(coord=self.last_max_bin, 
+                                                              size_x=suv_weighted_log_fr.shape[0], 
+                                                              size_y=suv_weighted_log_fr.shape[1])
+        else:
+            self.two_step_constraint_field = np.zeros_like(suv_weighted_log_fr)
+
+        ## unormalized log likelihood, check eq.36,41,43,47 (Zhang et al., 1998): 
+        ## firing_rate_ratio is the modulation factor of the firing rate (m(t) in e.q. 47)
+        self.log_likelihood = suv_weighted_log_fr - \
+                              firing_rate_ratio*self.t_window*place_fields.sum(axis=0) + \
+                              gamma * self.two_step_constraint_field / (firing_rate_ratio**2)
+    
         self.rt_post_2d = np.exp(self.log_likelihood)
         self.rt_post_2d /= self.rt_post_2d.sum()
         self.rt_pred_binned_pos = argmax_2d_tensor(self.rt_post_2d)
+        self.last_max_bin = self.rt_pred_binned_pos
         y = self.rt_pred_binned_pos*self.spatial_bin_size + self.spatial_origin
-        return y, self.rt_post_2d
+        return y, self.rt_post_2d                
 
     def drop_neuron(self, _disable_neuron_idx):
         if type(_disable_neuron_idx) == int:
@@ -351,13 +379,6 @@ class NaiveBayes(Decoder):
         self._disable_neuron_idx = _disable_neuron_idx
         if self._disable_neuron_idx is not None:
             self.neuron_idx = np.array([_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
-
-
-def gaussian_inhibition_field(coord, size_x=32, size_y=32):
-    xy  = np.stack(np.meshgrid(np.arange(0,size_x), np.arange(0,size_y)), axis=-1)
-    coord_xy = np.ones((size_x,size_y,2)) * np.array(coord)
-    constraint_field = coord_xy - xy
-    return -np.linalg.norm(constraint_field, axis=-1)
 
 
 def predict_rt(dec, X, two_steps=False, mean_firing_rate=0.547, gamma=1):
