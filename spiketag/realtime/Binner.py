@@ -17,13 +17,13 @@ class Binner(EventEmitter):
     bin_size The time span (ms) to compute the spike count of each bin
     Internal States:
 
-    count_vec: shape = (B,N) (entry +1 on with the input spike_id)
+    count_vec: shape = (B,N) B time bins and N neurons
     nbins (+1 when the input timestamps goes to the next bin, its number is the current bin)
     output (emitted variable to the decoder, N neuron's spike count in previous B bins)
 
     https://github.com/chongxi/spiketag/issues/47
     """
-    def __init__(self, bin_size, n_id, n_bin, sampling_rate=25000):
+    def __init__(self, bin_size, n_id, n_bin, sampling_rate=25000, exclude_first_unit=False):
         super(Binner, self).__init__()
         self.bin_size = bin_size
         self.N = n_id
@@ -33,6 +33,7 @@ class Binner(EventEmitter):
         self.fs = sampling_rate
         self.dt = 1/self.fs   # each frame is 1/25000:40us, which is the resolution of timestamp
         self.last_bin = 0
+        self.exclude_first_unit = exclude_first_unit
 
     def input(self, bmi_output, type='individual_spike'):
         '''
@@ -61,5 +62,8 @@ class Binner(EventEmitter):
         # first column (unit) is the noise
         # Warning: because the binner never send the unit#0 (noise) to the
         # decoder, we should also exclude unit#0 when building the decoder. 
-        self._output = self.count_vec[:, 1:] 
+        if self.exclude_first_unit:
+            self._output = self.count_vec[:, 1:] 
+        else:
+            self._output = self.count_vec
         return self._output
