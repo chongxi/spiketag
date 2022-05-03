@@ -651,8 +651,8 @@ class place_field(object):
             dec.connect_to(self)
             dec.resample(t_step=t_step, t_window=t_window)
             training_range = kwargs['training_range'] if 'training_range' in kwargs.keys() else [0.0, 1.0]
-            valid_range    = kwargs['training_range'] if 'valid_range'    in kwargs.keys() else [0.0, 1.0]
-            testing_range  = kwargs['training_range'] if 'testing_range'  in kwargs.keys() else [0.0, 1.0]
+            valid_range    = kwargs['valid_range'] if 'valid_range'    in kwargs.keys() else [0.0, 1.0]
+            testing_range  = kwargs['testing_range'] if 'testing_range'  in kwargs.keys() else [0.0, 1.0]
             low_speed_cutoff = kwargs['low_speed_cutoff'] if 'low_speed_cutoff' in kwargs.keys() else {'training': True, 'testing': True}
             dec.partition(training_range=training_range, 
                           valid_range=valid_range, 
