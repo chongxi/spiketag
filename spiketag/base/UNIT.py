@@ -4,7 +4,6 @@ from sympy import binomial_coefficients
 from .SPK import SPK
 from .FET import FET
 from .CLU import CLU
-from spiketag.analysis import spk_time_to_scv
 from ..view import scatter_3d_view, grid_scatter3d, raster_view
 
 class UNIT(object):
@@ -134,6 +133,7 @@ class UNIT(object):
         return ts
     
     def get_scv(self, start_time=None, end_time=None):
+        from spiketag.analysis import spk_time_to_scv
         if start_time is None and end_time is None:
             start_time, end_time = self.df.bin_end_time.iloc[0], self.df.bin_end_time.iloc[-1]
         self.spk_time_dict = {i: self.df[ (self.df.spike_id == i) & 
