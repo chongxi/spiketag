@@ -113,35 +113,10 @@ class BMI(object):
     #     self.spike_count_vector = torch.zeros(n_spike_count_vector,)
     #     self.spike_count_vector.share_memory_()
 
-    def set_decoder(self, dec, dec_file=None, score=True):
-        print('------------------------------------------------------------------------')
-        print('---Set the decoder `t_window` and `t_step` according to the bmi.binner---\r\n')
+    def set_decoder(self, dec, dec_file=None):
         self.dec = dec
-        self.dec.resample(t_step=self.binner.bin_size, t_window=self.binner.bin_size*self.binner.B)
-        print('--- Training decoder --- \r\n')
-        self.dec.partition(training_range=[0.0, 1.0], 
-                           valid_range=[0.5, 0.6], 
-                           testing_range=[0.0, 1.0], 
-                           low_speed_cutoff={'training': True, 'testing': True})
         if dec_file is not None:
             self.dec.save(dec_file)
-           # self.dec_result = os.open(dec_result_file, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
-        print('------------------------------------------------------------------------')
-
-        if score is True:
-            score = self.dec.score(smooth_sec=2) # 2 seconds smooth for scoring
-
-        ### key code (move this part anywhere needed, e.g. connect to playground)
-        # print('connecting decoder to the bmi for real-time control')
-        # @self.binner.connect
-        # def on_decode(X):
-        #     # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
-        #     with Timer('decoding', verbose=True):
-        #         if dec.name == 'NaiveBayes':
-        #             X = np.sum(X, axis=0)
-        #         y = self.dec.predict(X)
-        #         print('pos:{0}, time:{1:.5f} secs'.format(y, self.binner.current_time))
-        #         os.write(self.dec_result, np.hstack((self.binner.last_bin, y)))
         print('---3. BMI Decoder initiation succeed---\n')
         
 
