@@ -117,7 +117,7 @@ class Decoder(object):
         return totime
 
 
-    def partition(self, training_range=[0.0, 0.5], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0],
+    def partition(self, training_range=[0.0, 0.5], valid_range=[0.5, 0.6], testing_range=[0.5, 1.0],
                         low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=None):
 
         self.train_range = training_range
@@ -187,7 +187,6 @@ class Decoder(object):
             self.test_X  = self.test_X[:,1:]
 
         return (self.train_X, self.train_y), (self.valid_X, self.valid_y), (self.test_X, self.test_y) 
-
 
     def r2_score(self, y_true, y_predict, multioutput=True):
         '''
@@ -311,7 +310,7 @@ class NaiveBayes(Decoder):
         if self._disable_neuron_idx is not None:
             self.neuron_idx = np.array([_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
 
-    def predict(self, X, two_steps=False):
+    def predict(self, X, two_steps=False, firing_rate_modulation=True):
         '''
         # TODO: #2 Add two_steps decoding method to cope with erratic jumps 
         zhang et al., 1998 (https://journals.physiology.org/doi/full/10.1152/jn.1998.79.2.1017)
@@ -328,7 +327,7 @@ class NaiveBayes(Decoder):
             firing_bins = X_arr
             place_fields = self.fields
 
-        self.post_2d = bayesian_decoding(place_fields, firing_bins, t_window=self.t_window)
+        self.post_2d = bayesian_decoding(place_fields, firing_bins, t_window=self.t_window, firing_rate_modulation=firing_rate_modulation)
         binned_pos = argmax_2d_tensor(self.post_2d)
         y = binned_pos*self.spatial_bin_size + self.spatial_origin
         return y
@@ -379,44 +378,3 @@ class NaiveBayes(Decoder):
         self._disable_neuron_idx = _disable_neuron_idx
         if self._disable_neuron_idx is not None:
             self.neuron_idx = np.array([_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
-
-
-def predict_rt(dec, X, two_steps=False, mean_firing_rate=0.547, gamma=1):
-    # Ponential update (performance improved when using with 3 seconds moving average window)
-    if X.ndim == 1:
-        X = X.reshape(1,-1)
-    elif X.ndim>1 and X.shape[0]>1:
-        X = np.sum(X, axis=0)  # X is (B_bins, N_neurons) spike count matrix, we need to sum up B bins to decode the full window
-
-    X = X.ravel()
-
-    if dec._disable_neuron_idx is not None:
-        firing_bins = X[dec.neuron_idx]
-        place_fields = dec.fields[dec.neuron_idx]
-    else:
-        firing_bins = X
-        place_fields = dec.fields
-        
-    firing_rate_ratio = X.mean()/mean_firing_rate
-    
-    suv_weighted_log_fr = licomb_Matrix(firing_bins, np.log(place_fields))
-
-    if dec.rt_pred_binned_pos is not None and two_steps == True:
-        dec.constraint_field = gaussian_inhibition_field(coord=dec.last_max_bin, 
-                                                         size_x=suv_weighted_log_fr.shape[0], 
-                                                         size_y=suv_weighted_log_fr.shape[1])
-    else:
-        dec.constraint_field = np.zeros_like(suv_weighted_log_fr)
-    dec.log_likelihood = suv_weighted_log_fr - dec.t_window*place_fields.sum(axis=0) + gamma * dec.constraint_field / (firing_rate_ratio)**0.5
-    
-    if two_steps:
-        dec.rt_post_2d_two_step = np.exp(dec.log_likelihood)
-        dec.rt_post_2d_two_step /= dec.rt_post_2d_two_step.sum()
-        dec.rt_pred_binned_pos = argmax_2d_tensor(dec.rt_post_2d_two_step)
-    else:
-        dec.rt_post_2d = np.exp(dec.log_likelihood)
-        dec.rt_post_2d /= dec.rt_post_2d.sum()
-        dec.rt_pred_binned_pos = argmax_2d_tensor(dec.rt_post_2d)
-    dec.last_max_bin = dec.rt_pred_binned_pos
-    y = dec.rt_pred_binned_pos*dec.spatial_bin_size + dec.spatial_origin
-    return y, dec.rt_post_2d
