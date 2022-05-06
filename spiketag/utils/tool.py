@@ -304,7 +304,7 @@ class Player(animation.FuncAnimation):
 
 
 
-def plot_err_2d(dec_pos, real_pos, err, dt, N=5000, err_percentile = 90, err_max = None): 
+def plot_err_2d(real_pos, dec_pos, err, dt, N=5000, err_percentile = 90, err_max = None): 
     '''
     plot and show the decoding performance in 2D maze
 
