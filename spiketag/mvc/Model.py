@@ -60,7 +60,7 @@ class MainModel(object):
         # TODO1: fix this
         if playground_log is not None:
             self.pc = place_field(logfile=playground_log, session_id=session_id, v_cutoff=v_cutoff)
-            start, end = self._time_segs[0]
+            start, end = self._time_segs
             self.pc.align_with_recording(start, end, replay_offset)
             self.pc.initialize(bin_size=bin_size, v_cutoff=v_cutoff)
             if sort_movment_only:
@@ -69,7 +69,7 @@ class MainModel(object):
         # Load pc 
         elif pc is not None:
             self.pc = pc
-            start, end = self._time_segs[0]
+            start, end = self._time_segs
             self.pc.align_with_recording(start, end, replay_offset)
             self.pc.initialize(bin_size=bin_size, v_cutoff=v_cutoff)
             if sort_movment_only:
@@ -160,24 +160,29 @@ class MainModel(object):
         self.mua.spkdict = {} #self.spk.spk_dict
         self.mua.spk_times = {} #self.spk.spk_time_dict
         for g in self.probe.grp_dict.keys():
-
             if g in self.spk.spk_dict.keys():
                 if time_cutoff and self._time_segs is not None:
                     time_in_seg = (self.spk.spk_time_dict[g] > self._time_segs[0] * self.probe.fs) & (self.spk.spk_time_dict[g] <= self._time_segs[1] * self.probe.fs)
                     self.spk.spk_dict[g] = self.spk.spk_dict[g][time_in_seg]
+                    ## spk.spk_time_dict and spk.electrode_group are used in spk.to_spikedf()
                     self.spk.spk_time_dict[g] = self.spk.spk_time_dict[g][time_in_seg]
+                    self.spk.spk_group_dict[g] = self.spk.spk_group_dict[g][time_in_seg]
                 if speed_cutoff:
                     pass # ! TODO
                 if amp_cutoff:
                     pass # ! TODO
                 self.mua.spkdict[g] = self.spk.spk_dict[g]
                 self.mua.spk_times[g] = self.spk.spk_time_dict[g]
+            else:
+                self.mua.spkdict[g] = np.empty((0,0))
+                self.mua.spk_times[g] = np.empty((0,0))
 
             if self.mua.spk_times[g].shape[0] == 0: 
                 self.mua.spkdict[g] = np.random.randn(1, self.mua.spklen, len(self.probe[g]))
                 self.mua.spk_times[g] = np.array([0])
                 self.spk.spk_dict[g] = self.mua.spkdict[g]
                 self.spk.spk_time_dict[g] = np.array([0])
+                self.spk.spk_group_dict[g] = np.array([-1])
         
         self.gtimes = self.mua.spk_times
 

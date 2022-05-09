@@ -206,12 +206,15 @@ class SPK():
         self.spk_peak_ch, self.spk_time, self.electrode_group = self._spk[..., 0, 1], self._spk[..., 0, 2], self._spk[..., 0, 3]
         self.spk_info = np.vstack((self.spk_time, self.electrode_group, self.spk_peak_ch))
         group_list = np.sort(np.unique(self.electrode_group))
+        # ! critical four spike related dict
         self.spk_dict = {}
         self.spk_time_dict = {}
+        self.spk_group_dict = {}
         self.spk_max_dict = {}
         for group in group_list:
             self.spk_dict[group] = self._spk[self.electrode_group == group][:, 1:, :]/(2**13) # grouped spike waveforms
             self.spk_time_dict[group] = self._spk[self.electrode_group == group][:, 0, 2]
+            self.spk_group_dict[group] = self.electrode_group[self.electrode_group == group]
             self.spk_max_dict[group] = abs(self.spk_dict[group].reshape(-1, self.spk_dict[group].shape[1]*self.spk_dict[group].shape[2])).max(axis=1)
             if spk_max_threshold is not None:
                 self.remove_outliers(group, spk_max_threshold=7000, exclude_first_ten_spks=False)
@@ -230,6 +233,7 @@ class SPK():
         if len(ids) > 0:
             self.spk_dict[group] = np.delete(self.spk_dict[group], ids, axis=0)
             self.spk_time_dict[group] = np.delete(self.spk_time_dict[group], ids)
+            self.spk_group_dict[group] = np.delete(self.spk_group_dict[group], ids)
             self.spk_max_dict[group] = np.delete(self.spk_max_dict[group], ids)
 
     def calculate_spike_energy(self):
@@ -289,10 +293,10 @@ class SPK():
         spk_matrix = np.array([]).reshape(-1, 7)
         for g in self.fet.group:  # fet.group can be virtual groups (e.g., 0, 1, 2,... 38, 39)
             if g in self.groups:  # must be also in the unique electrode groups
-                h = np.hstack((self.spk_time_dict[g].reshape(-1,1),                      # spike frame_id (time stamps in #samples)
-                            self.electrode_group[self.electrode_group==g].reshape(-1,1), # spike group_id (electrode group)
-                            self.fet[g][:,:4],                                           # spike features (multichannel waveform 4d feature)
-                            self.fet.clu[g].membership_global.reshape(-1,1)))            # spike spike_id (assigned unit id)
+                h = np.hstack((self.spk_time_dict[g].reshape(-1,1),              # spike frame_id (time stamps in #samples)
+                               self.spk_group_dict[g].reshape(-1,1),             # spike group_id (electrode group)
+                               self.fet[g][:,:4],                                # spike features (multichannel waveform 4d feature)
+                               self.fet.clu[g].membership_global.reshape(-1,1))) # spike spike_id (assigned unit id)
                 spk_matrix = np.append(spk_matrix, h, axis=0)
 
         self.spike_df = pd.DataFrame(spk_matrix)
