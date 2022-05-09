@@ -201,7 +201,7 @@ class Decoder(object):
             print('r2 score: {}\n'.format(score))
         return score
 
-    def auto_pipeline(self, smooth_sec=2, remove_first_unit=False):
+    def auto_pipeline(self, t_smooth=2, remove_first_unit=False):
         '''
         example for evaluate the funciton of acc[partition]:
         >>> dec = NaiveBayes(t_window=500e-3, t_step=60e-3)
@@ -217,18 +217,18 @@ class Decoder(object):
                                                                                            remove_first_unit=remove_first_unit)
         self.fit(X_train, y_train, remove_first_unit=remove_first_unit)
         self.predicted_y = self.predict(self.X_test)
-        self.smooth_factor  = int(smooth_sec/self.pc.t_step) # 2 second by default
+        self.smooth_factor  = int(t_smooth/self.pc.t_step) # 2 second by default
         self.sm_predicted_y = smooth(self.predicted_y, self.smooth_factor)
         score = self.r2_score(self.y_test, self.sm_predicted_y) # ! r2 score is not symmetric, needs to be (true, prediction)
         return score
 
-    def score(self, smooth_sec=2, remove_first_unit=False):
+    def score(self, t_smooth=2, remove_first_unit=False):
         '''
         dec.score will first automatically train the decoder (fit) and then test it (predict). 
         The training set and test set are also automatically saved in dec.X_train and dec.X_test
         The training and test label are saved in dec.y_train and dec.y_test
         '''
-        return self.auto_pipeline(smooth_sec=smooth_sec, remove_first_unit=remove_first_unit)
+        return self.auto_pipeline(t_smooth=t_smooth, remove_first_unit=remove_first_unit)
 
     def plot_decoding_err(self, dec_pos, real_pos, err_percentile = 90, N=None, err_max=None):
         err = abs(dec_pos - real_pos)
