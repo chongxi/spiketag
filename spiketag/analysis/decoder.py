@@ -230,14 +230,12 @@ class Decoder(object):
         '''
         return self.auto_pipeline(t_smooth=t_smooth, remove_first_unit=remove_first_unit)
 
-    def plot_decoding_err(self, dec_pos, real_pos, err_percentile = 90, N=None, err_max=None):
-        err = abs(dec_pos - real_pos)
-        # err[:,0] /= self.pc.maze_length[0]
-        # err[:,1] /= self.pc.maze_length[1]
+    def plot_decoding_err(self, real_pos, dec_pos, err_percentile=90, N=None, err_max=None):
+        err = abs(real_pos - dec_pos)
         dt = self.t_step
         if N is None:
             N = err.shape[0]
-        return plot_err_2d(dec_pos, real_pos, err, dt, N, err_percentile, err_max)
+        return plot_err_2d(real_pos, dec_pos, err, dt, N, err_percentile, err_max)
 
 
 
