@@ -59,10 +59,10 @@ class MainModel(object):
         self.time_still = None
         # TODO1: fix this
         if playground_log is not None:
-            self.pc = place_field(logfile=playground_log, session_id=session_id, v_cutoff=v_cutoff)
+            self.pc = place_field(logfile=playground_log, session_id=session_id, bin_size=bin_size, v_cutoff=v_cutoff)
             start, end = self._time_segs
             self.pc.align_with_recording(start, end, replay_offset)
-            self.pc.initialize(bin_size=bin_size, v_cutoff=v_cutoff)
+            self.pc.initialize()
             if sort_movment_only:
                 self.time_still = self.ts[self.low_speed_idx] 
 
@@ -71,7 +71,7 @@ class MainModel(object):
             self.pc = pc
             start, end = self._time_segs
             self.pc.align_with_recording(start, end, replay_offset)
-            self.pc.initialize(bin_size=bin_size, v_cutoff=v_cutoff)
+            self.pc.initialize()
             if sort_movment_only:
                 self.time_still = self.pc.ts[self.pc.low_speed_idx]
 

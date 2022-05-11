@@ -49,7 +49,7 @@ class place_field(object):
         self.bin_size = bin_size
         self.v_cutoff = v_cutoff
         self.maze_range = maze_range
-        self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
+        self.initialize()
 
         #### parameter used to calculate the fields
         self.kernlen = 8
@@ -64,7 +64,7 @@ class place_field(object):
         new_fs = 1/t_step
         self.t_step = t_step
         self.ts, self.pos = self.interp_pos(self.ts, self.pos, self.t_step)
-        self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
+        self.initialize()
 
 
     def restore(self):
@@ -115,11 +115,10 @@ class place_field(object):
         self._ts_restore, self._pos_restore = self.ts, self.pos
 
 
-    def initialize(self, bin_size, v_cutoff):
-        self.v_cutoff = v_cutoff
+    def initialize(self):
         self.get_maze_range()
         self.get_speed() 
-        self.occupation_map(bin_size)
+        self.occupation_map()
         self.pos_df = pd.DataFrame(np.hstack((self.ts.reshape(-1,1), self.pos)),
                                    columns=['time', 'x', 'y'])
         # self.binned_pos = (self.pos-self.maze_original)//self.bin_size
@@ -528,7 +527,7 @@ class place_field(object):
         print('2. Align the behavior and ephys data with {0} offset\r\n    starting at {1:.3f} secs, end at {2:.3f} secs, step at {3:.3f} ms\r\n    all units mount up to {4:.3f} spikes/sec\r\n'.format(replay_offset, start, end, self.dt*1e3, self.mean_mua_firing_rate))
 
         print('3. Calculate the place field during [{},{}] secs\r\n    spatially bin the maze, calculate speed and occupation_map with {}cm bin_size\r\n    dump spikes when speed is lower than {}cm/secs\r\n'.format(start, end, self.bin_size, self.v_cutoff))                      
-        self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
+        self.initialize()
         self.get_fields(self.spk_time_dict, start=start, end=end, rank=True)
 
         try:
