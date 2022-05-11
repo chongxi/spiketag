@@ -51,6 +51,10 @@ class place_field(object):
         self.maze_range = maze_range
         self.initialize(bin_size=self.bin_size, v_cutoff=self.v_cutoff)
 
+        #### parameter used to calculate the fields
+        self.kernlen = 8
+        self.kernstd = 2
+
     def __call__(self, t_step):
         '''
         resample the trajectory with new time interval
@@ -205,8 +209,7 @@ class place_field(object):
         sns.despine()
         return fig
         
-
-    def occupation_map(self, bin_size=4, time_cutoff=None):
+    def occupation_map(self, start=None, end=None):
         '''
         f, ax = plt.subplots(1,2,figsize=(20,9))
         ax[0].plot(self.pos[:,0], self.pos[:,1])
@@ -218,23 +221,17 @@ class place_field(object):
         # if maze_range != 'auto':
         #     self.maze_range = maze_range
         self.maze_size = np.array([self.maze_range[0][1]-self.maze_range[0][0], self.maze_range[1][1]-self.maze_range[1][0]])
-        self.bin_size  = bin_size
-        self.nbins = self.maze_size/bin_size
+        self.nbins = self.maze_size/self.bin_size
         self.nbins = self.nbins.astype(int)
-        # occupation, self.x_edges, self.y_edges = np.histogram2d(x=self.pos[1:,0], y=self.pos[1:,1], 
-        #                                                         bins=self.nbins, range=self.maze_range)
-        idx = np.where(self.v_smoothed >= self.v_cutoff)[0]
-        if time_cutoff is not None:
-            idx = np.delete(idx, np.where(self.ts[idx]>time_cutoff)[0])
+
+        if start is None and end is None:
+            start, end = self.ts[0], self.ts[-1]
+        idx = np.where((self.v_smoothed >= self.v_cutoff) & (self.ts>=start) & (self.ts<=end))[0]
         occupation, self.x_edges, self.y_edges = np.histogram2d(x=self.pos[idx,0], y=self.pos[idx,1], 
                                                                 bins=self.nbins, range=self.maze_range)
         self.X, self.Y = np.meshgrid(self.x_edges, self.y_edges)
         self.O = occupation.T.astype(int)  # Let each row list bins with common y range.
         self.P = self.O/float(self.O.sum()) # occupation prabability
-
-        #### parameter used to calculate the fields
-        self.kernlen = 18
-        self.kernstd = 2.5
 
 
     def plot_occupation_map(self, cmap=cm.viridis):
