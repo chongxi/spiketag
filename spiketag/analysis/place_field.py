@@ -345,6 +345,7 @@ class place_field(object):
          ...
          N: spike trains for neuron N}
         '''
+        self.occupation_map(start=start, end=end) # ! critical for updating the self.O to correctly calculate the place field
 
         if spk_time_dict is None:
             spk_time_dict = self.spk_time_dict
