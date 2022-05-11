@@ -32,7 +32,7 @@ class place_field(object):
     load_spktag for spike data
     get_fields for computing the representaions using spike and behavior data
     '''
-    def __init__(self, pos, v_cutoff=5, bin_size=2.5, kernlen=8, kernstd=2, ts=None, t_step=None, maze_range=None):
+    def __init__(self, pos, v_cutoff=5, bin_size=2.5, kernlen=9, kernstd=2, ts=None, t_step=None, maze_range=None):
         '''
         resample the trajectory with new time interval
         reinitiallize with a new t_step (dt)
@@ -228,13 +228,12 @@ class place_field(object):
 
         if start is None and end is None:
             start, end = self.ts[0], self.ts[-1]
-        idx = np.where((self.v_smoothed_wide >= self.v_cutoff) & (self.ts>=start) & (self.ts<=end))[0]
+        idx = np.where((self.v_smoothed >= self.v_cutoff) & (self.ts>=start) & (self.ts<=end))[0]
         occupation, self.x_edges, self.y_edges = np.histogram2d(x=self.pos[idx,0], y=self.pos[idx,1], 
                                                                 bins=self.nbins, range=self.maze_range)
         self.X, self.Y = np.meshgrid(self.x_edges, self.y_edges)
         self.O = occupation.T.astype(int)  # Let each row list bins with common y range.
-        self.O_smoothed = signal.convolve2d(self.O, self.gkern(
-                                            self.kernlen, self.kernstd), boundary='symm', mode='same')
+        self.O_smoothed = signal.convolve2d(self.O, self.gkern(2, 1), boundary='symm', mode='same')
         self.P = self.O/float(self.O.sum()) # occupation prabability
 
 
@@ -281,7 +280,7 @@ class place_field(object):
                                                            bins=self.nbins, range=self.maze_range)
         self.firing_map = self.firing_map.T
         np.seterr(divide='ignore', invalid='ignore')
-        self.FR = self.firing_map / (self.O_smoothed * self.dt)
+        self.FR = self.firing_map / (self.O * self.dt)
         self.FR[np.isnan(self.FR)] = 0
         self.FR[np.isinf(self.FR)] = 0
         self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
