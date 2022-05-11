@@ -32,7 +32,7 @@ class place_field(object):
     load_spktag for spike data
     get_fields for computing the representaions using spike and behavior data
     '''
-    def __init__(self, pos, v_cutoff=5, bin_size=2.5, ts=None, t_step=None, maze_range=None):
+    def __init__(self, pos, v_cutoff=5, bin_size=2.5, kernlen=8, kernstd=2, ts=None, t_step=None, maze_range=None):
         '''
         resample the trajectory with new time interval
         reinitiallize with a new t_step (dt)
@@ -48,12 +48,14 @@ class place_field(object):
         # key parameters for initialization (before self.initialize we need to align behavior with ephys) 
         self.bin_size = bin_size
         self.v_cutoff = v_cutoff
+        self.kernlen = kernlen
+        self.kernstd = kernstd
         self.maze_range = maze_range
+
+        # calculate the binned maze, cutoff based on the speed, and the occupation map
         self.initialize()
 
-        #### parameter used to calculate the fields
-        self.kernlen = 8
-        self.kernstd = 2
+
 
     def __call__(self, t_step):
         '''
@@ -178,7 +180,7 @@ class place_field(object):
         self.v = np.linalg.norm(np.diff(self.pos, axis=0), axis=1)/np.diff(self.ts)
         self.v = np.hstack((self.v[0], self.v))
         self.v_smoothed = smooth(self.v.reshape(-1,1), int(np.round(self.fs))).ravel()
-        self.v_smoothed_wide = 2 * smooth(self.v.reshape(-1,1), 4*int(np.round(self.fs))).ravel()
+        self.v_smoothed_wide = 2 * smooth(self.v.reshape(-1,1), 6*int(np.round(self.fs))).ravel()
         self.low_speed_idx = np.where(self.v_smoothed_wide < self.v_cutoff)[0]
 
         self.df['pos'] = pd.DataFrame(data=np.hstack((self.pos, self.v_smoothed.reshape(-1,1))), index=self.ts, 
@@ -203,7 +205,8 @@ class place_field(object):
         fig, ax = plt.subplots(1,1, figsize=(18,5))
         period = np.logical_and(self.ts>start, self.ts<stop)
         plt.plot(self.ts[period], self.v[period], alpha=.7)
-        plt.plot(self.ts[period], self.v_smoothed[period], lw=3)
+        plt.plot(self.ts[period], self.v_smoothed[period], lw=2)
+        plt.plot(self.ts[period], self.v_smoothed_wide[period], lw=5, alpha=0.5)
         ax.axhline(v_cutoff, c='m', ls='-.')
         sns.despine()
         return fig
@@ -225,11 +228,13 @@ class place_field(object):
 
         if start is None and end is None:
             start, end = self.ts[0], self.ts[-1]
-        idx = np.where((self.v_smoothed >= self.v_cutoff) & (self.ts>=start) & (self.ts<=end))[0]
+        idx = np.where((self.v_smoothed_wide >= self.v_cutoff) & (self.ts>=start) & (self.ts<=end))[0]
         occupation, self.x_edges, self.y_edges = np.histogram2d(x=self.pos[idx,0], y=self.pos[idx,1], 
                                                                 bins=self.nbins, range=self.maze_range)
         self.X, self.Y = np.meshgrid(self.x_edges, self.y_edges)
         self.O = occupation.T.astype(int)  # Let each row list bins with common y range.
+        self.O_smoothed = signal.convolve2d(self.O, self.gkern(
+                                            self.kernlen, self.kernstd), boundary='symm', mode='same')
         self.P = self.O/float(self.O.sum()) # occupation prabability
 
 
@@ -276,7 +281,7 @@ class place_field(object):
                                                            bins=self.nbins, range=self.maze_range)
         self.firing_map = self.firing_map.T
         np.seterr(divide='ignore', invalid='ignore')
-        self.FR = self.firing_map/(self.O*self.dt)
+        self.FR = self.firing_map / (self.O_smoothed * self.dt)
         self.FR[np.isnan(self.FR)] = 0
         self.FR[np.isinf(self.FR)] = 0
         self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
