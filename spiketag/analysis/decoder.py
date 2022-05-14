@@ -81,6 +81,11 @@ class Decoder(object):
         self.t_step   = t_step
         self.verbose  = verbose
 
+    @property
+    def B_bins(self):
+        self._b_bins = int(np.round(self.t_window / self.t_step))
+        return self._b_bins
+
     def connect_to(self, pc):
         '''
         This decoder is specialized for position decoding
