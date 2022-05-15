@@ -10,6 +10,19 @@ from ..utils.utils import Timer
 from ..utils.conf import info, warning
 from .CLU import CLU
 
+def correct_label_order(labels):
+    '''
+    convert labels to the order [0, 1, 2... n], it does two things:
+    1. fills the holes in `labels`, making sure it is contiguous
+    2. make sure it starts from 0
+    '''
+    new_labels = labels.copy()
+    original_label = np.sort(np.unique(labels))
+    nclu = original_label.shape[0]
+    correct_label = np.arange(0, nclu)
+    for i, _original_label in enumerate(original_label):
+        new_labels[new_labels == _original_label] = correct_label[i]
+    return new_labels
 
 class cluster():
     def __init__(self, clu_status):
@@ -30,6 +43,7 @@ class cluster():
             if mode == 'blocking':
                 self.cpu.block = True
                 labels = self.cpu.apply(func, fet=fet, **kwargs)
+                labels = correct_label_order(labels)
                 group_id = self.clu.fill(labels)
                 self.clu.emit('report', state='READY') 
                 self.clu_status[group_id] = True
@@ -37,6 +51,7 @@ class cluster():
                 ar = self.cpu.apply_async(func, fet=fet, **kwargs)
                 def get_result(ar):
                     labels = ar.get()
+                    labels = correct_label_order(labels)
                     group_id = self.clu.fill(labels)
                     self.clu.emit('report', state='READY')              # state report --- before async non-blocking clustering 
                     # print(group_id, 'cluster finished')
@@ -136,6 +151,10 @@ class FET(object):
             self._toclu(method, group_id, mode, minimum_spks, **kwargs)
 
     def _toclu(self, method, group_id, mode, minimum_spks=80, **kwargs):
+        '''
+        cluster self.fet[i] to get self.clu[i]
+        '''
+        print(f"clustering {self.fet[group_id].shape[0]} spikes found in electrode group {group_id} ...", end='\r')
         self.backend.append(cluster(self.clu_status))
         self.backend[-1].fit(method = method, 
                              fet = self.fet[group_id], 
@@ -143,6 +162,7 @@ class FET(object):
                              mode = mode,
                              minimum_spks = minimum_spks,
                              **kwargs)
+        # print(f"get {self.clu[group_id].nclu} clusters", end='\r')
 
     def reset(self):
         for g in self.group:
