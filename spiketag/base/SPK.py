@@ -268,16 +268,17 @@ class SPK():
             self.fet = FET(fet)
             return self.fet
     
-    def auto_sort(self, cluster_method='kmeans', minimum_spks=50, n_comp=20, file=None):
+    def auto_sort(self, method='dpgmm', minimum_spks=50, n_comp=15, file=None):
         '''
         auto sort for clusterless decoding
 
         Inputs:
+            method: 'dpgmm' or 'kmeans'
             minimum_spks: minimum number of spikes in a group for start clustering
             n_comp: number of clusters aimed for each group
         '''
         self.tofet(method='pca', ncomp=4, whiten=False);
-        self.fet.toclu(method=cluster_method,
+        self.fet.toclu(method=method,
                        mode='blocking',
                        minimum_spks=minimum_spks,
                        n_comp=n_comp)

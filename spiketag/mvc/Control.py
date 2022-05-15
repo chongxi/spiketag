@@ -359,8 +359,11 @@ class controller(object):
         else:
             self.model.sort(clu_method=clu_method)   
 
-    def clusterless_sort(self, N=15, minimum_spks=300):
-        self.model.fet.toclu(method='kmeans',
+    def clusterless_sort(self, method='dpgmm', N=15, minimum_spks=300):
+        '''
+        method = 'dpgmm' or 'kmeans'
+        '''
+        self.model.fet.toclu(method=method,
                              mode='blocking',
                              minimum_spks=minimum_spks,
                              n_comp=N)
