@@ -197,7 +197,7 @@ class SPK():
             fet = np.zeros((spk.shape[0], ncomp), dtype=np.float32)
         return fet
 
-    def load_spkwav(self, file='./spk_wav.bin', spk_max_threshold=None):
+    def load_spkwav(self, file='./spk_wav.bin', spk_max_threshold=5000):
         '''
         spk = SPK()
         spk.load_spkwav('./spk_wav.bin')        
@@ -217,12 +217,12 @@ class SPK():
             self.spk_group_dict[group] = self.electrode_group[self.electrode_group == group]
             self.spk_max_dict[group] = abs(self.spk_dict[group].reshape(-1, self.spk_dict[group].shape[1]*self.spk_dict[group].shape[2])).max(axis=1)
             if spk_max_threshold is not None:
-                self.remove_outliers(group, spk_max_threshold=7000, exclude_first_ten_spks=False)
+                self.remove_outliers(group, spk_max_threshold=spk_max_threshold, exclude_first_ten_spks=False)
         self(self.spk_dict)
 
         self.calculate_spike_energy()
 
-    def remove_outliers(self, group, spk_max_threshold=7000, exclude_first_ten_spks=False):
+    def remove_outliers(self, group, spk_max_threshold, exclude_first_ten_spks=False):
         '''
         remove outliers (too big of absolute amplitude) in the electrode group
         '''
