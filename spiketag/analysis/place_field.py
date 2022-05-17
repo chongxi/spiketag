@@ -640,7 +640,7 @@ class place_field(object):
         df_all_in_one = pd.concat([self.pos_df, self.spike_df], sort=True)
         df_all_in_one.to_pickle(filename+'.pd')
 
-    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=2, first_unit_is_noise=True, peak_rate=0.1, firing_rate_modulation=True, **kwargs):
+    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=2, first_unit_is_noise=True, peak_rate=0.1, firing_rate_modulation=True, verbose=False, **kwargs):
         '''
         kwargs example:
         - training_range: [0, 0.5]
@@ -661,6 +661,7 @@ class place_field(object):
                           valid_range=valid_range, 
                           testing_range=testing_range,
                           low_speed_cutoff=low_speed_cutoff)
+            dec.verbose = verbose
             drop_idx = np.where(dec.pc.metric['peak_rate'] < peak_rate)[0]
             if first_unit_is_noise:
                 dec.drop_neuron(np.append(0, drop_idx))   # drop the neuron with id 0 which is noise with those fire at super low frequency
