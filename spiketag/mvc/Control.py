@@ -671,7 +671,13 @@ class controller(object):
             self.fpga.label[grpNo] = self.vq['fpga_labels'][grpNo]
 
     def reset_vq(self):
-        # step 1: set FPGA transfomer
+        # step 1: reset all vq dict
+        self.vq = {}
+        self.vq['points'] = {}
+        self.vq['labels'] = {}
+        self.vq['fpga_labels'] = {}
+        self.vq['scores'] = {}
+        # step 2: set FPGA transfomer
         for grp_id in range(self.prb.n_group):
             self.fpga.label[grp_id] = np.zeros((500,))
             if self.model.clu_manager.state_list[grp_id] == 3:
