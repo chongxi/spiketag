@@ -197,7 +197,7 @@ class SPK():
             fet = np.zeros((spk.shape[0], ncomp), dtype=np.float32)
         return fet
 
-    def load_spkwav(self, file='./spk_wav.bin', spk_max_threshold=5000):
+    def load_spkwav(self, file='./spk_wav.bin', spk_max_threshold=None):
         '''
         spk = SPK()
         spk.load_spkwav('./spk_wav.bin')        
