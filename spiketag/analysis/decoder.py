@@ -206,7 +206,7 @@ class Decoder(object):
             print('r2 score: {}\n'.format(score))
         return score
 
-    def auto_pipeline(self, t_smooth=2, remove_first_unit=False):
+    def auto_pipeline(self, t_smooth=2, remove_first_unit=False, firing_rate_modulation=True):
         '''
         example for evaluate the funciton of acc[partition]:
         >>> dec = NaiveBayes(t_window=500e-3, t_step=60e-3)
@@ -221,19 +221,23 @@ class Decoder(object):
         (X_train, y_train), (X_valid, y_valid), (self.X_test, self.y_test) = self.get_data(minimum_spikes=2, 
                                                                                            remove_first_unit=remove_first_unit)
         self.fit(X_train, y_train, remove_first_unit=remove_first_unit)
-        self.predicted_y = self.predict(self.X_test)
+        self.predicted_y = self.predict(self.X_test, 
+                                        firing_rate_modulation=firing_rate_modulation, 
+                                        two_steps=False)
         self.smooth_factor  = int(t_smooth/self.pc.t_step) # 2 second by default
         self.sm_predicted_y = smooth(self.predicted_y, self.smooth_factor)
         score = self.r2_score(self.y_test, self.sm_predicted_y) # ! r2 score is not symmetric, needs to be (true, prediction)
         return score
 
-    def score(self, t_smooth=2, remove_first_unit=False):
+    def score(self, t_smooth=2, remove_first_unit=False, firing_rate_modulation=True):
         '''
         dec.score will first automatically train the decoder (fit) and then test it (predict). 
         The training set and test set are also automatically saved in dec.X_train and dec.X_test
         The training and test label are saved in dec.y_train and dec.y_test
         '''
-        return self.auto_pipeline(t_smooth=t_smooth, remove_first_unit=remove_first_unit)
+        return self.auto_pipeline(t_smooth=t_smooth, 
+                                  remove_first_unit=remove_first_unit,
+                                  firing_rate_modulation=firing_rate_modulation)
 
     def plot_decoding_err(self, real_pos, dec_pos, err_percentile=90, N=None, err_max=None):
         err = abs(real_pos - dec_pos)
@@ -313,7 +317,11 @@ class NaiveBayes(Decoder):
         if self._disable_neuron_idx is not None:
             self.neuron_idx = np.array([_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
 
-    def predict(self, X, two_steps=False, firing_rate_modulation=True):
+    @property
+    def mean_firing_rate(self):
+        return np.mean(self.train_X[:, self.neuron_idx])
+
+    def predict(self, X, firing_rate_modulation=True, two_steps=False):
         '''
         # TODO: #2 Add two_steps decoding method to cope with erratic jumps 
         zhang et al., 1998 (https://journals.physiology.org/doi/full/10.1152/jn.1998.79.2.1017)
@@ -330,12 +338,17 @@ class NaiveBayes(Decoder):
             firing_bins = X_arr
             place_fields = self.fields
 
-        self.post_2d = bayesian_decoding(place_fields, firing_bins, t_window=self.t_window, firing_rate_modulation=firing_rate_modulation)
+        if firing_rate_modulation:
+            self.post_2d = bayesian_decoding(place_fields, firing_bins, 
+                                            t_window=self.t_window, 
+                                            mean_firing_rate=self.mean_firing_rate)
+        else:
+            self.post_2d = bayesian_decoding(place_fields, firing_bins, t_window=self.t_window)
         binned_pos = argmax_2d_tensor(self.post_2d)
         y = binned_pos*self.spatial_bin_size + self.spatial_origin
         return y
 
-    def predict_rt(self, X, two_steps=False, mean_firing_rate=0.547, gamma=0.06):
+    def predict_rt(self, X, two_steps=False, gamma=0.06, mean_firing_rate=None):
         # Ponential update (performance improved when using with 3 seconds moving average window)
         if X.ndim == 1:
             X = X.reshape(1,-1)
@@ -350,9 +363,12 @@ class NaiveBayes(Decoder):
         else:
             firing_bins = X
             place_fields = self.fields
-            
-        firing_rate_ratio = firing_bins.mean()/mean_firing_rate # eq.44 (Zhang et al., 1998) change speed to firing rate
         
+        if mean_firing_rate is not None:
+            firing_rate_ratio = firing_bins.mean()/mean_firing_rate # eq.44 (Zhang et al., 1998) change speed to firing rate
+        else:
+            firing_rate_ratio = 1
+
         suv_weighted_log_fr = licomb_Matrix(firing_bins, np.log(place_fields))
 
         if self.last_max_bin is not None and two_steps == True:
@@ -373,7 +389,7 @@ class NaiveBayes(Decoder):
         self.rt_pred_binned_pos = argmax_2d_tensor(self.rt_post_2d)
         self.last_max_bin = self.rt_pred_binned_pos
         y = self.rt_pred_binned_pos*self.spatial_bin_size + self.spatial_origin
-        return y, self.rt_post_2d                
+        return y, self.rt_post_2d
 
     def drop_neuron(self, _disable_neuron_idx):
         if type(_disable_neuron_idx) == int:

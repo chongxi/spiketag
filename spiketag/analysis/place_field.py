@@ -259,7 +259,7 @@ class place_field(object):
         return gkern2d
 
 
-    def _get_field(self, spk_times):
+    def _get_field(self, spk_times, time_span):
         '''
         spk_times: spike times in seconds (an Numpy array), for example:
         array([   1.38388,    1.6384 ,    1.7168 , ..., 2393.72648, 2398.52484, 2398.538  ])
@@ -281,6 +281,9 @@ class place_field(object):
         self.firing_map = self.firing_map.T
         np.seterr(divide='ignore', invalid='ignore')
         self.FR = self.firing_map / (self.O * self.dt)
+        # if spk_times.shape[0]>0: # for cross-validation, it is possible that some cell never fire in the training set, then its FR should be all zero
+        #     mean_firing_rate = spk_times.shape[0]/time_span
+        #     self.FR /= mean_firing_rate
         self.FR[np.isnan(self.FR)] = 0
         self.FR[np.isinf(self.FR)] = 0
         self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
@@ -323,7 +326,7 @@ class place_field(object):
         ### calculate representation from `start` to `end`
         if start is not None and end is not None:
             spk_times = spk_times[np.logical_and(start<=spk_times, spk_times < end)]
-        self._get_field(spk_times)
+        self._get_field(spk_times, time_span=end-start)
 
 
     def _plot_field(self, trajectory=False, cmap='viridis', marker=True, alpha=0.5, markersize=5, markercolor='m'):
@@ -637,8 +640,7 @@ class place_field(object):
         df_all_in_one = pd.concat([self.pos_df, self.spike_df], sort=True)
         df_all_in_one.to_pickle(filename+'.pd')
 
-
-    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=2, first_unit_is_noise=True, peak_rate=0.1, **kwargs):
+    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=2, first_unit_is_noise=True, peak_rate=0.1, firing_rate_modulation=True, **kwargs):
         '''
         kwargs example:
         - training_range: [0, 0.5]
@@ -664,7 +666,7 @@ class place_field(object):
                 dec.drop_neuron(np.append(0, drop_idx))   # drop the neuron with id 0 which is noise with those fire at super low frequency
             else:
                 dec.drop_neuron([0])
-            score = dec.score(t_smooth=t_smooth)
+            score = dec.score(t_smooth=t_smooth, firing_rate_modulation=firing_rate_modulation)
             return dec, score
 
         if type == 'LSTM':

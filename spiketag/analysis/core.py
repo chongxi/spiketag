@@ -165,7 +165,7 @@ def licomb_Matrix(w, X):
 
 
 @njit(cache=True, parallel=True, fastmath=True)
-def bayesian_decoding(Fr, suv, t_window=100e-3, firing_rate_modulation=True):
+def bayesian_decoding(Fr, suv, t_window=100e-3, mean_firing_rate=None):
     '''
     fast version of below labmda expression
     log_posterior = lambda x,y,i: np.nansum(np.log(Fr[:,x,y]) * suv[:,i]) - 100e-3*Fr[:,x,y].sum(axis=0)
@@ -175,17 +175,16 @@ def bayesian_decoding(Fr, suv, t_window=100e-3, firing_rate_modulation=True):
     Usage:
     post_2d = bayesian_decoding(Fr=Fr, suv=suv, t_window=100e-3)
     '''
-    mean_firing_rate = np.mean(suv)  # F_mean is the average firing rate of all cells over all time bins
+    # mean_firing_rate = np.mean(suv)  # F_mean is the average firing rate of all cells over all time bins
     post_2d = np.zeros((suv.shape[0], Fr.shape[1], Fr.shape[2]))
-    possion_matrix = t_window*Fr.sum(axis=0)
-    log_fr = np.log(Fr) # make sure Fr[Fr==0] = 1e-12
     for i in prange(suv.shape[0]): # i is time point
-        suv_weighted_log_fr = licomb_Matrix(suv[i].ravel(), log_fr)
-        if firing_rate_modulation: 
+        if mean_firing_rate is not None:
             firing_rate_ratio = np.mean(suv[i].ravel())/mean_firing_rate # firing rate modulation factor (e.q 46 in Zhang et al. 1998)
         else:
             firing_rate_ratio = 1
-        post_2d[i] = np.exp(suv_weighted_log_fr - firing_rate_ratio * possion_matrix)
+        suv_weighted_log_fr = licomb_Matrix(suv[i].ravel(), np.log(Fr))
+        post_2d[i] = np.exp(suv_weighted_log_fr - firing_rate_ratio * t_window * Fr.sum(axis=0))
+        post_2d[i] /= post_2d[i].sum()
     return post_2d
 
 
