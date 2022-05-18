@@ -259,7 +259,7 @@ class place_field(object):
         return gkern2d
 
 
-    def _get_field(self, spk_times, time_span):
+    def _get_field(self, spk_times):
         '''
         spk_times: spike times in seconds (an Numpy array), for example:
         array([   1.38388,    1.6384 ,    1.7168 , ..., 2393.72648, 2398.52484, 2398.538  ])
@@ -326,7 +326,7 @@ class place_field(object):
         ### calculate representation from `start` to `end`
         if start is not None and end is not None:
             spk_times = spk_times[np.logical_and(start<=spk_times, spk_times < end)]
-        self._get_field(spk_times, time_span=end-start)
+        self._get_field(spk_times)
 
 
     def _plot_field(self, trajectory=False, cmap='viridis', marker=True, alpha=0.5, markersize=5, markercolor='m'):
