@@ -387,10 +387,12 @@ class place_field(object):
     def max_firing_rate(self):
         return np.array([self.fields[i].max() for i in range(self.fields.shape[0])])
 
-    def plot_fields(self, idx=None, nspks=None, N=10, size=3, cmap='hot', marker=False, markersize=1, alpha=0.8, order=False):
+    def plot_fields(self, idx=None, nspks=None, N=10, size=3, cmap='hot', marker=False, markersize=1, alpha=0.8, order=False, min_peak_rate=None):
         '''
         order: if True will plot with ranked fields according to the metric 
         '''
+        if min_peak_rate is not None and idx is None:
+            idx = np.where(self.metric['peak_rate'] > min_peak_rate)[0] # peak rate larger than threshold
         if idx is None: # plot all fields
             nrow = self.n_fields/N + 1
             ncol = N
@@ -550,11 +552,11 @@ class place_field(object):
         print('------------------------------------------------------------------------')   
 
 
-    def report(self, cmap='hot', order=False):
+    def report(self, cmap='hot', order=False, min_peak_rate=1):
         print('occupation map from {0:.2f} to {1:.2f}, with speed cutoff:{2:.2f}'.format(self.ts[0], self.ts[-1], self.v_cutoff))
         self.plot_occupation_map();
         self.plot_speed(self.ts[0], self.ts[-1]//10, v_cutoff=self.v_cutoff);
-        self.plot_fields(N=10, cmap=cmap, order=order);
+        self.plot_fields(N=10, cmap=cmap, order=order, min_peak_rate=min_peak_rate);
 
 
     def load_spktag(self, spktag_file, show=False):
