@@ -184,7 +184,7 @@ def bayesian_decoding(Fr, suv, t_window=100e-3, mean_firing_rate=None):
             firing_rate_ratio = 1
         suv_weighted_log_fr = licomb_Matrix(suv[i].ravel(), np.log(Fr))
         post_2d[i] = np.exp(suv_weighted_log_fr - firing_rate_ratio * t_window * Fr.sum(axis=0))
-        post_2d[i] /= post_2d[i].sum()
+        post_2d[i] = np.nan_to_num(post_2d[i]/post_2d[i].sum()) # nan_to_num because it is possible that post_2d[i].sum() = 0
     return post_2d
 
 
