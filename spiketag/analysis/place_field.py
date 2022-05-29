@@ -360,6 +360,7 @@ class place_field(object):
         self.n_fields = len(spk_time_dict.keys())
         self.n_units  = self.n_fields
         self.fields = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
+        self.fields_sharp = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
         self.firing_pos_dict = {}
 
         if v_cutoff is None:
@@ -373,10 +374,9 @@ class place_field(object):
         for i in spk_time_dict.keys():
             ### get place fields from neuron i
             self.get_field(spk_time_dict, i, start, end)
+            self.fields_sharp[i] = self.FR
             self.fields[i] = self.FR_smoothed
             self.firing_pos_dict[i] = self.firing_pos
-            self.fields[i] = self.FR_smoothed
-            ### metrics for place fields
 
         self.fields[self.fields==0] = 1e-25
 
