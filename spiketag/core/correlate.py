@@ -4,16 +4,17 @@
 import numpy as np
 
 
-def CCG(spk_time, spk_id, window_bins=50, bin_size=1):
+def CCG(spk_time, spk_id, window_bins=50, bin_size=1, fs=25000.0):
     '''
         calculate the CCG from spike times of multiple neurons
 
         Parameter
         ---------
-        spk_time: a numpy array of spike times of N neurons
+        spk_time: a numpy array of spike times of N neurons (spk_time in #samples)
         spk_id  : a numpy array of spike id    of N neurons
         window_bins: #bins in the window for calculating the CCG
         bin_size:    #ms of a single bin
+        fs:          sampling rate of the spike train
 
         Return
         ---------
@@ -22,6 +23,7 @@ def CCG(spk_time, spk_id, window_bins=50, bin_size=1):
     '''
     ccg = correlate(spk_time, 
                     spk_id, np.unique(spk_id), 
+                    fs=fs,
                     window_bins=window_bins, 
                     bin_size=bin_size)
     return ccg
