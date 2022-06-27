@@ -41,6 +41,7 @@ class place_field(object):
             ts = np.arange(0, pos.shape[0]*t_step, t_step)
             self.t_step = t_step
         self.ts, self.pos = ts, pos
+        self._ts_init, self._pos_init = ts, pos
         self._ts_restore, self._pos_restore = ts, pos
         self.spk_time_array, self.spk_time_dict = None, None
         self.df = {}
@@ -228,8 +229,9 @@ class place_field(object):
 
         if start is None and end is None:
             start, end = self.ts[0], self.ts[-1]
-        idx = np.where((self.v_smoothed >= self.v_cutoff) & (self.ts>=start) & (self.ts<=end))[0]
-        occupation, self.x_edges, self.y_edges = np.histogram2d(x=self.pos[idx,0], y=self.pos[idx,1], 
+        self.high_speed_idx = np.where((self.v_smoothed >= self.v_cutoff) & (self.ts>=start) & (self.ts<=end))[0]
+        occupation, self.x_edges, self.y_edges = np.histogram2d(x=self.pos[self.high_speed_idx,0], 
+                                                                y=self.pos[self.high_speed_idx,1], 
                                                                 bins=self.nbins, range=self.maze_range)
         self.X, self.Y = np.meshgrid(self.x_edges, self.y_edges)
         self.O = occupation.T.astype(int)  # Let each row list bins with common y range.
