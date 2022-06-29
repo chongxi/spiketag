@@ -6,7 +6,10 @@ import matplotlib as mpl
 import seaborn as sns
 from matplotlib.pyplot import cm
 from scipy.interpolate import interp1d
-from .core import spk_time_to_scv, firing_pos_from_scv, smooth
+from sklearn.preprocessing import label_binarize
+import torch
+import torch.nn.functional as F
+from .core import argmax_2d_tensor, spk_time_to_scv, firing_pos_from_scv, smooth
 from ..base import SPKTAG
 from ..utils import colorbar
 from ..utils.plotting import colorline
@@ -154,11 +157,46 @@ class place_field(object):
 
     @property
     def binned_pos(self):
-        return (self.pos-self.maze_original)//self.bin_size
+        binned_pos = (self.pos-self.maze_original)//self.bin_size
+        return binned_pos
+    
+    @property
+    def onehot_pos(self):
+        return self.binned_pos_2_onehot(self.binned_pos, xbins=self.O.shape[1], ybins=self.O.shape[0])
+    
+    @property
+    def label_pos(self):
+        return self.binned_pos_2_label(self.binned_pos, xbins=self.O.shape[1], ybins=self.O.shape[0])
+
+    @property
+    def prob_pos(self):
+        xbins = self.O.shape[1]
+        ybins = self.O.shape[0]
+        Y = self.onehot_pos.reshape(-1, 1, ybins, xbins) # batch, channel, H, W
+        kernel_size = 3
+        T = F.conv2d(input=torch.from_numpy(Y).float(),
+                     weight=torch.from_numpy(self.gkern(kernel_size,1)).reshape(1,1,kernel_size,kernel_size).float(), 
+                     padding=kernel_size//2).squeeze()
+        T = T/T.reshape(-1, xbins*ybins).sum(axis=-1).reshape(-1,1,1)
+        return T
 
     def binned_pos_2_real_pos(self, binned_pos):
         pos = binned_pos*self.bin_size + self.maze_original
         return pos
+    
+    def binned_pos_2_label(self, binned_pos, xbins=25, ybins=25):
+        y = binned_pos[:,0]+binned_pos[:,1]*xbins
+        return y
+
+    def binned_pos_2_onehot(self, binned_pos, xbins=25, ybins=25):
+        label_y = self.binned_pos_2_label(binned_pos, xbins, ybins)
+        Y = label_binarize(label_y, classes=range(xbins*ybins))
+        return Y
+    
+    def label_pos_2_binned_pos(self, label_y, xbins=25, ybins=25):
+        Y = label_binarize(label_y, classes=range(xbins*ybins))
+        binned_pos = argmax_2d_tensor(Y)
+        return binned_pos
 
     def real_pos_2_binned_pos(self, real_pos, interger_output=True):
         if interger_output:
