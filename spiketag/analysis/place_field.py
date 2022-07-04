@@ -121,7 +121,7 @@ class place_field(object):
     def initialize(self):
         self.get_maze_range()
         self.get_speed() 
-        self.occupation_map()
+        self.get_occupation_map()
         self.pos_df = pd.DataFrame(np.hstack((self.ts.reshape(-1,1), self.pos)),
                                    columns=['time', 'x', 'y'])
         # self.binned_pos = (self.pos-self.maze_original)//self.bin_size
@@ -254,7 +254,7 @@ class place_field(object):
         sns.despine()
         return fig
         
-    def occupation_map(self, start=None, end=None):
+    def get_occupation_map(self, start=None, end=None):
         '''
         f, ax = plt.subplots(1,2,figsize=(20,9))
         ax[0].plot(self.pos[:,0], self.pos[:,1])
@@ -333,17 +333,23 @@ class place_field(object):
         self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
         return self.FR_smoothed
 
-    def scv_2_firing_maps(self, scv, pos):
+    def scv_2_fc(self, scv, pos):
         '''
-        convert spike count vector (scv) and positions (pos) from time series to space firing map
+        convert spike count vector (scv) and positions (pos) from time series to feature count and class count
         via one-hot position encoding and matrix multiplication (contraction in time)
 
         intput:
-            scv is (T, N) spike count vector in time 
+            scv is (T, N) spike count vector in time (N is number of neurons/features, T is number of samples)
             pos is (T, 2) positons in time 
 
         output:
-            firing_maps: feature (spike) counts in binned space (N, ybins, xbins) 
+            fc: {} that contains:
+            feature_count: feature (spike) counts in binned states (S, N) (S is number of states)
+            class_count:   class   (state) counts in binned states (S,) 
+            classes:       unique classes
+            feature_count_non_zero_: feature (spike) counts in binned states (K, N) (K is number of nonzero states)
+            class_count_non_zero:    classes (state) counts in binned states (K,) 
+            classes_non_zero_: unique classes that were visited at least once
 
         internal:
             onehot_pos: (T, S) (S)tate in time, each state is a one-hot binned positon vector 
@@ -367,13 +373,14 @@ class place_field(object):
         self.feature_count_non_zero_ = self.feature_count_[self.feature_count_.sum(axis=1) != 0]
         self.class_count_non_zero_ = self.class_count_[self.class_count_ != 0]
         self.classes_non_zero_ = self.class_count_.nonzero().ravel().numpy()
-        self.firing_maps = self.fc_2_firing_maps(self.feature_count_non_zero_, self.classes_non_zero_)
-
-        # or alternatively: (but fc_2_firing_maps is more general solution for `feature_count_`` that cannot be directly reshaped)
-        # firing_maps = self.feature_count_.reshape(self.O.shape[0], self.O.shape[1], -1)
-        # firing_maps = firing_maps.permute((2,0,1)).numpy()
-        # self.firing_maps = firing_maps
-        return self.firing_maps
+        fc = {}
+        fc['feature_count'] = self.feature_count_
+        fc['class_count'] = self.class_count_
+        fc['classes'] = self.classes_
+        fc['feature_count_non_zero_'] = self.feature_count_non_zero_
+        fc['class_count_non_zero_'] = self.class_count_non_zero_
+        fc['classes_non_zero_'] = self.classes_non_zero_
+        return fc
 
     def fc_2_firing_maps(self, feature_count, classes):
         '''
@@ -432,16 +439,17 @@ class place_field(object):
             fields[i, pos_idx[:, 1], pos_idx[:, 0]] = feature_count[:, i]
         return fields
 
-    def firing_maps_2_fields(self, firing_maps, t_window=None, smooth=True):
+    def firing_maps_2_fields(self, firing_maps, occupation_map, t_window=None, smooth=True):
         '''
-        convert firing count maps into firing rate maps (normalized by occupation matrix and devided by t_window)
+        convert firing count maps (firing_maps) into 
+                firing rate maps  (fields = firing_maps/occupation_map/t_window)
+                firing rate maps are place fields
         '''
         if t_window is None:
             t_window = self.t_step
         fields = np.zeros_like(firing_maps)
-        O = self.fc_2_firing_maps(self.class_count_non_zero_, self.classes_non_zero_)
         np.seterr(divide='ignore', invalid='ignore')
-        fields = firing_maps/t_window/O
+        fields = firing_maps/occupation_map/t_window
         fields[np.isinf(fields)] = 0
         fields[np.isnan(fields)] = 0
 
@@ -451,6 +459,16 @@ class place_field(object):
                     self.kernlen, self.kernstd), boundary='symm', mode='same')
                 fields[i] = field
         return fields
+
+    def get_firing_maps_from_scv(self, scv, pos):
+        fc = self.scv_2_fc(scv, pos)
+        self.firing_maps = self.fc_2_firing_maps(fc['feature_count_non_zero_'], fc['classes_non_zero_'])
+
+        # or alternatively: (but fc_2_firing_maps is more general solution for `feature_count_`` that cannot be directly reshaped)
+        # firing_maps = self.feature_count_.reshape(self.O.shape[0], self.O.shape[1], -1)
+        # firing_maps = firing_maps.permute((2,0,1)).numpy()
+        # self.firing_maps = firing_maps
+        return self.firing_maps
 
     def get_fields_from_scv(self, scv, pos, t_window=None):
         '''
@@ -478,8 +496,11 @@ class place_field(object):
                 plt.colorbar(mappable=c2, ax=ax[1]);
                 plt.show()
         '''
-        self.firing_maps = self.scv_2_firing_maps(scv, pos)
-        self.fields = self.firing_maps_2_fields(self.firing_maps, t_window)
+        # self.firing_maps = self.get_firing_maps_from_scv(scv, pos)
+        fc = self.scv_2_fc(scv, pos)
+        self.firing_maps = self.fc_2_firing_maps(fc['feature_count_non_zero_'], fc['classes_non_zero_'])
+        self.occupation_map = self.fc_2_firing_maps(fc['class_count_non_zero_'], fc['classes_non_zero_'])
+        self.fields = self.firing_maps_2_fields(self.firing_maps, self.occupation_map, t_window)
         return self.fields
 
     def get_field(self, spk_time_dict, neuron_id, start=None, end=None):
@@ -520,7 +541,7 @@ class place_field(object):
          ...
          N: spike trains for neuron N}
         '''
-        self.occupation_map(start=start, end=end) # ! critical for updating the self.O to correctly calculate the place field
+        self.get_occupation_map(start=start, end=end) # ! critical for updating the self.O to correctly calculate the place field
 
         if spk_time_dict is None:
             spk_time_dict = self.spk_time_dict
