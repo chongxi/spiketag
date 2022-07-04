@@ -59,8 +59,6 @@ class place_field(object):
         # calculate the binned maze, cutoff based on the speed, and the occupation map
         self.initialize()
 
-
-
     def __call__(self, t_step):
         '''
         resample the trajectory with new time interval
@@ -71,7 +69,6 @@ class place_field(object):
         self.t_step = t_step
         self.ts, self.pos = self.interp_pos(self.ts, self.pos, self.t_step)
         self.initialize()
-
 
     def restore(self):
         self.ts, self.pos = self._ts_restore, self._pos_restore
@@ -336,7 +333,7 @@ class place_field(object):
         self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
         return self.FR_smoothed
 
-    def get_firing_map_from_scv(self, scv, pos):
+    def scv_2_firing_maps(self, scv, pos):
         '''
         convert spike count vector (scv) and positions (pos) from time series to space firing map
         via one-hot position encoding and matrix multiplication (contraction in time)
@@ -344,14 +341,19 @@ class place_field(object):
         intput:
             scv is (T, N) spike count vector in time 
             pos is (T, 2) positons in time 
+
         output:
             firing_maps: feature (spike) counts in binned space (N, ybins, xbins) 
+
         internal:
             onehot_pos: (T, S) (S)tate in time, each state is a one-hot binned positon vector 
             feature_count_ = onehot_pos.T@scv : (S,T)@(T,N) = (S,N), is state-feature matrix, since each state is one-hot
                                                                      it becomes a feature counts matrix
             non_zero_feature_count_: (K, N), exclude those state that were never reached in all time
-            ! Note: `non_zero_feature_count_` should be exactly the same as `feature_count_` in `sklearn.naive_bayes.MultinomialNB`
+        
+        ! Note: `feature_count_non_zero_` == `feature_count_` in `sklearn.naive_bayes.MultinomialNB`
+        !       `class_count_non_zero_`   == `class_count_` in `sklearn.naive_bayes.MultinomialNB`
+        !       `classes_non_zero_`       == `classes_` in `sklearn.naive_bayes.MultinomialNB`
         '''
         T, N = scv.shape[0], scv.shape[1]
         assert(T==pos.shape[0])
@@ -360,11 +362,95 @@ class place_field(object):
         onehot_pos = torch.from_numpy(self.binned_pos_2_onehot(binned_pos)).float()
         # feature_count_ is firing count at each one-hot location
         self.feature_count_ = onehot_pos.T@scv # ! counts feature in scv at each one-hot location by contracting time dim
-        self.non_zero_feature_count_ = self.feature_count_[self.feature_count_.sum(axis=1)!=0]
-        firing_maps = self.feature_count_.reshape(self.O.shape[0], self.O.shape[1], -1)
-        firing_maps = firing_maps.permute((2,0,1)).numpy()
-        self.firing_maps = firing_maps
+        self.class_count_ = onehot_pos.sum(axis=0) # ! counts state (class) at each one-hot location by contracting time dim
+        self.classes_ = np.arange(self.class_count_.shape[0]) # ! all possible states label (not one-hot encoding)
+        self.feature_count_non_zero_ = self.feature_count_[self.feature_count_.sum(axis=1) != 0]
+        self.class_count_non_zero_ = self.class_count_[self.class_count_ != 0]
+        self.classes_non_zero_ = self.class_count_.nonzero().ravel().numpy()
+        self.firing_maps = self.fc_2_firing_maps(self.feature_count_non_zero_, self.classes_non_zero_)
+
+        # or alternatively: (but fc_2_firing_maps is more general solution for `feature_count_`` that cannot be directly reshaped)
+        # firing_maps = self.feature_count_.reshape(self.O.shape[0], self.O.shape[1], -1)
+        # firing_maps = firing_maps.permute((2,0,1)).numpy()
+        # self.firing_maps = firing_maps
         return self.firing_maps
+
+    def fc_2_firing_maps(self, feature_count, classes):
+        '''
+        convert `feature_count` and `classes` (in `sklearn.naive_bayes.MultinomialNB`) to 
+         - place fields (fields):  fields = pc.fc_2_firing_maps(mnb.feature_count_, mnb.classes_) 
+         - occumation field (O):   O = pc.fc_2_firing_maps(mnb.class_count_, mnb.classes_)
+        # 0. get training and testing data
+        pc(0.05)  
+        t_window = 0.5
+        X = pc.get_scv(t_window)
+        y = pc.label_pos[1:]
+        speed_threshold = 8
+        total_idx = np.where(pc.v_smoothed > speed_threshold)[0][:-1]
+        train_idx, test_idx = train_test_split(total_idx, test_size=0.5, shuffle=False)
+        train_X, train_y = X[train_idx], y[train_idx]
+        test_X = X[test_idx]
+        test_y = pc.binned_pos_2_real_pos(pc.label_pos_2_binned_pos(y[test_idx]))
+
+        # 1. fit and check 
+        mnb = MNB(alpha=1)
+        mnb.fit(train_X, train_y);
+        _dec_y = mnb.predict(test_X)
+        _dec_y = pc.binned_pos_2_real_pos(pc.label_pos_2_binned_pos(_dec_y))
+        dec_y = smooth(_dec_y, 50)
+        r2_score(test_y, dec_y, multioutput='raw_values')
+        dec.plot_decoding_err(test_y, dec_y);
+
+        # 2. get feature_count and classes
+        fields = pc.fc_2_firing_maps(mnb.feature_count_, mnb.classes_)
+        O = pc.fc_2_firing_maps(mnb.class_count_, mnb.classes_)
+        np.seterr(divide='ignore', invalid='ignore')
+        fields = fields/t_window/O
+        fields[np.isinf(fields)] = 0
+        fields[np.isnan(fields)] = 0
+
+        # 3. comparing fields produced by different method
+        pc.get_fields() # update pc.fields by turning spike times into firing map, then place fields 
+        @interact(i=(0, pc.n_fields-1, 1))
+        def compare_fields(i=0):
+            fig, ax = plt.subplots(1, 3, figsize=(4*5+1,5))
+            c1 = ax[0].imshow(fields[i], cmap=cm.hot, origin='lower');
+            plt.colorbar(mappable=c1, ax=ax[0]);    
+            field = signal.convolve2d(fields[i], pc.gkern(pc.kernlen, pc.kernstd), boundary='symm', mode='same')
+            c1 = ax[1].imshow(field, cmap=cm.hot, origin='lower');
+            plt.colorbar(mappable=c1, ax=ax[1]);
+            c2 = ax[2].imshow(pc.fields[i], cmap=cm.hot, origin='lower')
+            plt.colorbar(mappable=c2, ax=ax[2]);
+            plt.show()
+        '''
+        if feature_count.ndim == 1:
+            feature_count = feature_count.reshape(-1, 1)
+        S, N = feature_count.shape  # (S)tate, (N)eurons
+        pos_idx = self.label_pos_2_binned_pos(classes).astype(np.int)
+        fields = np.zeros((N, self.O.shape[0], self.O.shape[1])).astype(np.float)
+        for i in range(N):
+            fields[i, pos_idx[:, 1], pos_idx[:, 0]] = feature_count[:, i]
+        return fields
+
+    def firing_maps_2_fields(self, firing_maps, t_window=None, smooth=True):
+        '''
+        convert firing count maps into firing rate maps (normalized by occupation matrix and devided by t_window)
+        '''
+        if t_window is None:
+            t_window = self.t_step
+        fields = np.zeros_like(firing_maps)
+        O = self.fc_2_firing_maps(self.class_count_non_zero_, self.classes_non_zero_)
+        np.seterr(divide='ignore', invalid='ignore')
+        fields = firing_maps/t_window/O
+        fields[np.isinf(fields)] = 0
+        fields[np.isnan(fields)] = 0
+
+        if smooth is True:
+            for i, field in enumerate(fields):
+                field = signal.convolve2d(field, self.gkern(
+                    self.kernlen, self.kernstd), boundary='symm', mode='same')
+                fields[i] = field
+        return fields
 
     def get_fields_from_scv(self, scv, pos, t_window=None):
         '''
@@ -373,7 +459,7 @@ class place_field(object):
             pos is (T, 2) positons in time 
             t_window: time window of each row in scv (default: pc.t_step for non-overlapping scv)
         output:
-            fields: place fields in binned space (N, ybins, xbins) 
+            fields: place fields (spatial rate map) in binned space (N, ybins, xbins) 
         example:
             # get fields directly from scv and pos (non-overlapping window by default)
             t_window = pc.t_step
@@ -392,17 +478,8 @@ class place_field(object):
                 plt.colorbar(mappable=c2, ax=ax[1]);
                 plt.show()
         '''
-        self.firing_maps = self.get_firing_map_from_scv(scv, pos)
-        if t_window is None:
-            t_window = self.t_step
-        self.fields = np.zeros_like(self.firing_maps)
-        np.seterr(divide='ignore', invalid='ignore')
-        for i, firing_map in enumerate(self.firing_maps):
-            field = firing_map/t_window/self.O  # turn into firing rate
-            field[np.isinf(field)] = 0
-            field[np.isnan(field)] = 0
-            field = signal.convolve2d(field, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
-            self.fields[i] = field
+        self.firing_maps = self.scv_2_firing_maps(scv, pos)
+        self.fields = self.firing_maps_2_fields(self.firing_maps, t_window)
         return self.fields
 
     def get_field(self, spk_time_dict, neuron_id, start=None, end=None):
