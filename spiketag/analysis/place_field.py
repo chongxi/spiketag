@@ -495,6 +495,11 @@ class place_field(object):
                 c2 = ax[1].imshow(pc.fields[i], cmap=cm.hot, origin='lower')
                 plt.colorbar(mappable=c2, ax=ax[1]);
                 plt.show()
+        
+        Note:
+            unlike pc.get_fields() method, here user is responsible to exclude 
+            those `scv` and `pos` when animal at low speed. 
+            This method is more flexible because user can decide which scv and pos they want to use to build place fields
         '''
         # self.firing_maps = self.get_firing_maps_from_scv(scv, pos)
         fc = self.scv_2_fc(scv, pos)
