@@ -375,9 +375,22 @@ class place_field(object):
         output:
             fields: place fields in binned space (N, ybins, xbins) 
         example:
+            # get fields directly from scv and pos (non-overlapping window by default)
+            t_window = pc.t_step
             pos = pc.pos[1:]
-            scv = pc.get_scv(t_window=pc.t_window)
-            fields = pc.get_fields_from_scv(scv, pos)
+            scv = pc.get_scv(t_window)
+            fields = pc.get_fields_from_scv(scv, pos, t_window)
+
+            # comparing fields produced by different method
+            pc.get_fields() # update pc.fields by turning spike times into firing map, then place fields 
+            @interact(i=(0, pc.n_fields-1, 1))
+            def compare_fields(i=0):
+                fig, ax = plt.subplots(1,2, figsize=(13,5))
+                c1 = ax[0].imshow(fields[i], cmap=cm.hot, origin='lower');
+                plt.colorbar(mappable=c1, ax=ax[0]);
+                c2 = ax[1].imshow(pc.fields[i], cmap=cm.hot, origin='lower')
+                plt.colorbar(mappable=c2, ax=ax[1]);
+                plt.show()
         '''
         self.firing_maps = self.get_firing_map_from_scv(scv, pos)
         if t_window is None:
