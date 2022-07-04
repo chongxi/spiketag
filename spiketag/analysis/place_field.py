@@ -166,7 +166,7 @@ class place_field(object):
     
     @property
     def label_pos(self):
-        return self.binned_pos_2_label(self.binned_pos, xbins=self.O.shape[1], ybins=self.O.shape[0])
+        return self.binned_pos_2_label(self.binned_pos, xbins=self.O.shape[1])
 
     @property
     def prob_pos(self):
@@ -184,18 +184,25 @@ class place_field(object):
         pos = binned_pos*self.bin_size + self.maze_original
         return pos
     
-    def binned_pos_2_label(self, binned_pos, xbins=25, ybins=25):
+    def binned_pos_2_label(self, binned_pos, xbins=None):
+        if xbins is None:
+            xbins = self.O.shape[1]
         y = binned_pos[:,0]+binned_pos[:,1]*xbins
         return y
 
-    def binned_pos_2_onehot(self, binned_pos, xbins=25, ybins=25):
-        label_y = self.binned_pos_2_label(binned_pos, xbins, ybins)
+    def binned_pos_2_onehot(self, binned_pos, xbins=None, ybins=None):
+        if xbins is None:
+            xbins = self.O.shape[1]
+        if ybins is None:
+            ybins = self.O.shape[0]
+        label_y = self.binned_pos_2_label(binned_pos, xbins)
         Y = label_binarize(label_y, classes=range(xbins*ybins))
         return Y
     
-    def label_pos_2_binned_pos(self, label_y, xbins=25, ybins=25):
-        Y = label_binarize(label_y, classes=range(xbins*ybins))
-        binned_pos = argmax_2d_tensor(Y)
+    def label_pos_2_binned_pos(self, label_y, xbins=None):
+        if xbins is None:
+            xbins = self.O.shape[1]
+        binned_pos = np.vstack((label_y%xbins, label_y//xbins)).T
         return binned_pos
 
     def real_pos_2_binned_pos(self, real_pos, interger_output=True):
@@ -329,30 +336,61 @@ class place_field(object):
         self.FR_smoothed = signal.convolve2d(self.FR, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
         return self.FR_smoothed
 
-
-    def firing_map_from_scv(self, scv, t_step, section=[0,1]):
+    def get_firing_map_from_scv(self, scv, pos):
         '''
-        firing heat map constructed from spike count vector (scv) and position
+        convert spike count vector (scv) and positions (pos) from time series to space firing map
+        via one-hot position encoding and matrix multiplication (contraction in time)
+
+        intput:
+            scv is (T, N) spike count vector in time 
+            pos is (T, 2) positons in time 
+        output:
+            firing_maps: feature (spike) counts in binned space (N, ybins, xbins) 
+        internal:
+            onehot_pos: (T, S) (S)tate in time, each state is a one-hot binned positon vector 
+            feature_count_ = onehot_pos.T@scv : (S,T)@(T,N) = (S,N), is state-feature matrix, since each state is one-hot
+                                                                     it becomes a feature counts matrix
+            non_zero_feature_count_: (K, N), exclude those state that were never reached in all time
+            ! Note: `non_zero_feature_count_` should be exactly the same as `feature_count_` in `sklearn.naive_bayes.MultinomialNB`
         '''
-        # assert(scv.shape[1]==self.pos.shape[0])
-        scv = scv.T.copy()
-        n_neurons, total_bin = scv.shape
-        valid_bin = np.array(np.array(section)*total_bin, dtype=np.int)
-        firing_map_smoothed = np.zeros((n_neurons, *self.map_binned_size))
-        for neuron_id in range(n_neurons):
-            firing_pos = firing_pos_from_scv(scv, self.pos, neuron_id, valid_bin)
-            firing_map, x_edges, y_edges = np.histogram2d(x=firing_pos[:,0], y=firing_pos[:,1], 
-                                                          bins=self.nbins, range=self.maze_range)
-            firing_map = firing_map.T/self.O/t_step
-            firing_map[np.isnan(firing_map)] = 0
-            firing_map[np.isinf(firing_map)] = 0
-            firing_map_smoothed[neuron_id] = signal.convolve2d(firing_map, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
-            firing_map_smoothed[firing_map_smoothed==0] = 1e-25
+        T, N = scv.shape[0], scv.shape[1]
+        assert(T==pos.shape[0])
+        scv = torch.from_numpy(scv).float()
+        binned_pos = self.real_pos_2_binned_pos(pos)
+        onehot_pos = torch.from_numpy(self.binned_pos_2_onehot(binned_pos)).float()
+        # feature_count_ is firing count at each one-hot location
+        self.feature_count_ = onehot_pos.T@scv # ! counts feature in scv at each one-hot location by contracting time dim
+        self.non_zero_feature_count_ = self.feature_count_[self.feature_count_.sum(axis=1)!=0]
+        firing_maps = self.feature_count_.reshape(self.O.shape[0], self.O.shape[1], -1)
+        firing_maps = firing_maps.permute((2,0,1)).numpy()
+        self.firing_maps = firing_maps
+        return self.firing_maps
 
-        self.fields = firing_map_smoothed
-        self.n_fields = self.fields.shape[0]
-        self.n_units  = self.n_fields
-
+    def get_fields_from_scv(self, scv, pos, t_window=None):
+        '''
+        intput:
+            scv is (T, N) spike count vector in time 
+            pos is (T, 2) positons in time 
+            t_window: time window of each row in scv (default: pc.t_step for non-overlapping scv)
+        output:
+            fields: place fields in binned space (N, ybins, xbins) 
+        example:
+            pos = pc.pos[1:]
+            scv = pc.get_scv(t_window=pc.t_window)
+            fields = pc.get_fields_from_scv(scv, pos)
+        '''
+        self.firing_maps = self.get_firing_map_from_scv(scv, pos)
+        if t_window is None:
+            t_window = self.t_step
+        self.fields = np.zeros_like(self.firing_maps)
+        np.seterr(divide='ignore', invalid='ignore')
+        for i, firing_map in enumerate(self.firing_maps):
+            field = firing_map/t_window/self.O  # turn into firing rate
+            field[np.isinf(field)] = 0
+            field[np.isnan(field)] = 0
+            field = signal.convolve2d(field, self.gkern(self.kernlen, self.kernstd), boundary='symm', mode='same')
+            self.fields[i] = field
+        return self.fields
 
     def get_field(self, spk_time_dict, neuron_id, start=None, end=None):
         '''
