@@ -274,7 +274,7 @@ class place_field(object):
 
         if start is None and end is None:
             start, end = self.ts[0], self.ts[-1]
-        self.high_speed_idx = np.where((self.v_smoothed >= self.v_cutoff) & (self.ts>=start) & (self.ts<=end))[0]
+        self.high_speed_idx = np.where((self.v_smoothed_wide >= self.v_cutoff) & (self.ts>=start) & (self.ts<=end))[0]
         occupation, self.x_edges, self.y_edges = np.histogram2d(x=self.pos[self.high_speed_idx,0], 
                                                                 y=self.pos[self.high_speed_idx,1], 
                                                                 bins=self.nbins, range=self.maze_range)
