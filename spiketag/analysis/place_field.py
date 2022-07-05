@@ -10,6 +10,7 @@ from sklearn.preprocessing import label_binarize
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset
+import torchvision
 from .core import argmax_2d_tensor, spk_time_to_scv, firing_pos_from_scv, smooth
 from ..base import SPKTAG
 from ..utils import colorbar
@@ -669,7 +670,18 @@ class place_field(Dataset):
         ax.set_title('neuron {0}: max firing rate {1:.2f}Hz, {2:.3f} bits'.format(neuron_id, p_rate, n_bits))
         return f,ax
 
-
+    def plot_fields_image(self, fields, show=True, invert_y=True):
+        fields = torch.from_numpy(fields).unsqueeze(1) # N, C, H, W
+        if invert_y:
+            fields = torch.flip(fields, dims=(2,)) # invert the H axis (since our data is inverted in y-axis)
+        fields_img = torchvision.utils.make_grid(fields, padding=3, pad_value=1, nrow=10,
+                                               normalize=True,
+                                               scale_each=True).mean(axis=0)
+        fig, ax = plt.subplots(1,1, figsize=(8,8))
+        ax.imshow(fields_img.numpy(), cmap=cm.hot);
+        plt.axis(False);
+        return fig
+        
     def rank_fields(self, metric_name):
         '''
         metric_name: spatial_bit_spike, spatial_bit_smoothed_spike, spatial_sparcity
