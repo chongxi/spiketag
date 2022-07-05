@@ -9,6 +9,7 @@ from scipy.interpolate import interp1d
 from sklearn.preprocessing import label_binarize
 import torch
 import torch.nn.functional as F
+from torch.utils.data import Dataset
 from .core import argmax_2d_tensor, spk_time_to_scv, firing_pos_from_scv, smooth
 from ..base import SPKTAG
 from ..utils import colorbar
@@ -28,7 +29,7 @@ def info_sparcity(Fr, P):
     return sum(P.ravel()*Fr.ravel()**2/MFr**2)
 
 
-class place_field(object):
+class place_field(Dataset):
     '''
     place cells class contains `ts` `pos` `scv` for analysis
     load_log for behavior
