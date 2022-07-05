@@ -70,6 +70,20 @@ class place_field(object):
         self.ts, self.pos = self.interp_pos(self.ts, self.pos, self.t_step)
         self.initialize()
 
+    def __len__(self):
+        return len(self.ts[1:])
+
+    def __getitem__(self, idx):
+        '''
+        t_window = pc.t_step
+        scv = pc.get_scv(t_window)
+        train_size = 0.5
+        N = int(len(pc)*train_size)
+        train_X, train_y = pc[:N]
+        test_X, test_y = pc[N:]
+        '''
+        return self.scv[idx], self.pos[idx]
+
     def restore(self):
         self.ts, self.pos = self._ts_restore, self._pos_restore
 
