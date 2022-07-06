@@ -84,7 +84,7 @@ class place_field(Dataset):
         train_X, train_y = pc[:N]
         test_X, test_y = pc[N:]
         '''
-        return self.scv[idx], self.pos[idx]
+        return self.scv[idx].astype(np.float32), self.pos[idx].astype(np.float32)
 
     def restore(self):
         self.ts, self.pos = self._ts_restore, self._pos_restore
