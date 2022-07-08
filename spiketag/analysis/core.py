@@ -19,7 +19,35 @@ def softmax(X):
     _softmax = X_exp / partition # The broadcast mechanism is applied here
     return _softmax.numpy()
 
-
+def stack_scv(scv, n):
+    '''
+    >>> x = np.arange(5*3).reshape(5,3)
+    >>> x
+    >>> array([[ 0,  1,  2],
+               [ 3,  4,  5],
+               [ 6,  7,  8],
+               [ 9, 10, 11],
+               [12, 13, 14]])
+    >>> stack_scv(x, 1)
+    >>> array([[ 0,  1,  2,  3,  4,  5],
+               [ 3,  4,  5,  6,  7,  8],
+               [ 6,  7,  8,  9, 10, 11],
+               [ 9, 10, 11, 12, 13, 14]])
+    >>> stack_scv(x, 2)
+    >>> array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8],
+               [ 3,  4,  5,  6,  7,  8,  9, 10, 11],
+               [ 6,  7,  8,  9, 10, 11, 12, 13, 14]])
+    >>> stack_scv(x, 3)
+    >>> array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+               [ 3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14]])
+    >>> stack_scv(x, 4)
+    >>> array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14]])
+    '''
+    assert(n<scv.shape[0]),f"n must be less than {scv.shape[0]} since array only has {scv.shape[0]} rows"
+    _scv_list = [scv[i:i-n] if i<n else scv[n:] for i in range(n+1)]
+    new_scv = np.hstack(_scv_list)
+    return new_scv
+    
 def spike_time_from_fet(fet, fs=25000.):
     spike_timing = [ fet[fet[:,-1]==i][:,0]/fs for i in np.unique(fet[:,-1]) ]
     return spike_timing
