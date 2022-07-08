@@ -19,8 +19,14 @@ def softmax(X):
     _softmax = X_exp / partition # The broadcast mechanism is applied here
     return _softmax.numpy()
 
-def stack_scv(scv, n):
+def sliding_window_to_feature(scv, n):
     '''
+    used to stack scv, turn scv at different time (rows) into new feature (columns)
+    `n` is the number of sliding window that is added to feature (column)
+
+    from numpy.lib.stride_tricks import sliding_window_view
+    this function is equivalent to "sliding_window_view(scv.ravel(), (n+1)*scv.shape[1])[::scv.shape[1]]"
+
     >>> x = np.arange(5*3).reshape(5,3)
     >>> x
     >>> array([[ 0,  1,  2],
@@ -28,26 +34,26 @@ def stack_scv(scv, n):
                [ 6,  7,  8],
                [ 9, 10, 11],
                [12, 13, 14]])
-    >>> stack_scv(x, 1)
+    >>> sliding_window_to_feature(x, 1)
     >>> array([[ 0,  1,  2,  3,  4,  5],
                [ 3,  4,  5,  6,  7,  8],
                [ 6,  7,  8,  9, 10, 11],
                [ 9, 10, 11, 12, 13, 14]])
-    >>> stack_scv(x, 2)
+    >>> sliding_window_to_feature(x, 2)
     >>> array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8],
                [ 3,  4,  5,  6,  7,  8,  9, 10, 11],
                [ 6,  7,  8,  9, 10, 11, 12, 13, 14]])
-    >>> stack_scv(x, 3)
+    >>> sliding_window_to_feature(x, 3)  # sliding_window_view(x.ravel(), (3+1)*x.shape[1])[::x.shape[1]]
     >>> array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
                [ 3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14]])
-    >>> stack_scv(x, 4)
+    >>> sliding_window_to_feature(x, 4)
     >>> array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14]])
     '''
     assert(n<scv.shape[0]),f"n must be less than {scv.shape[0]} since array only has {scv.shape[0]} rows"
     _scv_list = [scv[i:i-n] if i<n else scv[n:] for i in range(n+1)]
     new_scv = np.hstack(_scv_list)
     return new_scv
-    
+
 def spike_time_from_fet(fet, fs=25000.):
     spike_timing = [ fet[fet[:,-1]==i][:,0]/fs for i in np.unique(fet[:,-1]) ]
     return spike_timing
