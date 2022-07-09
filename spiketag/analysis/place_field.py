@@ -11,7 +11,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset
 import torchvision
-from .core import argmax_2d_tensor, spk_time_to_scv, firing_pos_from_scv, smooth
+from .core import pos2speed, argmax_2d_tensor, spk_time_to_scv, firing_pos_from_scv, smooth
 from ..base import SPKTAG
 from ..utils import colorbar
 from ..utils.plotting import colorline
@@ -224,6 +224,9 @@ class place_field(Dataset):
         else:
             binned_pos = (real_pos - self.maze_original)/self.bin_size
         return binned_pos
+    
+    def pos_2_speed(self, pos, ts):
+        return pos2speed(pos, ts)
 
     def get_speed(self):
         '''
@@ -236,8 +239,10 @@ class place_field(Dataset):
 
         The `low_speed_idx` are thos index of `ts` and `pos` that are too slow to be considered to calculate the place field. 
         '''
-        self.v = np.linalg.norm(np.diff(self.pos, axis=0), axis=1)/np.diff(self.ts)
-        self.v = np.hstack((self.v[0], self.v))
+        # self.v = np.linalg.norm(np.diff(self.pos, axis=0), axis=1)/np.diff(self.ts)
+        # self.v = np.hstack((self.v[0], self.v))
+        self.v = self.pos_2_speed(self.pos, self.ts)
+        self.v = np.linalg.norm(self.v, axis=1)
         self.v_smoothed = smooth(self.v.reshape(-1,1), int(np.round(self.fs))).ravel()
         self.v_smoothed_wide = 2 * smooth(self.v.reshape(-1,1), 6*int(np.round(self.fs))).ravel()
         self.low_speed_idx = np.where(self.v_smoothed_wide < self.v_cutoff)[0]

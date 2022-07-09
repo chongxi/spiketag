@@ -19,6 +19,21 @@ def softmax(X):
     _softmax = X_exp / partition # The broadcast mechanism is applied here
     return _softmax.numpy()
 
+def pos2speed(pos, ts=None):
+    '''
+    input:
+        pos: (N,2) array
+        ts:  (N,) array
+    output:
+        speed: (N, 2) array (the speed at time 0 is copied to make the array size the same)
+    '''
+    if ts is not None:
+        speed = np.diff(pos, axis=0)/np.diff(ts).reshape(-1,1)
+    else:
+        speed = np.diff(pos, axis=0)
+    speed = np.vstack((speed[0], speed))
+    return speed
+
 def sliding_window_to_feature(scv, n):
     '''
     used to stack scv, turn scv at different time (rows) into new feature (columns)
