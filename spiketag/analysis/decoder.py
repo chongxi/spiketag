@@ -173,8 +173,9 @@ class Decoder(object):
         '''
         assert(self.pc.ts.shape[0] == self.pc.pos.shape[0])
 
-        X = self.pc.get_scv(self.t_window) # t_step is None unless specified, using pc.ts
-        y = self.pc.pos[1:] # the initial position is not predictable
+        self.pc.get_scv(self.t_window); # t_step is None unless specified, using pc.ts
+        self.pc.output_variables = ['scv', 'pos']
+        X, y = self.pc[:]
         assert(X.shape[0]==y.shape[0])
 
         self.train_X, self.train_y = X[self.train_idx], y[self.train_idx]

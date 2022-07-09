@@ -58,6 +58,9 @@ class place_field(Dataset):
         self.kernstd = kernstd
         self.maze_range = maze_range
 
+        # decide output variables (i.e., returned data when calling pc[:N], pc[N:], pc[:])
+        self.output_variables = ['scv', 'pos']
+
         # calculate the binned maze, cutoff based on the speed, and the occupation map
         self.initialize()
 
@@ -72,22 +75,47 @@ class place_field(Dataset):
         self.ts, self.pos = self.interp_pos(self.ts, self.pos, self.t_step)
         self.initialize()
 
+    def restore(self):
+        self.ts, self.pos = self._ts_restore, self._pos_restore
+
     def __len__(self):
         return len(self.ts[1:])
 
     def __getitem__(self, idx):
         '''
+        return variables in the pc.output_variables for analysis or training ML models
         t_window = pc.t_step
         scv = pc.get_scv(t_window)
+        pc.output_variables = ['scv', 'pos']
         train_size = 0.5
         N = int(len(pc)*train_size)
         train_X, train_y = pc[:N]
         test_X, test_y = pc[N:]
         '''
-        return self.scv[idx].astype(np.float32), self.pos[idx].astype(np.float32)
+        output = [getattr(self, var)[idx] for var in self.output_variables]
+        # use :k to make sure outputs has the same size as pos can contain one more item than scv or speed
+        k = np.array([len(_) for _ in output]).min() 
+        return [x[:k] for x in output]
 
-    def restore(self):
-        self.ts, self.pos = self._ts_restore, self._pos_restore
+    @property
+    def output_variables(self):
+        '''
+        This variable controls what variables would be returned when calling pc[:] or pc[i:j]
+        '''
+        return self._output_variables
+
+    @output_variables.setter
+    def output_variables(self, var=['scv', 'pos']):
+        '''
+        examples: 
+        ['scv', 'pos']
+        ['scv', 'speed']
+        ['scv', 'cue_pos']
+        ['scv', 'binned_pos']
+        ['scv', 'label_pos']
+        ['scv', 'pos', 'cue_pos', 'speed']
+        '''
+        self._output_variables = var
 
     @property
     def dt(self):
