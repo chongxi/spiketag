@@ -511,46 +511,53 @@ class DeepOSC(Decoder):
 
     To get scv matrix to hack (check the size):
     -------------------------------------------------------------
-    _scv = dec.pc.scv
-    _scv = dec.pc.scv[dec.train_idx]
-    _scv = dec.pc.scv[dec.test_idx]
-    _y = dec.predict(_scv)
-    post2d = dec.post_2d
+    # ! 1. data
+    pc.output_variables = ['scv', 'pos']
+    N = int(len(pc)*0.5)
+    X,y = pc[:N]
+    X_test, y_test = pc[N:]
+    # ! 2. training
+    dec.train(X,y) 
+    # ! 3. predict   
+    _y = dec.predict(X_test)
+    y_decoded  = smooth(_y, 60)
+
+    # ! 4. test
+    score = dec.r2_score(y_test, y_decoded)
 
     Test real-time prediction:
     -------------------------------------------------------------
-    _y = dec.predict_rt(_scv[8])
+    _y = dec.predict_rt()
     """
 
     # TODO 
     pass
 
-    def __init__(self, t_window, t_step, ncells, hidden_dim):
+    def __init__(self, t_window, t_step, hidden_dim=[128,128]):
         super(DeepOSC, self).__init__(t_window, t_step)
-        self.model = SineDec(ncells, hidden_dim=[128,128])
+        self.ncells = self.neuron_idx.shape[0] * self.B_bins
+        self.model = SineDec(self.ncells, hidden_dim=hidden_dim)
 
-    def fit(self, X=None, y=None, early_stop_r2=0.75, lr=3e-4, weight_decay=0.01):
+    def unroll(self, scv, n):
+        '''
+        unroll scv such that it has (T_step, B_bins, N_neurons) structure
+        '''
+        pass
+
+    def fit(self, X=None, y=None, early_stop_r2=0.75, lr=3e-4, weight_decay=0.01, cuda=True):
+        '''
+        training the deep neural network, using GPU if `cuda` == True
+        '''
         # optmizer
         optimizer = torch.optim.Adam(
             self.model.parameters(), lr=3e-4, betas=(0.9, 0.999), weight_decay=0.01)
-
-
-    def predict(self, X):
-        pass
-
-
-    def predict_rt(self, X):
-        pass
-
 
     def set_learning_rate(self, lr):
         for g in self.optim.param_groups:
             g['lr'] = lr
 
-    def drop_neuron(self, _disable_neuron_idx):
-        if type(_disable_neuron_idx) == int:
-            _disable_neuron_idx = [_disable_neuron_idx]
-        self._disable_neuron_idx = _disable_neuron_idx
-        if self._disable_neuron_idx is not None:
-            self.neuron_idx = np.array(
-                [_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
+    def predict(self, X):
+        pass
+
+    def predict_rt(self, X):
+        pass
