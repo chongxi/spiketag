@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-def spike_noise_bernoulli(X, noise_level=1, p=0.5, gain=1, cuda=True, independence=True):
+def spike_noise_bernoulli(X, noise_level=1, p=0.5, gain=1, cuda=True, IID=True):
     '''
     Add IID noise to data (spike vector count) to train network to ignore off-manifold activity
 
@@ -15,14 +15,14 @@ def spike_noise_bernoulli(X, noise_level=1, p=0.5, gain=1, cuda=True, independen
         X = X.cuda()
     else:
         noise = torch.ones_like(X).uniform_(-noise_level, noise_level)*torch.bernoulli(torch.ones_like(X)*p)
-    if independence:
+    if IID:
         X = torch.relu(gain*(X + noise))
     else:
         X = torch.relu(gain*(X + noise*X.mean(axis=0)))
     return X
 
 
-def spike_noise_gaussian(X, noise_level=1, mean=0.0, std=3.0, gain=1, cuda=True, independence=True):
+def spike_noise_gaussian(X, noise_level=1, mean=0.0, std=3.0, gain=1, cuda=True, IID=True):
     '''
     Add IID noise to data (spike vector count) to train network to ignore off-manifold activity
 
@@ -36,7 +36,7 @@ def spike_noise_gaussian(X, noise_level=1, mean=0.0, std=3.0, gain=1, cuda=True,
     else:
         noise = torch.ones_like(
             X).uniform_(-noise_level, noise_level)*torch.normal(torch.ones_like(X)*mean, std)
-    if independence:
+    if IID:
         X = torch.relu(gain*(X + noise))
     else:
         X = torch.relu(gain*(X + noise*X.mean(axis=0)))
