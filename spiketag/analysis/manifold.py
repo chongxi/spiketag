@@ -3,6 +3,44 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+def spike_noise_bernoulli(X, noise_level=1, p=0.5, gain=1, cuda=True, independence=True):
+    '''
+    Add IID noise to data (spike vector count) to train network to ignore off-manifold activity
+
+    each neuron will add a noise to each time bin: 
+    noise = uniform(-noise_level, noise_level) * bernoulli(p)
+    '''
+    if cuda:
+        noise = torch.ones_like(X).uniform_(-noise_level, noise_level)*torch.bernoulli(torch.ones_like(X)*p).cuda()
+        X = X.cuda()
+    else:
+        noise = torch.ones_like(X).uniform_(-noise_level, noise_level)*torch.bernoulli(torch.ones_like(X)*p)
+    if independence:
+        X = torch.relu(gain*(X + noise))
+    else:
+        X = torch.relu(gain*(X + noise*X.mean(axis=0)))
+    return X
+
+
+def spike_noise_gaussian(X, noise_level=1, mean=0.0, std=3.0, gain=1, cuda=True, independence=True):
+    '''
+    Add IID noise to data (spike vector count) to train network to ignore off-manifold activity
+
+    each neuron will add a noise to each time bin: 
+    noise = uniform(-noise_level, noise_level) * bernoulli(p)
+    '''
+    if cuda:
+        noise = torch.ones_like(X).uniform_(-noise_level, noise_level) * \
+            torch.normal(torch.ones_like(X)*mean, std).cuda()
+        X = X.cuda()
+    else:
+        noise = torch.ones_like(
+            X).uniform_(-noise_level, noise_level)*torch.normal(torch.ones_like(X)*mean, std)
+    if independence:
+        X = torch.relu(gain*(X + noise))
+    else:
+        X = torch.relu(gain*(X + noise*X.mean(axis=0)))
+    return X
 
 class FA(sklearn.decomposition.FactorAnalysis):
     '''

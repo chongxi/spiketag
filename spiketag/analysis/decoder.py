@@ -3,6 +3,8 @@ from .core import softmax, licomb_Matrix, bayesian_decoding, argmax_2d_tensor, s
 import numpy as np
 from sklearn.metrics import r2_score
 from ..utils import plot_err_2d
+from ..analysis import sliding_window_to_feature, FA
+from .manifold import spike_noise_bernoulli, spike_noise_gaussian
 import copy
 import torch
 from torch import nn
@@ -425,7 +427,6 @@ class SineDec(nn.Module):
         self.fc2g = nn.Linear(hidden_dim[1], output_dim, bias=True)
         self.fc2p = nn.Linear(hidden_dim[1], output_dim, bias=True)
         self.fc2  = nn.Linear(hidden_dim[1], output_dim, bias=True)
-        self.sine = Sine()
         self.olayer1 = Olayer(hidden_dim)
         self.olayer2 = Olayer(hidden_dim)
         self.olayer3 = Olayer(hidden_dim)
