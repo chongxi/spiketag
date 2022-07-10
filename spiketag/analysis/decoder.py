@@ -482,6 +482,7 @@ class SineDec(nn.Module):
 #         xp = self.fc2p(xp)
         return x, xg, y, v
 
+
 class DeepOSC(Decoder):
     """
     DeepOSC Decoder for position prediction (input X, output y) 
@@ -524,3 +525,33 @@ class DeepOSC(Decoder):
 
     # TODO 
     pass
+
+    def __init__(self, t_window, t_step, ncells, hidden_dim):
+        super(DeepOSC, self).__init__(t_window, t_step)
+        self.model = SineDec(ncells, hidden_dim=[128,128])
+
+    def fit(self, X=None, y=None, early_stop_r2=0.75, lr=3e-4, weight_decay=0.01):
+        # optmizer
+        optimizer = torch.optim.Adam(
+            self.model.parameters(), lr=3e-4, betas=(0.9, 0.999), weight_decay=0.01)
+
+
+    def predict(self, X):
+        pass
+
+
+    def predict_rt(self, X):
+        pass
+
+
+    def set_learning_rate(self, lr):
+        for g in self.optim.param_groups:
+            g['lr'] = lr
+
+    def drop_neuron(self, _disable_neuron_idx):
+        if type(_disable_neuron_idx) == int:
+            _disable_neuron_idx = [_disable_neuron_idx]
+        self._disable_neuron_idx = _disable_neuron_idx
+        if self._disable_neuron_idx is not None:
+            self.neuron_idx = np.array(
+                [_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
