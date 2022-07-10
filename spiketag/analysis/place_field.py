@@ -15,6 +15,7 @@ from .core import pos2speed, argmax_2d_tensor, spk_time_to_scv, firing_pos_from_
 from ..base import SPKTAG
 from ..utils import colorbar
 from ..utils.plotting import colorline
+from ..realtime import bmi_packet
 
 
 
@@ -769,6 +770,7 @@ class place_field(Dataset):
         self.spike_df.index = self.spike_df.index.astype(int)
         self.spike_df.index -= self.spike_df.index.min()
         self.spike_df.index.name = 'spike_id'
+        self.spike_df = self.spike_df[self.spike_df.frame_id > 0]
         self.df['spk'] = self.spike_df
         self.spk_time_dict = {i: self.spike_df.frame_id.to_numpy()[self.spike_df.index.to_numpy() == i]
                               for i in self.spike_df.index.unique().sort_values().to_numpy()}
@@ -804,7 +806,29 @@ class place_field(Dataset):
         if show is True:
             self.field_fig = self.plot_fields();     
         print('------------------------------------------------------------------------')   
-
+    
+    def bmi_packet(self, t0=0, t1=None):
+        '''
+        get all bmi packets (from t0 to t1) for simulating the bmi recording
+        Example:
+            # ! 1. prepare bmi packets and a binner
+            bmi_data = pc.bmi_packet(0, 25) # get bmi packet from 0 to 25 seconds
+            binner = Binner(bin_size=0.1, n_id=scv_full.shape[1], n_bin=7)
+            # ! 2. prepare the receving/decoding code
+            rt_scv = []
+            @binner.connect
+            def on_decode(X):
+                rt_scv.append(X)
+            # ! 3. simulate the recording
+            for bmi_output in bmi_data:
+                binner.input(bmi_output)
+        '''
+        if t1 is not None:
+            spk_df = self.spike_df[(self.spike_df.frame_id<=t1) & (self.spike_df.frame_id>t0)]
+        else:
+            spk_df = self.spike_df[(self.spike_df.frame_id>t0)]
+        _bmi_packet = bmi_packet(spk_df)
+        return _bmi_packet
 
     def report(self, cmap='hot', order=False, min_peak_rate=1):
         print('occupation map from {0:.2f} to {1:.2f}, with speed cutoff:{2:.2f}'.format(self.ts[0], self.ts[-1], self.v_cutoff))
@@ -890,7 +914,6 @@ class place_field(Dataset):
                                         orientation='horizontal')
         cb.set_label('speed (cm/sec)')
         return ax
-
 
     def to_file(self, filename):
         df_all_in_one = pd.concat([self.pos_df, self.spike_df], sort=True)

@@ -6,6 +6,7 @@ import struct
 import socket
 import numpy as np
 import torch as torch
+from collections import namedtuple
 from spiketag.fpga import xike_config
 from torch.multiprocessing import Process, Pipe, SimpleQueue 
 from ..utils.utils import EventEmitter, Timer
@@ -13,13 +14,55 @@ from ..realtime import Binner
 
 
 class bmi_stream(object):
-    """docstring for bmi_stream"""
+    """
+    data structure used to read from FPGA bmi data stream
+    """
     def __init__(self, buf):
         super(bmi_stream, self).__init__()
         self.buf = buf
         self.output = struct.unpack('<8i', self.buf)        
         self.timestamp, self.grp_id, self.fet0, self.fet1, self.fet2, self.fet3, self.spk_id, self.spk_energy = self.output
 
+
+class bmi_packet(object):
+    '''
+    Data structure to read single bmi_packet from spike_df (pandas dataframe)
+    This class is used to simulate a bmi recording + decoding process, by replaying bmi packets from `a recorded spike data frame` to a Binner, which was used in real-time 
+    by connecting to a `on_decode` method. 
+
+    Example:
+        # ! 1. prepare spike_df
+        spkdf = pc.spike_df[(pc.spike_df.frame_id<=9) & (pc.spike_df.frame_id>0)]
+        bmi_data = bmi_packet(spkdf)
+        # ! 2. prepare a binner
+        binner = Binner(bin_size=0.1, n_id=scv_full.shape[1], n_bin=7)
+        # ! 3. prepare the on_decode method for binner
+        rt_scv = []
+        @binner.connect
+        def on_decode(X):
+            rt_scv.append(X)
+        # ! 4. simulate a bmi recording process
+        for bmi_output in bmi_data:
+            binner.input(bmi_output)
+    '''
+    def __init__(self, spike_df, fs=25000.):
+        self.timestamp = 0
+        self.spk_id = 0
+        self.fs = fs
+        self.spike_df = spike_df
+        self.bmi_output = namedtuple('bmi_output', ['timestamp', 'spk_id'])
+    
+    def __len__(self):
+        return len(self.spike_df)
+
+    def __getitem__(self, i):
+        spike = self.spike_df.iloc[i]
+        self.timestamp = spike.frame_id * self.fs
+        self.spk_id = spike.spike_id
+        return self.bmi_output(self.timestamp, self.spk_id)
+    
+    def __repr__(self) -> str:
+        return f'a bmi_packet containing {len(self.spike_df)} single-spike packets'
 
 class BMI(object):
     """
