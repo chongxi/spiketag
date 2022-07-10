@@ -5,7 +5,8 @@ from sklearn.metrics import r2_score
 from ..utils import plot_err_2d
 import copy
 import torch
-
+from torch import nn
+import torch.nn.functional as F
 
 def gaussian_inhibition_field(coord, size_x=32, size_y=32):
     '''
@@ -271,10 +272,10 @@ class NaiveBayes(Decoder):
     dec_pos  = smooth(predicted_y, 60)
     real_pos = test_y
     
-    score = dec.evaluate(dec_pos, real_pos)
+    score = dec.r2_score(real_pos, dec_pos)
 
     # optional (cost time):
-    # dec.plot_decoding_err(dec_pos, real_pos);
+    # dec.plot_decoding_err(real_pos, dec_pos);
 
     To get scv matrix to hack (check the size):
     -------------------------------------------------------------
@@ -398,3 +399,127 @@ class NaiveBayes(Decoder):
         self._disable_neuron_idx = _disable_neuron_idx
         if self._disable_neuron_idx is not None:
             self.neuron_idx = np.array([_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
+
+class Olayer(nn.Module):
+    def __init__(self, hidden_dim=[128,64]):
+        super(Olayer, self).__init__()
+        self.fc1l = nn.Linear(hidden_dim[0], hidden_dim[1])
+        self.fc1r = nn.Linear(hidden_dim[0], hidden_dim[1])
+        self.fc1m = nn.Linear(hidden_dim[0], hidden_dim[1])
+        
+    def forward(self, xp, freq=torch.pi):
+        xl = self.fc1l(xp)      # hidden_dim[0] -> hidden_dim[1]
+        xr = self.fc1r(xp)
+#         xm = self.fc1m(xp)
+        xg = torch.cos(freq*xl) + torch.cos(freq*xr) # *torch.cos(freq*xm)
+        return xg
+
+class SineDec(nn.Module):
+
+    def __init__(self, input_dim, hidden_dim=[128,64], output_dim=2):
+        super(SineDec, self).__init__()
+        self.encoder = nn.Linear(input_dim, hidden_dim[0])
+        self.bn1 = nn.BatchNorm1d(hidden_dim[0])
+        self.fc1  = nn.Linear(hidden_dim[0], hidden_dim[1])
+        self.fc1xm = nn.Linear(hidden_dim[0], hidden_dim[1])
+        self.fc2g = nn.Linear(hidden_dim[1], output_dim, bias=True)
+        self.fc2p = nn.Linear(hidden_dim[1], output_dim, bias=True)
+        self.fc2  = nn.Linear(hidden_dim[1], output_dim, bias=True)
+        self.sine = Sine()
+        self.olayer1 = Olayer(hidden_dim)
+        self.olayer2 = Olayer(hidden_dim)
+        self.olayer3 = Olayer(hidden_dim)
+        self.olayer4 = Olayer(hidden_dim)
+        self.olayer5 = Olayer(hidden_dim)
+        self.olayer6 = Olayer(hidden_dim)
+        self.olayer7 = Olayer(hidden_dim)
+        self.olayer8 = Olayer(hidden_dim)
+        self.dropout = nn.Dropout(0.3)
+        # alternative (not used yet)
+        self.lstm = nn.LSTM(hidden_dim[0], hidden_dim[0], batch_first=True)   #input: (batch, seq, feature)
+        self.ln1 = nn.LayerNorm(hidden_dim[0])
+        # speed related
+        self.fcx2v  = nn.Linear(hidden_dim[1], output_dim, bias=True)
+        self.v2x_lstm = nn.LSTM(output_dim, hidden_dim[1], bias=True)
+        self.ln2 = nn.LayerNorm(hidden_dim[1])
+        self.fcv2x = nn.Linear(output_dim, hidden_dim[1], bias=True)
+        
+    def forward(self, X):
+        x = self.encoder(X)  # input_dim -> hidden_dim[0]
+#         x = self.dropout(x)
+        x = self.bn1(x)      # 
+#         x = self.dropout(x)
+#         x = torch.sin(x)
+        x = self.fc1(x)    # to both place and speed prediction 
+        x, h = self.lstm(x.view(len(x), 1, -1))
+        x = self.ln1(x)
+        x.squeeze_()
+
+        xg = self.olayer1(x) + x
+        xv = self.olayer2(x) + x
+        
+        xv = self.olayer3(xv) + xv
+#         xv = F.relu(xv)
+#         xv = torch.sin(xv)/(xv+1e-15)
+        xv = self.dropout(xv)
+        v = self.fcx2v(xv)
+#         v2x, _ = self.v2x_lstm(v.view(len(v), 1, -1))
+#         v2x = self.ln2(v2x)
+#         v2x.squeeze_()
+#         xg = self.dropout(v2x) # heavy dropout for grid emergence
+#         xg = v2x
+        xg = self.olayer4(xg) + xg
+        xg = self.olayer5(xg) + xg
+        xg = self.olayer6(xg) + xg
+        xg = self.dropout(xg)
+        # prediction
+        y = self.fc2p(xg)      # hidden_dim[1] -> 2
+
+#         xg = self.olayer7(xg)
+#         xg = self.olayer8(xg)
+
+#         xp = self.fc2p(xp)
+        return x, xg, y, v
+
+class DeepOSC(Decoder):
+    """
+    DeepOSC Decoder for position prediction (input X, output y) 
+    where X is the spike bin matrix (T_step, N_neurons*B_bins) # ! this is different from naive bayes decoder 
+    where y is the 2D position (x,y)
+
+    Examples:
+    -------------------------------------------------------------
+    from spiketag.analysis import DeepOSC, smooth
+
+    dec = DeepOSC(t_window=250e-3, t_step=50e-3)
+    dec.connect_to(pc)
+
+    dec.partition(training_range=[0.0, .7], valid_range=[0.5, 0.6], testing_range=[0.6, 1.0], 
+                  low_speed_cutoff={'training': True, 'testing': True})
+    (train_X, train_y), (valid_X, valid_y), (test_X, test_y) = dec.get_data(minimum_spikes=0)
+    dec.fit(train_X, train_y)
+
+    predicted_y = dec.predict(test_X)
+    dec_pos  = smooth(predicted_y, 60)
+    real_pos = test_y
+    
+    score = dec.r2_score(real_pos, dec_pos)
+
+    # optional (cost time):
+    # dec.plot_decoding_err(real_pos, dec_pos);
+
+    To get scv matrix to hack (check the size):
+    -------------------------------------------------------------
+    _scv = dec.pc.scv
+    _scv = dec.pc.scv[dec.train_idx]
+    _scv = dec.pc.scv[dec.test_idx]
+    _y = dec.predict(_scv)
+    post2d = dec.post_2d
+
+    Test real-time prediction:
+    -------------------------------------------------------------
+    _y = dec.predict_rt(_scv[8])
+    """
+
+    # TODO 
+    pass
