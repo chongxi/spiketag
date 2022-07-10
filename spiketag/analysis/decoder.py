@@ -62,6 +62,7 @@ def load_decoder(filename):
     print(f'decoder uses {dec.fields.shape[0]} neurons, R2 score: {score}')
     return dec
 
+
 class Decoder(object):
     """Base class for the decoders for place prediction"""
     def __init__(self, t_window, t_step=None, verbose=True):
@@ -102,6 +103,12 @@ class Decoder(object):
             print('Link the decoder with the place cell object (pc):\r\n resample the pc according to current decoder input sampling rate {0:.4f} Hz'.format(1/self.t_step))
             self.pc(t_step=self.t_step)
 
+    def drop_neuron(self, _disable_neuron_idx):
+        if type(_disable_neuron_idx) == int:
+            _disable_neuron_idx = [_disable_neuron_idx]
+        self._disable_neuron_idx = _disable_neuron_idx
+        if self._disable_neuron_idx is not None:
+            self.neuron_idx = np.array([_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
 
     def resample(self, t_step=None, t_window=None):
         if t_window is None:
@@ -114,7 +121,6 @@ class Decoder(object):
             self.t_step   = t_step
             self.connect_to(self.pc)
 
-
     def _percent_to_time(self, percent):
         len_frame = len(self.pc.ts)
         totime = int(np.round((percent * len_frame)))
@@ -123,7 +129,6 @@ class Decoder(object):
         elif totime > len_frame - 1:
             totime = len_frame - 1
         return totime
-
 
     def partition(self, training_range=[0.0, 0.5], valid_range=[0.5, 0.6], testing_range=[0.5, 1.0],
                         low_speed_cutoff={'training': True, 'testing': False}, v_cutoff=None):
@@ -395,12 +400,6 @@ class NaiveBayes(Decoder):
         y = self.rt_pred_binned_pos*self.spatial_bin_size + self.spatial_origin
         return y, self.rt_post_2d
 
-    def drop_neuron(self, _disable_neuron_idx):
-        if type(_disable_neuron_idx) == int:
-            _disable_neuron_idx = [_disable_neuron_idx]
-        self._disable_neuron_idx = _disable_neuron_idx
-        if self._disable_neuron_idx is not None:
-            self.neuron_idx = np.array([_ for _ in range(self.fields.shape[0]) if _ not in self._disable_neuron_idx])
 
 class Olayer(nn.Module):
     def __init__(self, hidden_dim=[128,64]):
