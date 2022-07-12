@@ -1,6 +1,7 @@
 from sklearn.covariance import log_likelihood
 from .core import softmax, licomb_Matrix, bayesian_decoding, argmax_2d_tensor, smooth
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
 from ..utils import plot_err_2d
 from ..analysis import sliding_window_to_feature, FA
@@ -417,27 +418,30 @@ class Olayer(nn.Module):
 
 class SineDec(nn.Module):
 
-    def __init__(self, input_dim, hidden_dim=[128,64], output_dim=2):
+    def __init__(self, input_dim, hidden_dim=[128,64], output_dim=2, LSTM=True):
         super(SineDec, self).__init__()
+        self.LSTM = LSTM
         self.encoder = nn.Linear(input_dim, hidden_dim[0])
+        self.ln1 = nn.LayerNorm(hidden_dim[0])
         self.bn1 = nn.BatchNorm1d(hidden_dim[0])
         self.fc1  = nn.Linear(hidden_dim[0], hidden_dim[1])
         self.fc1xm = nn.Linear(hidden_dim[0], hidden_dim[1])
         self.fc2g = nn.Linear(hidden_dim[1], output_dim, bias=True)
         self.fc2p = nn.Linear(hidden_dim[1], output_dim, bias=True)
         self.fc2  = nn.Linear(hidden_dim[1], output_dim, bias=True)
-        self.olayer1 = Olayer(hidden_dim)
-        self.olayer2 = Olayer(hidden_dim)
-        self.olayer3 = Olayer(hidden_dim)
-        self.olayer4 = Olayer(hidden_dim)
-        self.olayer5 = Olayer(hidden_dim)
-        self.olayer6 = Olayer(hidden_dim)
-        self.olayer7 = Olayer(hidden_dim)
-        self.olayer8 = Olayer(hidden_dim)
+        # self.olayer1 = Olayer(hidden_dim)
+        # self.olayer2 = Olayer(hidden_dim)
+        # self.olayer3 = Olayer(hidden_dim)
+        # self.olayer4 = Olayer(hidden_dim)
+        # self.olayer5 = Olayer(hidden_dim)
+        # self.olayer6 = Olayer(hidden_dim)
+        # self.olayer7 = Olayer(hidden_dim)
+        # self.olayer8 = Olayer(hidden_dim)
+        self.olayer = nn.ModuleList([Olayer(hidden_dim) for i in range(11)])
         self.dropout = nn.Dropout(0.3)
         # alternative (not used yet)
         self.lstm = nn.LSTM(hidden_dim[0], hidden_dim[0], batch_first=True)   #input: (batch, seq, feature)
-        self.ln1 = nn.LayerNorm(hidden_dim[0])
+        self.ln_lstm = nn.LayerNorm(hidden_dim[0])
         # speed related
         self.fcx2v  = nn.Linear(hidden_dim[1], output_dim, bias=True)
         self.v2x_lstm = nn.LSTM(output_dim, hidden_dim[1], bias=True)
@@ -446,19 +450,23 @@ class SineDec(nn.Module):
         
     def forward(self, X):
         x = self.encoder(X)  # input_dim -> hidden_dim[0]
+        # x = self.ln1(x)
 #         x = self.dropout(x)
-        x = self.bn1(x)      # 
-#         x = self.dropout(x)
+        # x = self.bn1(x)      # 
+        # x = self.dropout(x)
 #         x = torch.sin(x)
-        x = self.fc1(x)    # to both place and speed prediction 
-        x, h = self.lstm(x.view(len(x), 1, -1))
-        x = self.ln1(x)
-        x.squeeze_()
+        # x = self.fc1(x)    # to both place and speed prediction 
+        x = F.softmax(F.relu(torch.sin(x) + torch.sin(self.fc1(x))))*x
 
-        xg = self.olayer1(x) + x
-        xv = self.olayer2(x) + x
+        if self.LSTM:
+            x, h = self.lstm(x.view(len(x), 1, -1))
+            x = self.ln_lstm(x)
+            x.squeeze_()
+
+        xg = self.olayer[0](x) + x
+        xv = self.olayer[1](x) + x
         
-        xv = self.olayer3(xv) + xv
+        xv = self.olayer[2](xv) + xv
 #         xv = F.relu(xv)
 #         xv = torch.sin(xv)/(xv+1e-15)
         xv = self.dropout(xv)
@@ -468,9 +476,14 @@ class SineDec(nn.Module):
 #         v2x.squeeze_()
 #         xg = self.dropout(v2x) # heavy dropout for grid emergence
 #         xg = v2x
-        xg = self.olayer4(xg) + xg
-        xg = self.olayer5(xg) + xg
-        xg = self.olayer6(xg) + xg
+        xg = self.olayer[3](xg) + xg
+        xg = self.olayer[4](xg) + xg
+        xg = self.olayer[5](xg) + xg
+        xg = self.olayer[6](xg) + xg
+        # xg = self.olayer[7](xg) + xg
+        # xg = self.olayer[8](xg) + xg
+        # xg = self.olayer[9](xg) + xg
+        # xg = self.olayer[10](xg) + xg
         xg = self.dropout(xg)
         # prediction
         y = self.fc2p(xg)      # hidden_dim[1] -> 2
@@ -533,10 +546,17 @@ class DeepOSC(Decoder):
     # TODO 
     pass
 
-    def __init__(self, t_window, t_step, hidden_dim=[128,128]):
+    def __init__(self, input_dim, hidden_dim=[128, 128], output_dim=2, LSTM=False, t_window=3, t_step=0.1):
         super(DeepOSC, self).__init__(t_window, t_step)
-        self.ncells = self.neuron_idx.shape[0] * self.B_bins
-        self.model = SineDec(self.ncells, hidden_dim=hidden_dim)
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.output_dim = output_dim
+        self.model = SineDec(input_dim=self.input_dim, 
+                             hidden_dim=self.hidden_dim, 
+                             output_dim=self.output_dim, 
+                             LSTM=LSTM)
+        self.test_r2 = []
+        self.losses = []
 
     def unroll(self, scv, n):
         '''
@@ -544,20 +564,116 @@ class DeepOSC(Decoder):
         '''
         pass
 
-    def fit(self, X=None, y=None, early_stop_r2=0.75, lr=3e-4, weight_decay=0.01, cuda=True):
+    def fit(self, X, y, X_test, y_test, max_epoch=5000, smooth_factor=60, max_noise=1, 
+                                        early_stop_r2=0.82, lr=3e-4, weight_decay=0.01, cuda=True):
         '''
         training the deep neural network, using GPU if `cuda` == True
         '''
         # optmizer
-        optimizer = torch.optim.Adam(
-            self.model.parameters(), lr=3e-4, betas=(0.9, 0.999), weight_decay=0.01)
+        self.optimizer = torch.optim.Adam(
+            self.model.parameters(), lr=3e-4, betas=(0.9, 0.999), weight_decay=weight_decay)
+        
+        if type(X) == np.ndarray:
+            X = torch.from_numpy(X).float()
+        if type(y) == np.ndarray:
+            y = torch.from_numpy(y).float()
+        if type(X_test) == np.ndarray:
+            X_test = torch.from_numpy(X_test).float()
+        if type(y_test) == np.ndarray:
+            y_test = torch.from_numpy(y_test).float()
+
+        if cuda:
+            X = X.cuda()
+            y = y.cuda()
+            X_test = X_test.cuda()
+            y_test = y_test.cuda()
+            self.model.cuda();
+
+        for epoch in range(max_epoch):
+            self.model.train()
+            self.optimizer.zero_grad()
+            gain = 1 + 0.1*torch.randn(1, device='cuda')
+            std = 0.05 + np.abs(np.sin(epoch/500*3.14)) * max_noise
+            # gausian noise with sqrt spike count
+        #     noise_X = spike_noise_gaussian(X, noise_level=0,
+        #                                   mean=0, std=std, gain=gain,
+        #                                   IID=True, cuda=True)
+            # bernoulli noise with spike count
+            noise_X = spike_noise_bernoulli(
+                X, noise_level=std, p=0.5, gain=gain, cuda=True, IID=True)
+            h, grid, _y, _v = self.model(noise_X)
+            now_location = (y+0.5*torch.rand_like(y, device='cuda')) * 1.1
+            loss = F.mse_loss(now_location, _y)
+        #         loss = F.mse_loss(y[:-1] + _v[:-1], y[1:]) * 5
+        #     loss += F.mse_loss(y[:-1] + _v[:-1], y[1:])
+        #     loss += F.mse_loss(_v, v)
+        #     loss_g = F.mse_loss(now_location, h)
+            norm_val = torch.norm(grid, p=1, dim=1).sum() * 1e-5 + \
+                torch.norm(grid, p=1, dim=0).sum() * 1e-5
+            norm_h = torch.norm(h, p=1) * 1e-5
+            loss = loss + norm_val  # norm_h # + norm_val # + loss_g # + norm_val # + norm_h
+        #     grid = nn.Dropout(0.6)(grid)
+        #     grid_pos = self.model.fc2(grid)
+        #     grid_pos_loss = F.mse_loss(grid_pos, now_location)
+        #     loss += grid_pos_loss
+
+            loss.backward()
+            self.optimizer.step()
+        #     lrtim.step()
+            if epoch > 1000:
+                self.set_learning_rate(3e-4)
+            if epoch > 2000:
+                self.set_learning_rate(3e-5)
+
+            if epoch % 10 == 0:
+                with torch.inference_mode():
+                    _yo = self.predict(X_test)
+                dec_y = smooth(_yo, smooth_factor)
+                r2_p = r2_score(y_test.cpu().numpy(), dec_y)
+                self.test_r2.append(r2_p)
+                self.losses.append(loss.item())
+                print(f'[{epoch}] loss: {loss.item():.3f}, test r2: {r2_p:.3f}, std:{std:.3f}, norm_h:{norm_h:.3f}, norm_output:{norm_val:.3f}', end='\r')
 
     def set_learning_rate(self, lr):
-        for g in self.optim.param_groups:
+        for g in self.optimizer.param_groups:
             g['lr'] = lr
 
-    def predict(self, X):
-        pass
+    def plot_loss(self):
+        fig, ax1 = plt.subplots(figsize=(8,5))
+        color = 'C0'
+        ax1.set_xlabel('epoch')
+        ax1.set_ylabel('test R2', color=color)
+        ax1.plot(np.arange(len(self.test_r2))*10, self.test_r2, color=color)
+        ax1.tick_params(axis='y', labelcolor=color)
 
-    def predict_rt(self, X):
-        pass
+        ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+        color = 'C1'
+        ax2.set_ylabel('training losses', color=color)  # we already handled the x-label with ax1
+        ax2.plot(np.arange(len(self.losses))*10, self.losses, color=color)
+        ax2.tick_params(axis='y', labelcolor=color)
+
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        return fig
+
+    def predict(self, X, cuda=True, mode='eval', bn_momentum=0.1):
+        if type(X) == np.ndarray:
+            X = torch.from_numpy(X).float()
+        if X.ndim == 1:
+            X = X.view(1,-1)
+        if cuda:
+            X = X.cuda()
+        if mode=='eval':
+            self.model.eval()
+        else:
+            self.model.train()
+        self.model.bn1.momentum = bn_momentum
+
+        with torch.inference_mode():
+            _, _, _yo, _vo = self.model(X)
+            _yo = _yo.cpu().detach().numpy()
+            # _vo = _vo.cpu().detach().numpy()
+        return _yo
+
+    def predict_rt(self, X, cuda=True, mode='eval', bn_momentum=0.1):
+        y = self.predict(X, cuda, mode, bn_momentum)
+        return y
