@@ -222,7 +222,8 @@ class controller(object):
 
     @property
     def unit_ready(self):
-        return self.model.fet.nclus.sum()
+        nclus = self.model.fet.nclus - 1 # exclude the zero cluster (noisy)
+        return nclus.sum()
 
     @property
     def selected_spk_times(self):
@@ -239,8 +240,10 @@ class controller(object):
     def get_spk_times(self, group_id=-1, cluster_id=1):
         if group_id==-1:
             group_id = self.current_group
-        idx = self.model.clu[group_id][cluster_id]
-        spk_times = self.model.gtimes[group_id][idx]/float(self.model.mua.fs)
+        # idx = self.model.clu[group_id][cluster_id]
+        # spk_times = self.model.gtimes[group_id][idx]/float(self.model.mua.fs)
+        idx = self.model.spk.fet.clu[group_id].index[cluster_id]
+        spk_times = self.model.spk.spk_time_dict[group_id][idx]/self.model.mua.fs
         return spk_times
 
 
