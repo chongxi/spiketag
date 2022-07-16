@@ -418,12 +418,14 @@ class Olayer(nn.Module):
 
 class SineDec(nn.Module):
 
-    def __init__(self, input_dim, hidden_dim=[128,64], output_dim=2, LSTM=True):
+    def __init__(self, input_dim, hidden_dim=[128,64], output_dim=2, bn=False, LSTM=True):
         super(SineDec, self).__init__()
         self.LSTM = LSTM
+        self.bn = bn
         self.encoder = nn.Linear(input_dim, hidden_dim[0])
         self.ln1 = nn.LayerNorm(hidden_dim[0])
         self.bn1 = nn.BatchNorm1d(hidden_dim[0])
+        # self.bn1 = nn.InstanceNorm1d(hidden_dim[0])
         self.fc1  = nn.Linear(hidden_dim[0], hidden_dim[1])
         self.fc1xm = nn.Linear(hidden_dim[0], hidden_dim[1])
         self.fc2g = nn.Linear(hidden_dim[1], output_dim, bias=True)
@@ -438,7 +440,7 @@ class SineDec(nn.Module):
         # self.olayer7 = Olayer(hidden_dim)
         # self.olayer8 = Olayer(hidden_dim)
         self.olayer = nn.ModuleList([Olayer(hidden_dim) for i in range(11)])
-        self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(0.1)
         # alternative (not used yet)
         self.lstm = nn.LSTM(hidden_dim[0], hidden_dim[0], batch_first=True)   #input: (batch, seq, feature)
         self.ln_lstm = nn.LayerNorm(hidden_dim[0])
@@ -451,12 +453,17 @@ class SineDec(nn.Module):
     def forward(self, X):
         x = self.encoder(X)  # input_dim -> hidden_dim[0]
         # x = self.ln1(x)
-#         x = self.dropout(x)
-        # x = self.bn1(x)      # 
+        if self.bn:
+            x = self.bn1(x)      # 
+
+        x = self.dropout(x)
+
         # x = self.dropout(x)
 #         x = torch.sin(x)
         # x = self.fc1(x)    # to both place and speed prediction 
-        x = F.softmax(F.relu(torch.sin(x) + torch.sin(self.fc1(x))))*x
+        x = F.softmax(F.relu(torch.sin(x) + torch.sin(self.fc1(x)))) * x
+        # x = F.softmax(F.relu(self.fc1(x))) * x
+
 
         if self.LSTM:
             x, h = self.lstm(x.view(len(x), 1, -1))
@@ -484,7 +491,7 @@ class SineDec(nn.Module):
         # xg = self.olayer[8](xg) + xg
         # xg = self.olayer[9](xg) + xg
         # xg = self.olayer[10](xg) + xg
-        xg = self.dropout(xg)
+        # xg = self.dropout(xg)
         # prediction
         y = self.fc2p(xg)      # hidden_dim[1] -> 2
 
@@ -546,7 +553,7 @@ class DeepOSC(Decoder):
     # TODO 
     pass
 
-    def __init__(self, input_dim, hidden_dim=[128, 128], output_dim=2, LSTM=False, t_window=3, t_step=0.1):
+    def __init__(self, input_dim, hidden_dim=[128, 128], output_dim=2, bn=False, LSTM=False, t_window=3, t_step=0.1):
         super(DeepOSC, self).__init__(t_window, t_step)
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
@@ -554,6 +561,7 @@ class DeepOSC(Decoder):
         self.model = SineDec(input_dim=self.input_dim, 
                              hidden_dim=self.hidden_dim, 
                              output_dim=self.output_dim, 
+                             bn=bn,
                              LSTM=LSTM)
         self.test_r2 = []
         self.losses = []
@@ -571,7 +579,8 @@ class DeepOSC(Decoder):
         '''
         # optmizer
         self.optimizer = torch.optim.Adam(
-            self.model.parameters(), lr=3e-4, betas=(0.9, 0.999), weight_decay=weight_decay)
+            self.model.parameters(), lr=lr, betas=(0.9, 0.999), weight_decay=weight_decay)
+        # self.optimizer = torch.optim.RMSprop(self.model.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay)
         
         if type(X) == np.ndarray:
             X = torch.from_numpy(X).float()
@@ -602,15 +611,15 @@ class DeepOSC(Decoder):
             noise_X = spike_noise_bernoulli(
                 X, noise_level=std, p=0.5, gain=gain, cuda=True, IID=True)
             h, grid, _y, _v = self.model(noise_X)
-            now_location = (y+0.5*torch.rand_like(y, device='cuda')) * 1.1
-            loss = F.mse_loss(now_location, _y)
+            now_location = (y + 0.5*torch.rand_like(y, device='cuda')) 
+            loss = F.mse_loss(now_location, _y) 
         #         loss = F.mse_loss(y[:-1] + _v[:-1], y[1:]) * 5
         #     loss += F.mse_loss(y[:-1] + _v[:-1], y[1:])
         #     loss += F.mse_loss(_v, v)
         #     loss_g = F.mse_loss(now_location, h)
-            norm_val = torch.norm(grid, p=1, dim=1).sum() * 1e-5 + \
-                torch.norm(grid, p=1, dim=0).sum() * 1e-5
-            norm_h = torch.norm(h, p=1) * 1e-5
+            norm_val = torch.norm(grid, p=1, dim=1).sum() * 1e-6 + \
+                       torch.norm(grid, p=1, dim=0).sum() * 1e-6
+            norm_h = torch.norm(h, p=1) * 1e-6
             loss = loss + norm_val  # norm_h # + norm_val # + loss_g # + norm_val # + norm_h
         #     grid = nn.Dropout(0.6)(grid)
         #     grid_pos = self.model.fc2(grid)
@@ -621,9 +630,9 @@ class DeepOSC(Decoder):
             self.optimizer.step()
         #     lrtim.step()
             if epoch > 1000:
-                self.set_learning_rate(3e-4)
+                self.set_learning_rate(lr/4)
             if epoch > 2000:
-                self.set_learning_rate(3e-5)
+                self.set_learning_rate(lr/8)
 
             if epoch % 10 == 0:
                 with torch.inference_mode():
@@ -664,7 +673,7 @@ class DeepOSC(Decoder):
             X = X.cuda()
         if mode=='eval':
             self.model.eval()
-        else:
+        elif mode=='train':
             self.model.train()
         self.model.bn1.momentum = bn_momentum
 
@@ -672,8 +681,8 @@ class DeepOSC(Decoder):
             _, _, _yo, _vo = self.model(X)
             _yo = _yo.cpu().detach().numpy()
             # _vo = _vo.cpu().detach().numpy()
-        return _yo
+        return np.nan_to_num(_yo)
 
-    def predict_rt(self, X, cuda=True, mode='eval', bn_momentum=0.1):
+    def predict_rt(self, X, cuda=True, mode='train', bn_momentum=0.1):
         y = self.predict(X, cuda, mode, bn_momentum)
         return y
