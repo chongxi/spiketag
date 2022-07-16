@@ -250,6 +250,42 @@ class SPK():
         if self._spike_energy is None:
             self.calculate_spike_energy()
         return self._spike_energy
+
+    def get_spk_times(self, grp_id, clu_id, fs=25000.0):
+        '''
+        Get spike times of specific electrode group and specific cluster
+        Input: 
+            - grp_id: group id
+            - clu_id: cluster id
+
+        Output:
+            - spk_times: an array of spike times (s) of the cluster
+        '''
+        spk_times = self.spk_time_dict[grp_id][self.fet.clu[grp_id][clu_id]]/fs
+        return spk_times
+
+    def get_spk_times_all(self, fs=25000.0):
+        '''
+        Get spike times of all electrode groups (that contains >1 clusters) and all cluster
+        Input: 
+            - grp_id: group id
+            - clu_id: cluster id
+
+        Output:
+            - spk_times_all: an dictionary {group_id: {clu_id: spk_times}}
+            each spk_times is an array of spike times (s) of the cluster
+        '''
+        spk_times_all = {}
+        groups_has_nonzero_cluster = np.where(self.fet.nclus>0)[0]
+        for grp_id in groups_has_nonzero_cluster:
+            spk_times_all[grp_id] = {}
+            for clu_id in range(self.fet.nclus[grp_id]):
+                spk_times_all[grp_id][clu_id] = self.get_spk_times(grp_id, clu_id, fs)
+        return spk_times_all
+
+    @property
+    def nclus(self):
+        return self.fet.nclus
         
     def tofet(self, group_id=None, method='pca', ncomp=4, whiten=False):
         fet = {}
