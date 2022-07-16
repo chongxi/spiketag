@@ -187,7 +187,7 @@ class FET(object):
         for i in self.group:
             n = self.clu[i].nclu
             self._nclus.append(n)
-        self._nclus = np.array(self._nclus) - 1
+        self._nclus = np.array(self._nclus)
         return self._nclus
 
     def assign_clu_global_labels(self):
