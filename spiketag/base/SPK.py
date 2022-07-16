@@ -167,7 +167,36 @@ class SPK():
         nspk = 0
         for i in self.groups:
             nspk += self.spk[i].shape[0]
+        # assert(nspk == sum(list(self.nspks_per_grp.values())))
         return nspk
+
+    @property
+    def nspks_per_grp(self):
+        '''
+        {grp0: nspks_grp0, grp1: nspks_grp1, ...}
+        '''
+        self._nspks_per_grp = {}
+        for grp_id, clu in self.fet.clu.items():
+        #     print(grp_id, clu.nclu, clu.nspks_per_clu)
+            if grp_id in self.groups:
+                self._nspks_per_grp[grp_id] = clu.membership.shape[0]
+        return self._nspks_per_grp
+
+    @property
+    def nspks_per_clu(self):
+        '''
+        {grp_id: [nspks_clu0, nspks_clu1, nspks_clu2, ...]}
+        '''
+        self._nspks_per_clu = {}
+        for grp_id, clu in self.fet.clu.items():
+        #     print(grp_id, clu.nclu, clu.nspks_per_clu)
+            if grp_id in self.groups:
+                self._nspks_per_clu[grp_id] = clu.nspks_per_clu
+        return self._nspks_per_clu
+
+    @property
+    def nclus(self):
+        return self.fet.nclus
 
     def weight_channel_saw(self, chlist, a=None, p=None):
         n = len(chlist)
@@ -282,10 +311,6 @@ class SPK():
             for clu_id in range(self.fet.nclus[grp_id]):
                 spk_times_all[grp_id][clu_id] = self.get_spk_times(grp_id, clu_id, fs)
         return spk_times_all
-
-    @property
-    def nclus(self):
-        return self.fet.nclus
         
     def tofet(self, group_id=None, method='pca', ncomp=4, whiten=False):
         fet = {}

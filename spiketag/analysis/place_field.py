@@ -123,6 +123,10 @@ class place_field(Dataset):
         return self.ts[1] - self.ts[0]
 
     @property
+    def t_total(self):
+        return self.ts[-1] - self.ts[0]
+
+    @property
     def fs(self):
         self._fs = 1/(self.ts[1]-self.ts[0])
         return self._fs
@@ -722,12 +726,14 @@ class place_field(Dataset):
         '''
         self.metric = {}
         self.metric['peak_rate'] = np.zeros((self.n_fields,))
+        self.metric['avg_rate']  = np.zeros((self.n_fields,))
         self.metric['spatial_bit_spike'] = np.zeros((self.n_fields,))
         self.metric['spatial_bit_smoothed_spike'] = np.zeros((self.n_fields,))
         self.metric['spatial_sparcity'] = np.zeros((self.n_fields,))
 
         for neuron_id in range(self.fields.shape[0]):
             self.metric['peak_rate'][neuron_id] = self.fields[neuron_id].max()
+            self.metric['avg_rate'][neuron_id]  = self.firing_pos_dict[neuron_id].shape[0]/self.t_total
             self.metric['spatial_bit_spike'][neuron_id] = info_bits(self.fields[neuron_id], self.P) 
             self.metric['spatial_bit_smoothed_spike'][neuron_id] = info_bits(self.fields[neuron_id], self.P)
             self.metric['spatial_sparcity'][neuron_id] = info_sparcity(self.fields[neuron_id], self.P)
