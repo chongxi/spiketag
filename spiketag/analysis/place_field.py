@@ -919,7 +919,10 @@ class place_field(Dataset):
         df_all_in_one = pd.concat([self.pos_df, self.spike_df], sort=True)
         df_all_in_one.to_pickle(filename+'.pd')
 
-    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=2, first_unit_is_noise=True, peak_rate=0.1, firing_rate_modulation=True, verbose=False, **kwargs):
+    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=2, 
+                     first_unit_is_noise=True, 
+                     min_bit=0.1, min_peak_rate=0.6, firing_rate_modulation=True, 
+                     verbose=False, **kwargs):
         '''
         kwargs example:
         - training_range: [0, 0.5]
@@ -941,14 +944,16 @@ class place_field(Dataset):
                           testing_range=testing_range,
                           low_speed_cutoff=low_speed_cutoff)
             dec.verbose = verbose
-            drop_idx = np.where(dec.pc.metric['peak_rate'] < peak_rate)[0]
+            cond = (self.metric['spatial_bit_spike'] >= min_bit) & (self.metric['peak_rate'] >= min_peak_rate)
+            self.drop_idx = (cond==0).nonzero()[0]
             if first_unit_is_noise:
-                dec.drop_neuron(np.append(0, drop_idx))   # drop the neuron with id 0 which is noise with those fire at super low frequency
+                self.drop_idx = np.append(0, self.drop_idx)
+                dec.drop_neuron(self.drop_idx)   # drop the neuron with id 0 which is noise with those fire at super low frequency
             else:
                 dec.drop_neuron([0])
             score = dec.score(t_smooth=t_smooth, firing_rate_modulation=firing_rate_modulation)
             return dec, score
 
-        if type == 'LSTM':
+        if type == 'NN':
             # TODO
             pass
