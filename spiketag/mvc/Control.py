@@ -44,11 +44,10 @@ class controller(object):
     To download a spike-based stimulation trigger:
     >> ctrl.fpga.target_unit = 77 # neuron with label 77 generate TTL spike train for optogenetics/other transcient stimulation 
     '''
-    def __init__(self, fpga=False, *args, **kwargs):
+    def __init__(self, view=True, fpga=False, *args, **kwargs):
 
         self.model = MainModel(*args, **kwargs)
         self.prb   = self.model.probe
-        self.view  = MainView(prb=self.prb, model=self.model)
         self.current_group = 0
 
         # place fields
@@ -65,7 +64,6 @@ class controller(object):
         self.vq['scores'] = {}
         self._vq_npts = 500  # size of codebook to download to FPGA, there are many codebooks
 
-
         if fpga is True:
             # initialize FPGA channel grouping
             # both ch_hash and ch_grpNo are configured
@@ -74,106 +72,108 @@ class controller(object):
         else:
             self.fpga = None
             
+        if view is True:
+            self.view  = MainView(prb=self.prb, model=self.model)
+
+            @self.view.prb.connect
+            def on_select(group_id, chs):
+                # print(group_id, chs)
+                self.current_group = group_id
+                nspks = self.model.gtimes[self.current_group].shape[0]
+                self.view.status_bar.setStyleSheet("color:red")
+                self.view.status_bar.showMessage('loading group {}:{}. It contains {} spikes'.format(group_id, chs, nspks))
+                self.show(group_id)
+                self.view.status_bar.setStyleSheet("color:black")
+                self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, chs, nspks))
+                self.view.setWindowTitle("Spiketag: {} units".format(self.unit_done)) 
+
+
+            @self.view.clu_view.clu_manager.connect
+            def on_vq2fpga():
+                self.build_vq(self.current_group, fpga=True)
+
+            @self.view.clu_view.clu_manager.connect
+            def on_select(group_id):
+                self.view.prb_view.select(group_id)
+
+            @self.view.clu_view.clu_manager.connect
+            def on_backend(method, **params):
+                self.recluster(method=method, **params)
+
+            @self.view.spkview.event.connect
+            def on_show(content):
+                if content == 'ephys_full':
+                    if self.clu.selectlist.shape[0] == 1:
+                        _time = self.model.gtimes[self.current_group][self.clu.selectlist[0]]/self.prb.fs
+                        _span = 0.1
+                        self.model.mua.show(self.prb.chs, span=_span, time=_time)
+                        # _highlight_point = int(_span*self.prb.fs)
+                        # #  chs, timelist, colorlist=None, mask_others=False
+                        # _cluNo = self.clu.membership[self.clu.selectlist][0]
+                        # _highlight_color = np.array(self.view.spkview.palette[_cluNo])
+                        # _highlight_color = np.append(_highlight_color, 1)
+                        # self.model.mua.wview.highlight(chs=self.prb[self.current_group], 
+                        #                                timelist=[[_highlight_point-10, _highlight_point+15]],
+                        #                                colorlist=_highlight_color, mask_others=True)
+
+
+            @self.view.spkview.event.connect
+            def on_magnet(sink_id, source_id, k):
+                # print('sink_id {}, k {}'.format(sink_id, k))
+                self.transfer(sink_id, source_id, k)
+
+            @self.view.spkview.event.connect
+            def on_trim(source_id, k):
+                self.trim(source_id, k)
+                
+            @self.view.spkview.event.connect
+            def on_dismiss(source_id):
+                self.dismiss(source_id)
             
-        @self.view.prb.connect
-        def on_select(group_id, chs):
-            # print(group_id, chs)
-            self.current_group = group_id
-            nspks = self.model.gtimes[self.current_group].shape[0]
-            self.view.status_bar.setStyleSheet("color:red")
-            self.view.status_bar.showMessage('loading group {}:{}. It contains {} spikes'.format(group_id, chs, nspks))
-            self.show(group_id)
-            self.view.status_bar.setStyleSheet("color:black")
-            self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, chs, nspks))
-            self.view.setWindowTitle("Spiketag: {} units".format(self.unit_done)) 
+            @self.view.spkview.event.connect
+            def on_build_vq():
+                self.build_vq()
 
+            @self.view.spkview.event.connect
+            def on_reorder():
+                self.field_reorder()
 
-        @self.view.clu_view.clu_manager.connect
-        def on_vq2fpga():
-            self.build_vq(self.current_group, fpga=True)
+            @self.view.spkview.event.connect
+            def on_clip(idx):
+                idx = np.array(idx)
+                print('delete {} spikes'.format(idx.shape))
+                self.delete_spk(spk_idx=idx)
+                self.update_view()
 
-        @self.view.clu_view.clu_manager.connect
-        def on_select(group_id):
-            self.view.prb_view.select(group_id)
+            @self.view.spkview.event.connect
+            def on_recluster(method, **params):
+                self.recluster(method=method, **params)
 
-        @self.view.clu_view.clu_manager.connect
-        def on_backend(method, **params):
-            self.recluster(method=method, **params)
+            @self.view.spkview.event.connect
+            def on_refine(method, args):
+                self.refine(method, args)
 
-        @self.view.spkview.event.connect
-        def on_show(content):
-            if content == 'ephys_full':
-                if self.clu.selectlist.shape[0] == 1:
-                    _time = self.model.gtimes[self.current_group][self.clu.selectlist[0]]/self.prb.fs
-                    _span = 0.1
-                    self.model.mua.show(self.prb.chs, span=_span, time=_time)
-                    # _highlight_point = int(_span*self.prb.fs)
-                    # #  chs, timelist, colorlist=None, mask_others=False
-                    # _cluNo = self.clu.membership[self.clu.selectlist][0]
-                    # _highlight_color = np.array(self.view.spkview.palette[_cluNo])
-                    # _highlight_color = np.append(_highlight_color, 1)
-                    # self.model.mua.wview.highlight(chs=self.prb[self.current_group], 
-                    #                                timelist=[[_highlight_point-10, _highlight_point+15]],
-                    #                                colorlist=_highlight_color, mask_others=True)
+            @self.view.ampview.event.connect
+            def on_refine(method, args):
+                self.refine(method, args)
 
+            @self.view.ampview.event.connect
+            def on_clip(thres):
+                idx = np.where(self.model.spk[self.current_group][:,8,:].min(axis=1)>thres)[0]
+                print('delete {} spikes'.format(idx.shape))
+                self.delete_spk(spk_idx=idx)
 
-        @self.view.spkview.event.connect
-        def on_magnet(sink_id, source_id, k):
-            # print('sink_id {}, k {}'.format(sink_id, k))
-            self.transfer(sink_id, source_id, k)
-
-        @self.view.spkview.event.connect
-        def on_trim(source_id, k):
-            self.trim(source_id, k)
-            
-        @self.view.spkview.event.connect
-        def on_dismiss(source_id):
-            self.dismiss(source_id)
-        
-        @self.view.spkview.event.connect
-        def on_build_vq():
-            self.build_vq()
-
-        @self.view.spkview.event.connect
-        def on_reorder():
-            self.field_reorder()
-
-        @self.view.spkview.event.connect
-        def on_clip(idx):
-            idx = np.array(idx)
-            print('delete {} spikes'.format(idx.shape))
-            self.delete_spk(spk_idx=idx)
-            self.update_view()
-
-        @self.view.spkview.event.connect
-        def on_recluster(method, **params):
-            self.recluster(method=method, **params)
-
-        @self.view.spkview.event.connect
-        def on_refine(method, args):
-            self.refine(method, args)
-
-        @self.view.ampview.event.connect
-        def on_refine(method, args):
-            self.refine(method, args)
-
-        @self.view.ampview.event.connect
-        def on_clip(thres):
-            idx = np.where(self.model.spk[self.current_group][:,8,:].min(axis=1)>thres)[0]
-            print('delete {} spikes'.format(idx.shape))
-            self.delete_spk(spk_idx=idx)
-
-        @self.view.traceview.event.connect
-        def on_view_trace():
-            if self.current_group>min(self.prb.grp_dict.keys()) and self.current_group<max(self.prb.grp_dict.keys()):
-                vchs = np.hstack((self.prb[self.current_group-1], self.prb[self.current_group], self.prb[self.current_group+1]))
-            elif self.current_group == min(self.prb.grp_dict.keys()):
-                vchs = np.hstack((self.prb[self.current_group], self.prb[self.current_group+1]))
-            elif self.current_group == max(self.prb.grp_dict.keys()):
-                vchs = np.hstack((self.prb[self.current_group-1], self.prb[self.current_group]))
-            if len(self.view.spkview.selected_spk) == 1:
-                current_time = self.model.mua.spk_times[self.current_group][self.view.spkview.selected_spk]/self.model.mua.fs
-                self.model.mua.show(time = current_time, chs=self.prb.chs, span=0.1)
+            @self.view.traceview.event.connect
+            def on_view_trace():
+                if self.current_group>min(self.prb.grp_dict.keys()) and self.current_group<max(self.prb.grp_dict.keys()):
+                    vchs = np.hstack((self.prb[self.current_group-1], self.prb[self.current_group], self.prb[self.current_group+1]))
+                elif self.current_group == min(self.prb.grp_dict.keys()):
+                    vchs = np.hstack((self.prb[self.current_group], self.prb[self.current_group+1]))
+                elif self.current_group == max(self.prb.grp_dict.keys()):
+                    vchs = np.hstack((self.prb[self.current_group-1], self.prb[self.current_group]))
+                if len(self.view.spkview.selected_spk) == 1:
+                    current_time = self.model.mua.spk_times[self.current_group][self.view.spkview.selected_spk]/self.model.mua.fs
+                    self.model.mua.show(time = current_time, chs=self.prb.chs, span=0.1)
 
     @property
     def current_group(self):
@@ -219,6 +219,10 @@ class controller(object):
     @property
     def unit_done(self):
         return sum(list(self.spk_times_all[1].values()))
+
+    @property
+    def unit_ready(self):
+        return self.model.fet.nclus.sum()
 
     @property
     def selected_spk_times(self):
@@ -651,10 +655,15 @@ class controller(object):
         labels = np.asarray(list(self.model.kd.values()))[np.argmin(d, axis=0)]
         return labels
 
-    def set_vq(self, vq_method='proportional'):
+    def set_vq(self, vq_method='proportional', status='done'):
         # step 1: set FPGA transfomer and build vq 
+        if status == 'done':
+            status_id = 3
+        elif status == 'ready':
+            status_id = 2
+
         for grp_id in range(self.prb.n_group):  # set_vq condition for a group: at least 500 spikes and in a `done` state
-            if self.model.clu_manager.state_list[grp_id]==3:
+            if self.model.clu_manager.state_list[grp_id]==status_id:
                 self.set_transformer(group_id=grp_id)
                 self.build_vq(grp_id=grp_id, show=False, method=vq_method)
             else:
@@ -680,13 +689,17 @@ class controller(object):
         # step 2: set FPGA transfomer
         for grp_id in range(self.prb.n_group):
             self.fpga.label[grp_id] = np.zeros((500,))
-            if self.model.clu_manager.state_list[grp_id] == 3:
-                self.set_transformer(group_id=grp_id)
+            self.fpga.vq[grp_id] = np.zeros((500,4))
+            # if self.model.clu_manager.state_list[grp_id] == 3:
+            #     self.set_transformer(group_id=grp_id)
 
-    def compile(self, vq_method='proportional'):
+    def compile(self, vq_method='proportional', status='done'):
         self.reset_vq()
-        self.set_vq(vq_method)
-        self.fpga.n_units = self.unit_done
+        self.set_vq(vq_method, status)
+        if status == 'done':
+            self.fpga.n_units = self.unit_done
+        elif status == 'ready':
+            self.fpga.n_units = self.unit_ready
         print('FPGA is compiled')
         if self._check_FPGA_labels():
             print('{} units are ready for real-time spike assignment'.format(self.fpga.n_units))
