@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
 from ipywidgets import interact
@@ -368,6 +369,7 @@ class controller(object):
         '''
         method = 'dpgmm' or 'kmeans'
         '''
+        self.clusterless_sort_method = method
         self.model.fet.toclu(method=method,
                              mode='blocking',
                              minimum_spks=minimum_spks,
@@ -381,11 +383,17 @@ class controller(object):
             self.view.set_data(group_id, self.model.mua, self.model.spk[group_id], self.model.fet[group_id], self.model.clu[group_id])
             self.view.show()
 
-    def save(self, filename, including_noise=True):
+    def save(self, filename=None, including_noise=True):
         '''
         update spktag object in the model
         and save all files including sorted result and fpga pamrameters
         '''
+        if filename is None:
+            os.makedirs('./spktag', exist_ok=True)
+            filename = './spktag/' + self.clusterless_sort_method + '_sort'
+        else:
+            os.makedirs('./spktag', exist_ok=True)
+            filename = './spktag/' + filename
         self.model.update_spktag()
         self.model.tofile(filename, including_noise)
         self.fpga.save(filename+'.param')
@@ -617,27 +625,9 @@ class controller(object):
             self.vq_view.transparency = 0.9
             self.vq_view.show()
 
-                
-    def _update_FPGA_labels(self):
-        '''
-        This update the global labels after each time the vq['labels'] is updated by any group
-        The purpose is to order the labels of neurons in a non-overlapping manner except `0` cluster for each group (noise cluster)
-        '''
-        base_label = 0  # start from zero
-        for _grpNo, _labels in self.vq['labels'].items():
-            _labels = order_label(_labels)
-            _labels = shift_label(_labels, base_label)
-            self.vq['fpga_labels'][_grpNo] = _labels
-            if _labels.max() != 0:
-                base_label = _labels.max() # base_label gets up each group by its #unit
-
-    def _check_FPGA_labels(self):
-        '''
-        This assert that labels in FPGA is not overlapping and it is up to the fpga.n_units
-        '''
-        _fpga_labels = np.array([self.fpga.label[i] for i in self.fpga.configured_groups]).ravel()
-        _noverlap_labels = np.arange(self.fpga.n_units+1)
-        return np.array_equal(np.unique(_fpga_labels), _noverlap_labels)
+    @property
+    def fpga_unique_labels(self):
+        return self.fpga.unique_labels
         
     def _validate_vq(self, grp_id, n_dim=4):
         from sklearn.neighbors import KNeighborsClassifier as KNN
@@ -671,7 +661,6 @@ class controller(object):
                 pass
 
         # step 2: change labels such that each group has a different range that no overlapping
-        # self._update_FPGA_labels()
         self.global_label_lut = self.model.fet.assign_clu_global_labels()
 
         # step 3: set FPGA vq
@@ -681,20 +670,23 @@ class controller(object):
             self.fpga.label[grpNo] = self.vq['fpga_labels'][grpNo]
 
     def reset_vq(self):
-        # step 1: reset all vq dict
+        # step 1: reset all vq dict 
         self.vq = {}
         self.vq['points'] = {}
         self.vq['labels'] = {}
         self.vq['fpga_labels'] = {}
         self.vq['scores'] = {}
-        # step 2: set FPGA transfomer
+        # step 2: reset FPGA label and vq to zero (actual FPGA parameter update)
         for grp_id in range(self.prb.n_group):
             self.fpga.label[grp_id] = np.zeros((500,))
             self.fpga.vq[grp_id] = np.zeros((500,4))
-            # if self.model.clu_manager.state_list[grp_id] == 3:
-            #     self.set_transformer(group_id=grp_id)
 
     def compile(self, vq_method='proportional', status='done'):
+        '''
+        Download model parameters into the FPGA, and read back the downloaded parameters for a self-checking
+        return False if self-checking is failed
+        return True if self-checking is passed
+        '''
         self.reset_vq()
         self.set_vq(vq_method, status)
         if status == 'done':
@@ -702,7 +694,4 @@ class controller(object):
         elif status == 'ready':
             self.fpga.n_units = self.unit_ready
         print('FPGA is compiled')
-        if self._check_FPGA_labels():
-            print('{} units are ready for real-time spike assignment'.format(self.fpga.n_units))
-        else:
-            info('check vq and labels, something went wrong') 
+        self.fpga.check()
