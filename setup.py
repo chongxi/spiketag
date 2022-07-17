@@ -49,7 +49,6 @@ setup(name='spiketag',
           'vispy',
           'phy',
           'seaborn',
-          'hdbscan',
           'ipyparallel'
       ],
       extras_require=dict(
