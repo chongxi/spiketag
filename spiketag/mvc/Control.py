@@ -352,12 +352,10 @@ class controller(object):
         self.clu.emit('cluster')
         return kmm    
 
-
     def update_view(self):
         i = self.current_group
         self.view.set_data(i, self.model.mua, self.model.spk[i], self.model.fet[i], self.model.clu[i])
         self.view.setWindowTitle("Spiketag: {} units".format(self.unit_done)) 
-
 
     def sort(self, clu_method='hdbscan'):
         if clu_method == 'bg_cluster':
@@ -366,7 +364,7 @@ class controller(object):
         else:
             self.model.sort(clu_method=clu_method)   
 
-    def clusterless_sort(self, method='dpgmm', N=15, minimum_spks=300):
+    def clusterless_sort(self, method='dpgmm', N=20, minimum_spks=3000):
         '''
         method = 'dpgmm' or 'kmeans'
         '''

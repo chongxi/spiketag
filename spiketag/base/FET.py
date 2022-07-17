@@ -34,7 +34,7 @@ class cluster():
         self.clu_status = clu_status
     
     ############### Backend Engine Func ####################
-    def fit(self, method, fet, clu, mode, minimum_spks=80, **kwargs):
+    def fit(self, method, fet, clu, mode, minimum_spks, **kwargs):
         self.fet = fet
         self.clu = clu
         if self.fet.shape[0] >= minimum_spks:
@@ -150,7 +150,7 @@ class FET(object):
             group_id = self.group[i]
             self._toclu(method, group_id, mode, minimum_spks, **kwargs)
 
-    def _toclu(self, method, group_id, mode, minimum_spks=80, **kwargs):
+    def _toclu(self, method, group_id, mode, minimum_spks, **kwargs):
         '''
         cluster self.fet[i] to get self.clu[i]
         '''
