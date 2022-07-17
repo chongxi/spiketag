@@ -45,7 +45,7 @@ def idx_still_spike(time_spike, time_still, dt):
 
 
 class MUA(object):
-    def __init__(self, mua_filename, probe, numbytes=4, binary_radix=13, scale=True, 
+    def __init__(self, mua_filename, probe, numbytes=4, binary_radix=13, scale=False, 
                  spk_filename=None, 
                  cutoff=[-1500, 1000], time_segs=None, time_still=None, lfp=False):
         '''
@@ -116,9 +116,8 @@ class MUA(object):
             self.pivotal_pos = None
             info('no spike file provided')
 
-
-    def get_threshold(self, beta=4.0):
-        return _calculate_threshold(self.data[::100], beta)
+    def get_threshold(self, beta=4.0, bin_point=13):
+        return self.bf.to_threshold(beta=beta) / 2**bin_point
 
     def tofile(self, file_name, nchs, dtype=np.int32):
         data = self.data[:, nchs].astype(dtype)

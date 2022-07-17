@@ -125,7 +125,7 @@ class bload(object):
     bf.load('./137_36_shankD_116.dat')
 
     1. bf.t is time; bf.asarray(binpoint) return data
-    2. bf.asarray(binpoint=14) to convert int to fix-point
+    2. bf.asarray(binpoint=13) to convert int to fix-point
     3. bf.to_threshold(k=4.5) to export median-based threshold
     4. (bf._npts, bf._nCh, bf._nbytes) are metadata
     '''
@@ -293,13 +293,11 @@ class bload(object):
             new_data[:,col] = new_data[:,col].astype(dtype)
         self.data = new_data
 
-
-    def to_threshold(self, data, k=4.5):
+    def to_threshold(self, beta=4.5, start=0, length=60*25000):
         # QQ threshold for spike detection
-        data = data[::20,:]
-        thres_arr = -np.median(ne.evaluate('abs(data)*k/0.675'), axis=0)
-        return thres_arr
-
+        data = self.data[start+25000:start+length, :].cuda()
+        thres_arr = -beta * data.abs().median(axis=0)[0]/0.6745
+        return thres_arr.cpu().numpy()
 
     def detect_spks(self, delta=.3):
         '''
