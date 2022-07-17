@@ -230,6 +230,19 @@ class xike_config(object):
 
     @property
     def configured_groups(self):
-        self._configured_groups = np.array([g for g in range(self.probe.n_group) if np.unique(self.label[g]).shape[0]>1])
+        self._configured_groups = np.array([g for g in range(self.probe.n_group) 
+                                            if np.unique(self.label[g]).shape[0]>1])
         return self._configured_groups
-        # return np.where(self.transformer_status)[0]
+
+    @property
+    def unique_labels(self):
+        _fpga_labels = np.array([self.label[g] for g in range(self.probe.n_group)]).ravel()
+        self._unique_labels = np.unique(_fpga_labels)
+        return self._unique_labels
+
+    def check(self):
+        _noverlap_labels = np.arange(self.n_units+1)
+        assert(np.array_equal(self.unique_labels, _noverlap_labels),
+               'fpga labels violation, check whether it corresponds to software labels')
+        print(f'{self.n_units} units has been configured in the FPGA-NSP')
+        return True
