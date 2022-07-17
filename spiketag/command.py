@@ -224,18 +224,40 @@ def sort(probefile):
     prb = probe()
     prb.load(probefile)
     app  = QApplication(sys.argv)
-    ctrl = controller(
-                      probe = prb,
-                      mua_filename='./mua.bin', 
-                      spk_filename='./spk.bin', 
-                      binary_radix=13, 
-                      scale=False
-                      # time_segs=[[0,320]]
-                     )
+    ctrl = controller(probe = prb)
     # ctrl.model.sort(clu_method='dpgmm', group_id=0, n_comp=8, max_iter=400)
     ctrl.show()
     sys.exit(app.exec_())
-
+    
+@main.command()
+@click.argument('probefile')
+def auto_compile(probefile):
+    '''
+    - clusterless sort units
+    - compile FPGA-NSP
+    - save the sorted results and FPGA configurations
+    - build naive-bayes decoder and test R2-score
+    '''
+    from spiketag.mvc.Control import controller
+    from spiketag.base import probe
+    from playground.base import logger
+    prb = probe()
+    prb.load(probefile)
+    log = logger('./process.log')
+    pc = log.to_pc(bin_size=4, v_cutoff=4)    
+    ctrl = controller(view = False, fpga = True, pc = pc, probe = prb) 
+    ctrl.clusterless_sort(method='kmeans', N=25, minimum_spks=3000)
+    ctrl.compile(status='ready')
+    ctrl.save()
+    ctrl.model.pc.load_spkdf('./spktag/kmeans_sort.pd')
+    _, score = ctrl.model.pc.to_dec(t_step=0.1, t_window=0.8, t_smooth=3, verbose=True, 
+                                  training_range = [0.0, 0.6], min_bit=0.2, min_peak_rate=0.3,
+                                  testing_range  = [0.6, 1.0]);
+    dec, _ = ctrl.model.pc.to_dec(t_step=0.1, t_window=0.8, t_smooth=3, verbose=True,
+                                  training_range=[0.0, 1.0], min_bit=0.2, min_peak_rate=0.3,
+                                  testing_range=[0.0, 1.0]);
+    dec.save('./spktag/nbdec_clusterless')
+    
 @main.command()
 @click.argument('group_id')
 def spk(group_id):
