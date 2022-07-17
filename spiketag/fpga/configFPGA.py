@@ -181,8 +181,7 @@ class xike_config(object):
             try:
                 self.ch_grpNo[ch] = self.probe.ch2g[ch]
             except:
-                self.ch_grpNo[ch] = 100            
-        print(self.probe.__str__())
+                self.ch_grpNo[ch] = 100
 
     def set_channel_ref(self, ch_ref):
         self.ch_ref[:] = ch_ref

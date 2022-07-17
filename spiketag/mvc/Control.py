@@ -88,7 +88,6 @@ class controller(object):
                 self.view.status_bar.showMessage('group {}:{} are loaded. It contains {} spikes'.format(group_id, chs, nspks))
                 self.view.setWindowTitle("Spiketag: {} units".format(self.unit_done)) 
 
-
             @self.view.clu_view.clu_manager.connect
             def on_vq2fpga():
                 self.build_vq(self.current_group, fpga=True)
