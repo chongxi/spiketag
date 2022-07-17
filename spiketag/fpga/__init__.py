@@ -2,7 +2,7 @@ from .bram_thres import threshold
 from .bram_thres import offset
 from .bram_thres import channel_hash 
 from .memory_api import *
-from .configFPGA import FPGA
+from .NSP import FPGA
 from .run import run
 
 
