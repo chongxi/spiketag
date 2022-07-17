@@ -14,7 +14,6 @@ import os.path as op
 from tqdm import tqdm
 
 
-
 def fs2t(N, fs):
     dt = 1./fs
     t = np.arange(0, N*dt, dt)
@@ -135,7 +134,7 @@ class bload(object):
         self.fs = float(fs)
         self.nyquist_fs = fs/2
 
-    def load(self, file_name, dtype='int32'):
+    def load(self, file_name, dtype='int32', verbose=True):
         '''
         bin.load('filename','int16')
         bin.load('filename','float32')
@@ -147,12 +146,14 @@ class bload(object):
         self._nbytes = self.npmm.nbytes
         self.t = fs2t(self._npts, self.fs)
         self.data = torch.from_numpy(self.npmm.reshape(-1, self._nCh))
-        info("#############  load data  ###################")
-        info('{0} loaded, it contains: '.format(file_name))
-        info('{0} * {1} points ({2} bytes) '.format(self._npts, self._nCh, self._nbytes))
-        info('{0} channels with sampling rate of {1:.4f} '.format(self._nCh, self.fs))
-        info('{0:.3f} secs ({1:.3f} mins) of data'.format(self._npts/self.fs, self._npts/self.fs/60))
-        info("#############################################")
+        
+        if verbose:
+            info("#############  load data  ###################")
+            info('{0} loaded, it contains: '.format(file_name))
+            info('{0} * {1} points ({2} bytes) '.format(self._npts, self._nCh, self._nbytes))
+            info('{0} channels with sampling rate of {1:.4f} '.format(self._nCh, self.fs))
+            info('{0:.3f} secs ({1:.3f} mins) of data'.format(self._npts/self.fs, self._npts/self.fs/60))
+            info("#############################################")
 
         # dt = 1/self.fs
         # self.t = np.linspace(0,self._npts*dt,self._npts,endpoint='false')
