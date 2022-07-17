@@ -43,7 +43,12 @@ class MainModel(object):
         self._corr_cutoff = corr_cutoff
         self._spklen = spklen 
         self._amp_cutoff = amp_cutoff
-        self._time_segs = time_segs
+        if time_segs is None:
+            bf = Binload.bload()
+            bf.load(mua_filename, verbose=False)
+            self._time_segs = [bf.t[0], bf.t[-1]]
+        else:
+            self._time_segs = time_segs
 
         # fet param
         self.fet_method = fet_method
