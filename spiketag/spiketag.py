@@ -1,6 +1,6 @@
 from spiketag.base import probe
 from spiketag.base import MUA
-from spiketag.fpga import xike_config
+from spiketag.fpga import FPGA
 from vispy import app
 
 
@@ -18,7 +18,7 @@ def check_fpga(prbfile, var):
     prb.load(prbfile)    
     prb.n_ch = 160
     prb.fs  = 25000.
-    fpga = xike_config(prb)
+    fpga = FPGA(prb)
     if var in dir(fpga):
         exec('print(fpga.{})'.format(var))
 

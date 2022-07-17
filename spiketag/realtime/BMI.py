@@ -7,7 +7,7 @@ import socket
 import numpy as np
 import torch as torch
 from collections import namedtuple
-from spiketag.fpga import xike_config
+from spiketag.fpga import FPGA
 from torch.multiprocessing import Process, Pipe, SimpleQueue 
 from ..utils.utils import EventEmitter, Timer
 from ..realtime import Binner 
@@ -102,10 +102,10 @@ class BMI(object):
             self.prb = prb
             self.ngrp = prb.n_group
             # self.group_idx = np.array(list(self.prb.grp_dict.keys()))
-            self.fpga = xike_config(self.prb)
+            self.fpga = FPGA(self.prb)
         else:
             self.ngrp = 40   # by default
-            self.fpga = xike_config()   # by default
+            self.fpga = FPGA()   # by default
         print('{} groups on probe'.format(self.ngrp))
         print('{} groups is configured in the FPGA: {}'.format(len(self.fpga.configured_groups), 
                                                                self.fpga.configured_groups))

@@ -283,8 +283,8 @@ def fpga_check(var):
     `spiketag fpga-check`
     '''
     click.echo('check FPGA')
-    from spiketag.fpga import xike_config
-    fpga = xike_config()
+    from spiketag.fpga import FPGA
+    fpga = FPGA()
     if var in dir(fpga):
         exec('print(fpga.{})'.format(var))  
 
@@ -298,8 +298,8 @@ def fpga_detector(cmd):
     `spiketag fpga-detector ch_ref==-14`
     '''
     click.echo('set FPGA detector {} '.format(cmd))
-    from spiketag.fpga import xike_config
-    fpga = xike_config()
+    from spiketag.fpga import FPGA
+    fpga = FPGA()
     exec('fpga.{}'.format(cmd))  
 
 
@@ -311,12 +311,12 @@ def fpga(probefile):
     `spiketag fpga prb.json`
     '''
     click.echo('init FPGA with probe file {}'.format(probefile))
-    from spiketag.fpga import xike_config
+    from spiketag.fpga import FPGA
     from spiketag.base import probe
     prb = probe()
     prb.load(probefile)    
     prb.show()
-    fpga = xike_config(prb)
+    fpga = FPGA(prb)
     fpga.ch_ref[:] = 160
     fpga.thres[:] = -360
     click.echo('FPGA-NSP initiates, load fpga in ipython via `%load_ext spiketag` then check variable `fpga`')

@@ -11,7 +11,7 @@ from ..base import CLU
 from ..utils import warning, conf, order_label, shift_label
 from ..utils.utils import Timer
 from ..base.SPK import _transform
-from ..fpga import xike_config
+from ..fpga import FPGA
 from ..analysis.place_field import place_field
 from ..view import scatter_3d_view
 from ..utils.conf import info 
@@ -21,8 +21,8 @@ from ..utils.conf import info
 class controller(object):
     '''
     First stage:  (channel map in the prb file)
-    >> from spiketag.fpga import xike_config
-    >> fpga = xike_config(probe=prb)
+    >> from spiketag.fpga import FPGA
+    >> fpga = FPGA(probe=prb)
 
     Second stage: (ch_ref and thres)
     >> ctrl = controller(fpga=True, **kwargs)     #1. load pre-recorded files
@@ -69,7 +69,7 @@ class controller(object):
             # initialize FPGA channel grouping
             # both ch_hash and ch_grpNo are configured
             # every channel has a `ch_hash` and a `ch_grpNo` 
-            self.fpga = xike_config(probe=self.prb)  # this will automatically download the prb map into the FPGA
+            self.fpga = FPGA(probe=self.prb)  # this will automatically download the prb map into the FPGA
         else:
             self.fpga = None
             

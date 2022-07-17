@@ -12,7 +12,7 @@ def calculate_threshold(x, beta=4.0):
 class dummyobj(object):
     pass
 
-class xike_config(object):
+class FPGA(object):
 
     def __init__(self, probe=None):
         """TODO: to be defined1.
