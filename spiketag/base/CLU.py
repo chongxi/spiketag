@@ -179,10 +179,6 @@ class CLU(EventEmitter):
                 _counts_per_clu.append(self.index_count[cluNo])
         self._clu_cumsum = np.cumsum(np.asarray(_counts_per_clu))
 
-
-
-
-
     def _extract_extra_info(self, clusterer):
         '''store extra infomation for other purpose.
         '''
@@ -192,6 +188,11 @@ class CLU(EventEmitter):
         return extra_info
 
     def make_id_continuous(self):
+        '''
+        - force the cluster id to start from 0
+        - force the cluster id to be continous: 0,1,2,3,4,5,6......N
+        '''
+        self.membership -= self.membership.min()
         if self._is_id_discontineous():
             for i in range(1, self.index_id.size):
                 self.membership[self.membership==self.index_id[i]] = i
