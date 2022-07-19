@@ -7,11 +7,13 @@ import seaborn as sns
 from matplotlib.pyplot import cm
 from scipy.interpolate import interp1d
 from sklearn.preprocessing import label_binarize
+from sklearn.metrics import r2_score
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset
 import torchvision
 from .core import pos2speed, argmax_2d_tensor, spk_time_to_scv, firing_pos_from_scv, smooth
+from .core import sliding_window_to_feature # , FA
 from ..base import SPKTAG
 from ..utils import colorbar
 from ..utils.plotting import colorline
@@ -925,9 +927,9 @@ class place_field(Dataset):
         df_all_in_one = pd.concat([self.pos_df, self.spike_df], sort=True)
         df_all_in_one.to_pickle(filename+'.pd')
 
-    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=2, 
-                     first_unit_is_noise=True, 
-                     min_bit=0.1, min_peak_rate=0.6, firing_rate_modulation=True, 
+    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=3, 
+                     first_unit_is_noise=True, min_speed=4, 
+                     min_bit=0.1, min_peak_rate=1.5, firing_rate_modulation=True, 
                      verbose=False, **kwargs):
         '''
         kwargs example:
@@ -935,6 +937,8 @@ class place_field(Dataset):
         - valid_range: [0.5, 0.7]
         - testing_range: [0.7, 1.0]
         - low_speed_cutoff: {'training': True, 'testing': True}
+        - max_noise: for deep network training data augmentation
+        - 
         '''
         if type == 'bayesian':
             from spiketag.analysis import NaiveBayes
@@ -961,5 +965,70 @@ class place_field(Dataset):
             return dec, score
 
         if type == 'NN':
-            # TODO
-            pass
+            # select units
+            cond = (self.metric['spatial_bit_spike'] > min_bit) & (self.metric['peak_rate'] > min_peak_rate)
+            neuron_idx = (cond > 0).nonzero()[0]
+            print(f'{neuron_idx.shape[0]} neurons are selected')
+            
+            # 1. prepare training and test data
+            self(t_step)
+            self.get_scv(t_window=t_step);
+            self.output_variables = ['scv', 'pos']
+            scv_full, pos_full = self[:]
+            pos_full = smooth(pos_full, 30) * 1.1
+            v = np.linalg.norm(self.pos_2_speed(pos_full, self.ts[1:]), axis=1)
+            scv_full = scv_full[v>min_speed]
+            pos_full = pos_full[v>min_speed]
+            scv_full = np.sqrt(scv_full)  # square root spike count for training and testing
+            scv = scv_full[:, neuron_idx]
+            
+            # specific to deep net decoder, we need to unroll the time bin 
+            # and make a unit at different time bins a different unit
+            n = int(t_window/t_step)
+            pos = pos_full[n:]
+            scv = sliding_window_to_feature(scv, n)
+            
+            ncells, nsamples = scv.shape[1], scv.shape[0]
+            training_range = kwargs['training_range'] if 'training_range' in kwargs.keys() else [0.0, 1.0]
+            valid_range    = kwargs['valid_range'] if 'valid_range'    in kwargs.keys() else [0.0, 1.0]
+            testing_range  = kwargs['testing_range'] if 'testing_range'  in kwargs.keys() else [0.0, 1.0]
+            X = scv[int(nsamples*training_range[0]):int(nsamples*training_range[1])]
+            y = pos[int(nsamples*training_range[0]):int(nsamples*training_range[1])]
+            X_test = scv[int(nsamples*testing_range[0]):int(nsamples*testing_range[1])]
+            y_test = pos[int(nsamples*testing_range[0]):int(nsamples*testing_range[1])]
+            
+            # 2. initiate deepnet decoder
+            from spiketag.analysis.decoder import DeepOSC
+            decoder = DeepOSC(input_dim=ncells, t_step=t_step, t_window=t_window, 
+                              hidden_dim=[256, 256], output_dim=2, bn=True, LSTM=True)
+            decoder.connect_to(self)
+            decoder.neuron_idx = neuron_idx
+            decoder.train_X = X
+            decoder.train_y = y
+            decoder.test_X = X_test
+            decoder.test_y = y_test
+            print(f'{X.shape[0]} training samples')
+            print(f'{X_test.shape[0]} testing samples')
+
+            # 3. training
+            decoder.model.bn1.track_running_stats = False
+            decoder.model.bn1.running_mean = None
+            decoder.model.bn1.running_var = None
+            max_noise = kwargs['max_noise'] if 'max_noise' in kwargs.keys() else 1
+            max_epoch = kwargs['max_epoch'] if 'max_epoch' in kwargs.keys() else 3000
+            lr = kwargs['lr'] if 'lr' in kwargs.keys() else 3e-4
+            smooth_factor = int(t_smooth/t_step)
+            
+            try:
+                decoder.fit(X, y, X_test, y_test, max_noise=max_noise, max_epoch=max_epoch, lr=lr, 
+                            smooth_factor=smooth_factor, cuda=True)
+            except KeyboardInterrupt:
+                pass
+            
+            # 4. testing and score
+            # dec_y = decoder.predict(X_test, mode='train', bn_momentum=0.9)
+            dec_y = decoder.predict(X_test, mode='eval', bn_momentum=0.9)
+            dec_y = smooth(dec_y, smooth_factor)
+            decoder.plot_decoding_err(y_test, dec_y)
+            score = decoder.r2_score(y_test, dec_y)
+            return decoder, score
