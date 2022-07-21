@@ -520,13 +520,13 @@ class SineDec(nn.Module):
             # _vo = _vo.cpu().detach().numpy()
         return np.nan_to_num(_yo)
     
-    def predict_rt(self, X, cuda, mode, bn_momentum):
+    def predict_rt(self, X, neuron_idx, cuda, mode, bn_momentum):
         '''
         T_steps can be 1
         X: (T_steps, B_bins, N_neurons)
         y: (T_steps, N_neurons)
         '''
-        X = X[..., self.neuron_idx]
+        X = X[..., neuron_idx]
         X = X.ravel()
         y = self.predict(X, cuda, mode, bn_momentum)
         return y
@@ -698,5 +698,5 @@ class DeepOSC(Decoder):
         return y
 
     def predict_rt(self, X, cuda=True, mode='eval', bn_momentum=0.1):
-        y = self.model.predict_rt(X, cuda=cuda, mode=mode, bn_momentum=bn_momentum)
+        y = self.model.predict_rt(X, neuron_idx=self.neuron_idx, cuda=cuda, mode=mode, bn_momentum=bn_momentum)
         return y
