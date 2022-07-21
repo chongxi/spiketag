@@ -685,4 +685,5 @@ class DeepOSC(Decoder):
 
     def predict_rt(self, X, cuda=True, mode='train', bn_momentum=0.1):
         y = self.predict(X, cuda, mode, bn_momentum)
-        return y
+        self.rt_post_2d = self.pc.real_pos_2_soft_pos(y)
+        return y, self.rt_post_2d

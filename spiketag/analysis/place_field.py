@@ -254,11 +254,22 @@ class place_field(Dataset):
         return binned_pos
 
     def real_pos_2_binned_pos(self, real_pos, interger_output=True):
+        if real_pos.ndim == 1:
+            real_pos = real_pos.reshape(1,-1)
         if interger_output:
             binned_pos = (real_pos - self.maze_original)//self.bin_size
         else:
             binned_pos = (real_pos - self.maze_original)/self.bin_size
         return binned_pos
+    
+    def real_pos_2_soft_pos(self, pos, kernel_size=5):
+        binned_y = self.real_pos_2_binned_pos(pos)
+        Y = self.binned_pos_2_onehot(binned_y).reshape(-1, 1, self.O.shape[1], self.O.shape[0])
+        T = F.conv2d(input=torch.from_numpy(Y).float(),
+                    weight=torch.from_numpy(pc.gkern(kernel_size,1)).reshape(1,1,kernel_size,kernel_size).float(), 
+                    padding=kernel_size//2).squeeze()
+        T = T/T.reshape(-1, self.O.shape[0]*self.O.shape[1]).sum(axis=-1).reshape(-1,1,1)
+        return T.squeeze().numpy()
     
     def pos_2_speed(self, pos, ts):
         return pos2speed(pos, ts)
