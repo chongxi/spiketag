@@ -198,7 +198,7 @@ class BMI(object):
         return bmi_output
 
 
-    def BMI_core_func(self, gui_queue):
+    def BMI_core_func(self, gui_queue, model=None):
         '''
         A daemon process dedicated on reading data from PCIE and update
         the shared memory with other processors: shared_arr 
@@ -214,7 +214,8 @@ class BMI(object):
                 # timestamp, grp_id, fet0, fet1, fet2, fet3, spk_id = bmi_output 
                 # ----- real-time processing the BMI output ------
                 # ----- This section should cost < 100us -----
-                    
+                
+                self.model = model
                 ##### real-time decoder
                 # 1. binner
                 # print(bmi_output.timestamp, bmi_output.grp_id)
@@ -231,12 +232,12 @@ class BMI(object):
                 # ----- This section should cost < 100us -----
 
 
-    def start(self, gui_queue=False):
+    def start(self, gui_queue=False, model=None):
         if gui_queue:
             self.gui_queue = SimpleQueue()
         else:
             self.gui_queue = None
-        self.fpga_process = Process(target=self.BMI_core_func, name='fpga', args=(self.gui_queue,)) #, args=(self.pipe_jovian_side,)
+        self.fpga_process = Process(target=self.BMI_core_func, name='fpga', args=(self.gui_queue, model))
         self.fpga_process.daemon = True
         self.fpga_process.start()  
 
