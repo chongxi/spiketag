@@ -501,6 +501,35 @@ class SineDec(nn.Module):
 #         xp = self.fc2p(xp)
         return x, xg, y, v
 
+    def predict(self, X, cuda=True, mode='eval', bn_momentum=0.1)
+        if type(X) == np.ndarray:
+            X = torch.from_numpy(X).float()
+        if X.ndim == 1:
+            X = X.view(1, -1)
+        if cuda:
+            X = X.cuda()
+        if mode == 'eval':
+            self.model.eval()
+        elif mode == 'train':
+            self.model.train()
+        self.model.bn1.momentum = bn_momentum
+
+        with torch.inference_mode():
+            _, _, _yo, _vo = self.model(X)
+            _yo = _yo.cpu().detach().numpy()
+            # _vo = _vo.cpu().detach().numpy()
+        return np.nan_to_num(_yo)
+    
+    def predict_rt(self, cuda, mode, bn_momentum):
+        '''
+        T_steps can be 1
+        X: (T_steps, B_bins, N_neurons)
+        y: (T_steps, N_neurons)
+        '''
+        X = X[..., self.neuron_idx]
+        X = X.ravel()
+        y = self.predict(X, cuda, mode, bn_momentum)
+        return y
 
 class DeepOSC(Decoder):
     """
@@ -665,32 +694,9 @@ class DeepOSC(Decoder):
         return fig
 
     def predict(self, X, cuda=True, mode='eval', bn_momentum=0.1):
-        if type(X) == np.ndarray:
-            X = torch.from_numpy(X).float()
-        if X.ndim == 1:
-            X = X.view(1,-1)
-        if cuda:
-            X = X.cuda()
-        if mode=='eval':
-            self.model.eval()
-        elif mode=='train':
-            self.model.train()
-        self.model.bn1.momentum = bn_momentum
-
-        with torch.inference_mode():
-            _, _, _yo, _vo = self.model(X)
-            _yo = _yo.cpu().detach().numpy()
-            # _vo = _vo.cpu().detach().numpy()
-        return np.nan_to_num(_yo)
+        y = self.model.predict(X, cuda, mode, bn_momentum)
+        return y
 
     def predict_rt(self, X, cuda=True, mode='eval', bn_momentum=0.1):
-        '''
-        T_steps can be 1
-        X: (T_steps, B_bins, N_neurons)
-        y: (T_steps, N_neurons)
-        '''
-        X = X[..., self.neuron_idx]
-        X = X.ravel()
-        y = self.predict(X, cuda, mode, bn_momentum)
-        self.rt_post_2d = self.pc.real_pos_2_soft_pos(y)
-        return y, self.rt_post_2d
+        y = self.model.predict_rt(X, cuda, mode, bn_momentum)
+        return y
