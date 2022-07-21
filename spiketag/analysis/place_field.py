@@ -266,7 +266,7 @@ class place_field(Dataset):
         binned_y = self.real_pos_2_binned_pos(pos)
         Y = self.binned_pos_2_onehot(binned_y).reshape(-1, 1, self.O.shape[1], self.O.shape[0])
         T = F.conv2d(input=torch.from_numpy(Y).float(),
-                    weight=torch.from_numpy(pc.gkern(kernel_size,1)).reshape(1,1,kernel_size,kernel_size).float(), 
+                    weight=torch.from_numpy(self.gkern(kernel_size,1)).reshape(1,1,kernel_size,kernel_size).float(), 
                     padding=kernel_size//2).squeeze()
         T = T/T.reshape(-1, self.O.shape[0]*self.O.shape[1]).sum(axis=-1).reshape(-1,1,1)
         return T.squeeze().numpy()
