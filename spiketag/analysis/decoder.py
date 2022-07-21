@@ -509,18 +509,18 @@ class SineDec(nn.Module):
         if cuda:
             X = X.cuda()
         if mode == 'eval':
-            self.model.eval()
+            self.eval()
         elif mode == 'train':
-            self.model.train()
-        self.model.bn1.momentum = bn_momentum
+            self.train()
+        self.bn1.momentum = bn_momentum
 
         with torch.inference_mode():
-            _, _, _yo, _vo = self.model(X)
+            _, _, _yo, _vo = self.forward(X)
             _yo = _yo.cpu().detach().numpy()
             # _vo = _vo.cpu().detach().numpy()
         return np.nan_to_num(_yo)
     
-    def predict_rt(self, cuda, mode, bn_momentum):
+    def predict_rt(self, X, cuda, mode, bn_momentum):
         '''
         T_steps can be 1
         X: (T_steps, B_bins, N_neurons)
@@ -694,9 +694,9 @@ class DeepOSC(Decoder):
         return fig
 
     def predict(self, X, cuda=True, mode='eval', bn_momentum=0.1):
-        y = self.model.predict(X, cuda, mode, bn_momentum)
+        y = self.model.predict(X, cuda=cuda, mode=mode, bn_momentum=bn_momentum)
         return y
 
     def predict_rt(self, X, cuda=True, mode='eval', bn_momentum=0.1):
-        y = self.model.predict_rt(X, cuda, mode, bn_momentum)
+        y = self.model.predict_rt(X, cuda=cuda, mode=mode, bn_momentum=bn_momentum)
         return y
