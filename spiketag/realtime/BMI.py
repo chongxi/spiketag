@@ -207,7 +207,8 @@ class BMI(object):
                           it ends with self.stop()
         '''
         # os.nice(-20) # makes this process almost real-time priority
-
+        self.model = model
+        
         while True:
             with Timer('real-time decoding', verbose=False):
                 bmi_output = self.read_bmi()
@@ -215,7 +216,6 @@ class BMI(object):
                 # ----- real-time processing the BMI output ------
                 # ----- This section should cost < 100us -----
                 
-                self.model = model
                 ##### real-time decoder
                 # 1. binner
                 # print(bmi_output.timestamp, bmi_output.grp_id)
