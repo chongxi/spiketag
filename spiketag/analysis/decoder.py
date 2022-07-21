@@ -501,7 +501,7 @@ class SineDec(nn.Module):
 #         xp = self.fc2p(xp)
         return x, xg, y, v
 
-    def predict(self, X, cuda=True, mode='eval', bn_momentum=0.1)
+    def predict(self, X, cuda=True, mode='eval', bn_momentum=0.1):
         if type(X) == np.ndarray:
             X = torch.from_numpy(X).float()
         if X.ndim == 1:
