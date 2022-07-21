@@ -927,17 +927,17 @@ class place_field(Dataset):
         df_all_in_one = pd.concat([self.pos_df, self.spike_df], sort=True)
         df_all_in_one.to_pickle(filename+'.pd')
 
-    def to_dec(self, t_step, t_window, type='bayesian', t_smooth=3, 
+    def to_dec(self, t_step=0.1, t_window=0.8, t_smooth=3, type='bayesian',  
                      first_unit_is_noise=True, min_speed=4, 
                      min_bit=0.1, min_peak_rate=1.5, firing_rate_modulation=True, 
-                     verbose=False, **kwargs):
+                     verbose=True, **kwargs):
         '''
         kwargs example:
         - training_range: [0, 0.5]
         - valid_range: [0.5, 0.7]
         - testing_range: [0.7, 1.0]
         - low_speed_cutoff: {'training': True, 'testing': True}
-        - max_noise: for deep network training data augmentation
+        - max_noise: for data augmentation
         - 
         '''
         if type == 'bayesian':
@@ -961,7 +961,9 @@ class place_field(Dataset):
                 dec.drop_neuron(self.drop_idx)   # drop the neuron with id 0 which is noise with those fire at super low frequency
             else:
                 dec.drop_neuron([0])
+            self.smooth_factor = int(t_smooth/t_step)
             score = dec.score(t_smooth=t_smooth, firing_rate_modulation=firing_rate_modulation)
+            dec._score = score
             return dec, score
 
         if type == 'NN':
@@ -984,7 +986,7 @@ class place_field(Dataset):
             
             # specific to deep net decoder, we need to unroll the time bin 
             # and make a unit at different time bins a different unit
-            n = int(t_window/t_step)
+            n = int(t_window/t_step) - 1
             pos = pos_full[n:]
             scv = sliding_window_to_feature(scv, n)
             
@@ -1011,24 +1013,25 @@ class place_field(Dataset):
             print(f'{X_test.shape[0]} testing samples')
 
             # 3. training
-            decoder.model.bn1.track_running_stats = False
-            decoder.model.bn1.running_mean = None
-            decoder.model.bn1.running_var = None
+            # decoder.model.bn1.track_running_stats = False
+            # decoder.model.bn1.running_mean = None
+            # decoder.model.bn1.running_var = None
             max_noise = kwargs['max_noise'] if 'max_noise' in kwargs.keys() else 1
             max_epoch = kwargs['max_epoch'] if 'max_epoch' in kwargs.keys() else 3000
             lr = kwargs['lr'] if 'lr' in kwargs.keys() else 3e-4
-            smooth_factor = int(t_smooth/t_step)
+            self.smooth_factor = int(t_smooth/t_step)
             
             try:
                 decoder.fit(X, y, X_test, y_test, max_noise=max_noise, max_epoch=max_epoch, lr=lr, 
-                            smooth_factor=smooth_factor, cuda=True)
+                            smooth_factor=self.smooth_factor, cuda=True)
             except KeyboardInterrupt:
                 pass
             
             # 4. testing and score
             # dec_y = decoder.predict(X_test, mode='train', bn_momentum=0.9)
             dec_y = decoder.predict(X_test, mode='eval', bn_momentum=0.9)
-            dec_y = smooth(dec_y, smooth_factor)
+            dec_y = smooth(dec_y, self.smooth_factor)
             decoder.plot_decoding_err(y_test, dec_y)
             score = decoder.r2_score(y_test, dec_y)
+            decoder._score = score
             return decoder, score

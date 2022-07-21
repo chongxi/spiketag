@@ -694,3 +694,23 @@ class controller(object):
             self.fpga.n_units = self.unit_ready
         print('FPGA is compiled')
         self.fpga.check()
+
+    def to_nbdec(self, spkdf='./spktag/kmeans_sort.pd', t_step=0.1, t_window=0.8, t_smooth=3, 
+                       tps=[0.5, 0.6, 0.7, 0.8]):
+        '''
+        t_step: decoder update time step
+        t_window: decoder time window
+        t_smooth: noisy decoder output moving average length
+        tps: training data percentage (for cross-validation)
+        '''
+        self.model.pc.load_spkdf(spkdf)
+        for tp in tps:
+            print(f'{tp*100}% training data')
+            _, score = self.model.pc.to_dec(t_step=t_step, t_window=t_window, t_smooth=t_smooth, verbose=True,
+                                            training_range=[0.0, tp], min_bit=0.1, min_peak_rate=1.5,
+                                            testing_range=[tp, 1.0])
+        print(f'100% training data')
+        dec, score = self.model.pc.to_dec(t_step=t_step, t_window=t_window, t_smooth=t_smooth, verbose=True,
+                                          training_range=[0.0, 1.0], min_bit=0.1, min_peak_rate=1.5,
+                                          testing_range=[0.0, 1.0])
+        return dec

@@ -251,10 +251,10 @@ def auto_compile(probefile):
     ctrl.save()
     ctrl.model.pc.load_spkdf('./spktag/kmeans_sort.pd')
     _, score = ctrl.model.pc.to_dec(t_step=0.1, t_window=0.8, t_smooth=3, verbose=True, 
-                                  training_range = [0.0, 0.6], min_bit=0.2, min_peak_rate=0.3,
+                                  training_range = [0.0, 0.6], min_bit=0.1, min_peak_rate=1.5,
                                   testing_range  = [0.6, 1.0]);
     dec, _ = ctrl.model.pc.to_dec(t_step=0.1, t_window=0.8, t_smooth=3, verbose=True,
-                                  training_range=[0.0, 1.0], min_bit=0.2, min_peak_rate=0.3,
+                                  training_range=[0.0, 1.0], min_bit=0.1, min_peak_rate=1.5,
                                   testing_range=[0.0, 1.0]);
     dec.save('./spktag/nbdec_clusterless')
     
