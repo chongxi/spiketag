@@ -8,7 +8,7 @@ import numpy as np
 import torch as torch
 from collections import namedtuple
 from spiketag.fpga import FPGA
-from torch.multiprocessing import Process, Pipe, SimpleQueue 
+from torch.multiprocessing import Process, Pipe, SimpleQueue, set_start_method
 from ..utils.utils import EventEmitter, Timer
 from ..realtime import Binner 
 
@@ -51,6 +51,8 @@ class bmi_packet(object):
         self.fs = fs
         self.spike_df = spike_df
         self.bmi_output = namedtuple('bmi_output', ['timestamp', 'spk_id'])
+        self.model_output = torch.zeros_(2,)
+        self.model_output.share_memory_()
     
     def __len__(self):
         return len(self.spike_df)
