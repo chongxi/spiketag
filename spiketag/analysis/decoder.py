@@ -683,7 +683,14 @@ class DeepOSC(Decoder):
             # _vo = _vo.cpu().detach().numpy()
         return np.nan_to_num(_yo)
 
-    def predict_rt(self, X, cuda=True, mode='train', bn_momentum=0.1):
+    def predict_rt(self, X, cuda=True, mode='eval', bn_momentum=0.1):
+        '''
+        T_steps can be 1
+        X: (T_steps, B_bins, N_neurons)
+        y: (T_steps, N_neurons)
+        '''
+        X = X[..., self.neuron_idx]
+        X = X.ravel()
         y = self.predict(X, cuda, mode, bn_momentum)
         self.rt_post_2d = self.pc.real_pos_2_soft_pos(y)
         return y, self.rt_post_2d
