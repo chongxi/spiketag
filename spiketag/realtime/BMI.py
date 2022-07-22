@@ -128,7 +128,7 @@ class BMI(object):
             self.TTLserial = None
 
         self.binner = None
-        self.model_output = torch.zeros_(2,)
+        self.model_output = torch.zeros(2,)
         self.model_output.share_memory_()
 
     def __getstate__(self):
