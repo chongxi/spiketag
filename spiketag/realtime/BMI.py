@@ -51,8 +51,6 @@ class bmi_packet(object):
         self.fs = fs
         self.spike_df = spike_df
         self.bmi_output = namedtuple('bmi_output', ['timestamp', 'spk_id'])
-        self.model_output = torch.zeros_(2,)
-        self.model_output.share_memory_()
     
     def __len__(self):
         return len(self.spike_df)
@@ -100,6 +98,7 @@ class BMI(object):
     """
 
     def __init__(self, prb=None, fetfile=None, ttlport=None):
+        super(BMI, self).__init__()
         if prb is not None:
             self.prb = prb
             self.ngrp = prb.n_group
@@ -129,6 +128,22 @@ class BMI(object):
             self.TTLserial = None
 
         self.binner = None
+        self.model_output = torch.zeros_(2,)
+        self.model_output.share_memory_()
+
+    def __getstate__(self):
+
+        # this method is called when you are
+        # going to pickle the class, to know what to pickle
+        state = self.__dict__.copy()
+        
+        # don't pickle the parameter fun. otherwise will raise 
+        # AttributeError: Can't pickle local object 'Process.__init__.<locals>.<lambda>'
+        del state['r32']
+        return state
+    
+    def __setstate__(self, state):
+        self.__dict__.update(state)
 
     def close(self):
         self.r32.close()
