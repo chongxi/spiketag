@@ -1047,5 +1047,4 @@ class place_field(Dataset):
             decoder.plot_decoding_err(y_test, dec_y)
             score = decoder.r2_score(y_test, dec_y)
             decoder._score = score
-            decoder.model.cpu();
             return decoder, score
