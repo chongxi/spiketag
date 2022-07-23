@@ -1,3 +1,4 @@
+from cv2 import SparsePyrLKOpticalFlow_create
 from sklearn.covariance import log_likelihood
 from .core import softmax, licomb_Matrix, bayesian_decoding, argmax_2d_tensor, smooth
 import numpy as np
@@ -582,7 +583,7 @@ class DeepOSC(Decoder):
     # TODO 
     pass
 
-    def __init__(self, input_dim, hidden_dim=[128, 128], output_dim=2, bn=False, LSTM=False, t_window=3, t_step=0.1):
+    def __init__(self, input_dim, hidden_dim=[128, 128], output_dim=2, bn=False, LSTM=False, t_window=2, t_step=0.1):
         super(DeepOSC, self).__init__(t_window, t_step)
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
@@ -594,6 +595,9 @@ class DeepOSC(Decoder):
                              LSTM=LSTM)
         self.test_r2 = []
         self.losses = []
+        self.running_steps = 0
+        self.running_data = []
+        self.update_interval = int(60/t_step) # update bn every 60 seconds
 
     def unroll(self, scv, n):
         '''
@@ -697,6 +701,18 @@ class DeepOSC(Decoder):
         y = self.model.predict(X, cuda=cuda, mode=mode, bn_momentum=bn_momentum)
         return y
 
+    def update_bn(self, cuda=True, bn_momentum=0.9):
+        self.predict(np.vstack(self.running_data), cuda=cuda, mode='train', bn_momentum=bn_momentum); 
+        
     def predict_rt(self, X, cuda=True, mode='eval', bn_momentum=0.1):
+        # predict in real time eval mode
         y = self.model.predict_rt(X, neuron_idx=self.neuron_idx, cuda=cuda, mode=mode, bn_momentum=bn_momentum)
+
+        # cache data for computing running mean and std
+        self.running_steps += 1
+        self.running_data.append(X[..., self.neuron_idx].ravel())
+
+        # update running mean and std to BN (batch normalization)
+        if self.running_steps % self.update_interval == 0 and self.running_steps > 1200:
+            self.update_bn(cuda=cuda)
         return y

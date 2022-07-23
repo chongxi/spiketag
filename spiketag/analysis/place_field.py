@@ -262,7 +262,7 @@ class place_field(Dataset):
             binned_pos = (real_pos - self.maze_original)/self.bin_size
         return binned_pos
     
-    def real_pos_2_soft_pos(self, pos, kernel_size=5):
+    def real_pos_2_soft_pos(self, pos, kernel_size=7):
         binned_y = self.real_pos_2_binned_pos(pos)
         Y = self.binned_pos_2_onehot(binned_y).reshape(-1, 1, self.O.shape[1], self.O.shape[0])
         T = F.conv2d(input=torch.from_numpy(Y).float(),
@@ -973,6 +973,7 @@ class place_field(Dataset):
             else:
                 dec.drop_neuron([0])
             self.smooth_factor = int(t_smooth/t_step)
+            dec.smooth_factor = int(t_smooth/t_step)
             score = dec.score(t_smooth=t_smooth, firing_rate_modulation=firing_rate_modulation)
             dec._score = score
             return dec, score
@@ -1031,6 +1032,7 @@ class place_field(Dataset):
             max_epoch = kwargs['max_epoch'] if 'max_epoch' in kwargs.keys() else 3000
             lr = kwargs['lr'] if 'lr' in kwargs.keys() else 3e-4
             self.smooth_factor = int(t_smooth/t_step)
+            decoder.smooth_factor = int(t_smooth/t_step)
             
             try:
                 decoder.fit(X, y, X_test, y_test, max_noise=max_noise, max_epoch=max_epoch, lr=lr, 
@@ -1045,4 +1047,5 @@ class place_field(Dataset):
             decoder.plot_decoding_err(y_test, dec_y)
             score = decoder.r2_score(y_test, dec_y)
             decoder._score = score
+            decoder.model.cpu();
             return decoder, score
