@@ -525,9 +525,12 @@ class SineDec(nn.Module):
         T_steps can be 1
         X: (T_steps, B_bins, N_neurons)
         y: (T_steps, N_neurons)
+
+        Note: we trained on square root of spike count, so we need to sqrt it back when predicting in real time
         '''
         X = X[..., neuron_idx]
         X = X.ravel()
+        X = np.sqrt(X)  
         y = self.predict(X, cuda, mode, bn_momentum)
         return y
 
@@ -705,6 +708,8 @@ class DeepOSC(Decoder):
         
     def predict_rt(self, X, cuda=True, mode='eval', bn_momentum=0.1):
         # predict in real time eval mode
+
+        # note: we don't need to take the squre root here, as the `model.predict_rt` will take the square root
         y = self.model.predict_rt(X, neuron_idx=self.neuron_idx, cuda=cuda, mode=mode, bn_momentum=bn_momentum)
 
         # cache data for computing running mean and std
