@@ -1,4 +1,3 @@
-from cv2 import SparsePyrLKOpticalFlow_create
 from sklearn.covariance import log_likelihood
 from .core import softmax, licomb_Matrix, bayesian_decoding, argmax_2d_tensor, smooth
 import numpy as np
