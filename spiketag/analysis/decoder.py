@@ -597,8 +597,12 @@ class DeepOSC(Decoder):
         self.test_r2 = []
         self.losses = []
         self.running_steps = 0
-        self.running_data = []
+        self._running_data = []
         self.update_interval = int(60/t_step) # update bn every 60 seconds
+        
+    @property
+    def running_data(self):
+        return np.vstack(self._running_data)
 
     def unroll(self, scv, n):
         '''
@@ -703,7 +707,7 @@ class DeepOSC(Decoder):
         return y
 
     def update_bn(self, cuda=True, bn_momentum=0.9):
-        self.predict(np.vstack(self.running_data), cuda=cuda, mode='train', bn_momentum=bn_momentum); 
+        self.predict(self.running_data, cuda=cuda, mode='train', bn_momentum=bn_momentum); 
         
     def predict_rt(self, X, cuda=True, mode='eval', bn_momentum=0.1):
         # predict in real time eval mode
@@ -712,7 +716,7 @@ class DeepOSC(Decoder):
 
         # cache data for computing running mean and std
         self.running_steps += 1
-        self.running_data.append(X[..., self.neuron_idx].ravel())
+        self._running_data.append(X[..., self.neuron_idx].ravel())
 
         # update running mean and std to BN (batch normalization)
         if self.running_steps % self.update_interval == 0 and self.running_steps > 600:
