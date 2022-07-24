@@ -1066,11 +1066,19 @@ class place_field(Dataset):
             except KeyboardInterrupt:
                 pass
             
-            # 4. testing and score
-            # dec_y = decoder.predict(X_test, mode='train', bn_momentum=0.9)
-            dec_y = decoder.predict(X_test, mode='eval', bn_momentum=0.9)
+            # 4. testing and initialize bn statistics using both the training the testing data
+            decoder.model.bn1.track_running_stats = True
+            decoder.model.bn1.running_mean = torch.zeros((256,)).float().cuda()
+            decoder.model.bn1.running_var = torch.zeros((256,)).float().cuda()
+            decoder.predict(X, mode='train', bn_momentum=0.9);
+            dec_y = decoder.predict(X_test, mode='train', bn_momentum=0.9)
             dec_y = smooth(dec_y, self.smooth_factor)
+            
+            # 5. report and save the r2 score
             decoder.plot_decoding_err(y_test, dec_y)
             score = decoder.r2_score(y_test, dec_y)
             decoder._score = score
+            
+            # 6. To deploy the model - set to cpu mode
+            decoder.model.cpu();
             return decoder, score
