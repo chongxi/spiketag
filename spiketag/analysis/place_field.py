@@ -271,7 +271,7 @@ class place_field(Dataset):
         T = T/T.reshape(-1, self.O.shape[0]*self.O.shape[1]).sum(axis=-1).reshape(-1,1,1)
         return T.squeeze().numpy()
     
-    def pos_2_speed(self, pos, ts):
+    def pos_2_speed(self, pos, ts=None):
         return pos2speed(pos, ts)
 
     def get_speed(self):
@@ -890,7 +890,27 @@ class place_field(Dataset):
             self.scv = sliding_window_to_feature(self.scv, B_bins-1)
             self.scv = self.scv.reshape(self.scv.shape[0], B_bins, self.n_units)
         return self.scv
-
+    
+    def get_data(self, t_window=None, B_bins=None):
+        '''
+        get data as same format in real-time BMI application
+        Input:
+            - t_window: integration window, default to t_step if non-overlapping binning is used
+            - B_bins: bins used for each frame
+            
+        Output:
+            - scv: spike count vector (N_frames, B_bins, N_neurons)
+            - pos: position output (N_frames, 2); each row(frame) is a position: (x,y)
+            - hdv: head direction speed (N_frames, 2); each row(frame) is a movement: (dx, dy)
+        '''
+        if t_window is None:
+            t_window = self.t_step
+        scv = self.get_scv(t_window, B_bins)
+        pos = smooth(self.pos, int(1/self.t_step))
+        hdv = smooth(self.pos_2_speed(pos), int(2/self.t_step))
+        pos = self.pos[B_bins:]
+        hdv = hdv[B_bins:]
+        return scv, pos, hdv
 
     def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'wo'], markersize=15, alpha=.5, cmap=None, legend_loc=None):
         '''
