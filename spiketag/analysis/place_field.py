@@ -874,25 +874,22 @@ class place_field(Dataset):
             self.field_fig = self.plot_fields();
 
 
-    def get_scv(self, t_window):
+    def get_scv(self, t_window, B_bins=None):
         '''
         The offline binner to calculate the spike count vector (scv)
         run `pc.load_spktag(spktag_file)` first
         t_window is the window to count spikes
         t_step defines the sliding window size
+        
+        B_bins: binning parameter used in bmi application,
+        if B_bins is not None, then for each frame, the _scv:(B_Bins, N_neurons) 
         '''
-        # if t_step is None:
         self.scv = spk_time_to_scv(self.spk_time_dict, t_window=t_window, ts=self.ts)
         self.mua_count = self.scv.sum(axis=1)
-        # scv = scv[self.sorted_fields_id]
+        if B_bins is not None:
+            self.scv = sliding_window_to_feature(self.scv, B_bins-1)
+            self.scv = self.scv.reshape(self.scv.shape[0], B_bins, self.n_units)
         return self.scv
-        # else:
-        #     new_ts = np.arange(self.t_start, self.t_end, t_step)
-        #     scv = spk_time_to_scv(self.spk_time_dict, delta_t=t_window, ts=new_ts)
-        #     # scv = scv[self.sorted_fields_id]
-        #     x, y = interp1d(self.ts, self.pos[:,0], fill_value="extrapolate"), interp1d(self.ts, self.pos[:,1], fill_value="extrapolate")
-        #     new_pos = np.hstack((x(new_ts).reshape(-1,1), y(new_ts).reshape(-1,1))) 
-        #     return scv, new_ts, new_pos
 
 
     def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'wo'], markersize=15, alpha=.5, cmap=None, legend_loc=None):
@@ -951,15 +948,27 @@ class place_field(Dataset):
         - max_noise: for data augmentation
         - 
         '''
+        # first visualize the training data and test data (sanity check)
+        training_range = kwargs['training_range'] if 'training_range' in kwargs.keys() else [0.0, 1.0]
+        valid_range    = kwargs['valid_range'] if 'valid_range'    in kwargs.keys() else [0.0, 1.0]
+        testing_range  = kwargs['testing_range'] if 'testing_range'  in kwargs.keys() else [0.0, 1.0]
+        low_speed_cutoff = kwargs['low_speed_cutoff'] if 'low_speed_cutoff' in kwargs.keys() else {'training': True, 'testing': True}
+
+        N = self.pos.shape[0]
+        fig, ax = plt.subplots(1,2,figsize=(11,5))
+        ax[0].plot(self.pos[int(N*training_range[0]):int(N*training_range[1]),0], 
+                   self.pos[int(N*training_range[0]):int(N*training_range[1]),1]);
+        ax[0].set_title(f'training_range: {training_range[0]}-{training_range[1]}')
+        ax[1].plot(self.pos[int(N*testing_range[0]):int(N*testing_range[1]), 0], 
+                   self.pos[int(N*testing_range[0]):int(N*testing_range[1]), 1])
+        ax[1].set_title(f'testing_range: {testing_range[0]}-{testing_range[1]}')
+        plt.show();
+        
         if type == 'bayesian':
             from spiketag.analysis import NaiveBayes
             dec = NaiveBayes(t_step=t_step, t_window=t_window)
             dec.connect_to(self)
             dec.resample(t_step=t_step, t_window=t_window)
-            training_range = kwargs['training_range'] if 'training_range' in kwargs.keys() else [0.0, 1.0]
-            valid_range    = kwargs['valid_range'] if 'valid_range'    in kwargs.keys() else [0.0, 1.0]
-            testing_range  = kwargs['testing_range'] if 'testing_range'  in kwargs.keys() else [0.0, 1.0]
-            low_speed_cutoff = kwargs['low_speed_cutoff'] if 'low_speed_cutoff' in kwargs.keys() else {'training': True, 'testing': True}
             dec.partition(training_range=training_range, 
                           valid_range=valid_range, 
                           testing_range=testing_range,
@@ -1003,9 +1012,6 @@ class place_field(Dataset):
             scv = sliding_window_to_feature(scv, n)
             
             ncells, nsamples = scv.shape[1], scv.shape[0]
-            training_range = kwargs['training_range'] if 'training_range' in kwargs.keys() else [0.0, 1.0]
-            valid_range    = kwargs['valid_range'] if 'valid_range'    in kwargs.keys() else [0.0, 1.0]
-            testing_range  = kwargs['testing_range'] if 'testing_range'  in kwargs.keys() else [0.0, 1.0]
             X = scv[int(nsamples*training_range[0]):int(nsamples*training_range[1])]
             y = pos[int(nsamples*training_range[0]):int(nsamples*training_range[1])]
             X_test = scv[int(nsamples*testing_range[0]):int(nsamples*testing_range[1])]
@@ -1025,9 +1031,9 @@ class place_field(Dataset):
             print(f'{X_test.shape[0]} testing samples')
 
             # 3. training
-            # decoder.model.bn1.track_running_stats = False
-            # decoder.model.bn1.running_mean = None
-            # decoder.model.bn1.running_var = None
+            decoder.model.bn1.track_running_stats = False
+            decoder.model.bn1.running_mean = None
+            decoder.model.bn1.running_var = None
             max_noise = kwargs['max_noise'] if 'max_noise' in kwargs.keys() else 1
             max_epoch = kwargs['max_epoch'] if 'max_epoch' in kwargs.keys() else 3000
             lr = kwargs['lr'] if 'lr' in kwargs.keys() else 3e-4

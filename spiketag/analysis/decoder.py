@@ -464,7 +464,6 @@ class SineDec(nn.Module):
         x = F.softmax(F.relu(torch.sin(x) + torch.sin(self.fc1(x)))) * x
         # x = F.softmax(F.relu(self.fc1(x))) * x
 
-
         if self.LSTM:
             x, h = self.lstm(x.view(len(x), 1, -1))
             x = self.ln_lstm(x)
@@ -708,7 +707,6 @@ class DeepOSC(Decoder):
         
     def predict_rt(self, X, cuda=True, mode='eval', bn_momentum=0.1):
         # predict in real time eval mode
-
         # note: we don't need to take the squre root here, as the `model.predict_rt` will take the square root
         y = self.model.predict_rt(X, neuron_idx=self.neuron_idx, cuda=cuda, mode=mode, bn_momentum=bn_momentum)
 
@@ -717,6 +715,6 @@ class DeepOSC(Decoder):
         self.running_data.append(X[..., self.neuron_idx].ravel())
 
         # update running mean and std to BN (batch normalization)
-        if self.running_steps % self.update_interval == 0 and self.running_steps > 1200:
+        if self.running_steps % self.update_interval == 0 and self.running_steps > 600:
             self.update_bn(cuda=cuda)
         return y
