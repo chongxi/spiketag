@@ -13,7 +13,8 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset
 import torchvision
 from .core import pos2speed, argmax_2d_tensor, spk_time_to_scv, firing_pos_from_scv, smooth
-from .core import sliding_window_to_feature # , FA
+from .core import sliding_window_to_feature
+from .manifold import FA
 from ..base import SPKTAG
 from ..utils import colorbar
 from ..utils.plotting import colorline
@@ -874,24 +875,34 @@ class place_field(Dataset):
             self.field_fig = self.plot_fields();
 
 
-    def get_scv(self, t_window, B_bins=None):
+    def get_scv(self, t_window, B_bins=None, FA_dim=0):
         '''
         The offline binner to calculate the spike count vector (scv)
         run `pc.load_spktag(spktag_file)` first
-        t_window is the window to count spikes
-        t_step defines the sliding window size
-        
-        B_bins: binning parameter used in bmi application,
-        if B_bins is not None, then for each frame, the _scv:(B_Bins, N_neurons) 
+        Input:
+            - t_window is the window to count spikes
+            t_step defines the sliding window size
+            
+            - B_bins: binning parameter used in bmi application,
+            if B_bins is not None, then for each frame, the _scv:(B_Bins, N_neurons) 
+            
+            - FA_dim: factor analysis to remove the independent noise from scv
+            if FA_dim is 0, then FA will be bypassed, no reconstruction will be done
         '''
         self.scv = spk_time_to_scv(self.spk_time_dict, t_window=t_window, ts=self.ts)
+        if FA_dim>0:
+            self.fa = FA(n_components=FA_dim)
+            self.fa.fit(self.scv) #scv (spike count vector): (n_samples, n_units)
+            self.reconstructed_scv = self.fa.reconstruct(self.scv) 
+            self.resampled_scv = self.fa.sample_manifold(self.scv) 
+            self.scv = self.resampled_scv
         self.mua_count = self.scv.sum(axis=1)
         if B_bins is not None:
             self.scv = sliding_window_to_feature(self.scv, B_bins-1)
             self.scv = self.scv.reshape(self.scv.shape[0], B_bins, self.n_units)
         return self.scv
     
-    def get_data(self, t_window=None, B_bins=None):
+    def get_data(self, t_window=None, B_bins=None, FA_dim=0):
         '''
         get data as same format in real-time BMI application
         Input:
@@ -905,8 +916,9 @@ class place_field(Dataset):
         '''
         if t_window is None:
             t_window = self.t_step
-        scv = self.get_scv(t_window, B_bins)
-        pos = smooth(self.pos, int(1/self.t_step))
+        scv = self.get_scv(t_window, B_bins, FA_dim)
+        pos = smooth(self.pos, int(2/self.t_step)) * 1.1
+        pos = self.pos
         hdv = smooth(self.pos_2_speed(pos), int(2/self.t_step))
         pos = self.pos[B_bins:]
         hdv = hdv[B_bins:]
@@ -956,7 +968,7 @@ class place_field(Dataset):
         df_all_in_one.to_pickle(filename+'.pd')
 
     def to_dec(self, t_step=0.1, t_window=0.8, t_smooth=3, type='bayesian',  
-                     first_unit_is_noise=True, min_speed=4, 
+                     first_unit_is_noise=True, min_speed=4, FA_dim=0, 
                      min_bit=0.1, min_peak_rate=1.5, firing_rate_modulation=True, 
                      verbose=True, **kwargs):
         '''
@@ -1015,21 +1027,21 @@ class place_field(Dataset):
             
             # 1. prepare training and test data
             self(t_step)
-            self.get_scv(t_window=t_step);
-            self.output_variables = ['scv', 'pos']
-            scv_full, pos_full = self[:]
-            pos_full = smooth(pos_full, 30) * 1.1
-            v = np.linalg.norm(self.pos_2_speed(pos_full, self.ts[1:]), axis=1)
+
+            # self.get_scv(t_window=t_step);
+            # self.output_variables = ['scv', 'pos']
+            # scv_full, pos_full = self[:]
+            B_bins = int(t_window/t_step)
+            n = B_bins - 1
+            scv_full, pos_full, hdv_full = self.get_data(t_window=t_step, B_bins=B_bins, FA_dim=FA_dim)
+            # pos_full = smooth(pos_full, 30) * 1.1
+            v = np.linalg.norm(self.pos_2_speed(pos_full)/t_step, axis=1)
             scv_full = scv_full[v>min_speed]
             pos_full = pos_full[v>min_speed]
             scv_full = np.sqrt(scv_full)  # square root spike count for training and testing
-            scv = scv_full[:, neuron_idx]
             
-            # specific to deep net decoder, we need to unroll the time bin 
-            # and make a unit at different time bins a different unit
-            n = int(t_window/t_step) - 1
-            pos = pos_full[n:]
-            scv = sliding_window_to_feature(scv, n)
+            scv = scv_full[:, :, neuron_idx].reshape(scv_full.shape[0], -1) # training data format
+            pos = pos_full
             
             ncells, nsamples = scv.shape[1], scv.shape[0]
             X = scv[int(nsamples*training_range[0]):int(nsamples*training_range[1])]

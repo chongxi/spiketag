@@ -2,6 +2,7 @@ import sklearn
 import numpy as np
 import torch
 import torch.nn.functional as F
+from sklearn.decomposition import FactorAnalysis
 
 def spike_noise_bernoulli(X, noise_level=1, p=0.5, gain=1, cuda=True, IID=True):
     '''
@@ -42,7 +43,7 @@ def spike_noise_gaussian(X, noise_level=1, mean=0.0, std=3.0, gain=1, cuda=True,
         X = torch.relu(gain*(X + noise*X.mean(axis=0)))
     return X
 
-class FA(sklearn.decomposition.FactorAnalysis):
+class FA(FactorAnalysis):
     '''
     Factor analysis extended from sklearn
     `reconstruct` input to 
