@@ -244,17 +244,21 @@ def auto_compile(probefile):
     prb = probe()
     prb.load(probefile)
     log = logger('./process.log')
-    pc = log.to_pc(bin_size=4, v_cutoff=4)    
+    pc = log.to_pc(bin_size=2.5, v_cutoff=4) 
+
     ctrl = controller(view = False, fpga = True, pc = pc, probe = prb) 
-    ctrl.clusterless_sort(method='kmeans', N=25, minimum_spks=3000)
+    ctrl.clusterless_sort(method='dpgmm', N=20, minimum_spks=3000)
     ctrl.compile(status='ready')
     ctrl.save()
-    ctrl.model.pc.load_spkdf('./spktag/kmeans_sort.pd')
+    ctrl.model.pc.load_spkdf('./spktag/dpgmm_sort.pd')
+    # ctrl.model.pc.kernlen = 9
+    # ctrl.model.pc.kernstd = 2.5
+    # ctrl.model.pc.get_fields()
     _, score = ctrl.model.pc.to_dec(t_step=0.1, t_window=0.8, t_smooth=3, verbose=True, 
-                                  training_range = [0.0, 0.6], min_bit=0.1, min_peak_rate=1.5,
+                                  training_range = [0.0, 0.6], min_bit=0.2, min_peak_rate=1.5,
                                   testing_range  = [0.6, 1.0]);
     dec, _ = ctrl.model.pc.to_dec(t_step=0.1, t_window=0.8, t_smooth=3, verbose=True,
-                                  training_range=[0.0, 1.0], min_bit=0.1, min_peak_rate=1.5,
+                                  training_range=[0.0, 1.0], min_bit=0.2, min_peak_rate=1.5,
                                   testing_range=[0.0, 1.0]);
     dec.save('./spktag/nbdec_clusterless')
     

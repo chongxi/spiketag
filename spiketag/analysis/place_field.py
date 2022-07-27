@@ -968,7 +968,7 @@ class place_field(Dataset):
 
     def to_dec(self, t_step=0.1, t_window=0.8, t_smooth=3, type='bayesian',  
                      first_unit_is_noise=True, min_speed=4, FA_dim=0, 
-                     min_bit=0.1, min_peak_rate=1.5, firing_rate_modulation=True, 
+                     min_bit=0.1, min_peak_rate=1.5, min_avg_rate=0.5, firing_rate_modulation=True, 
                      verbose=True, **kwargs):
         '''
         kwargs example:
@@ -984,7 +984,10 @@ class place_field(Dataset):
         valid_range    = kwargs['valid_range'] if 'valid_range'    in kwargs.keys() else [0.0, 1.0]
         testing_range  = kwargs['testing_range'] if 'testing_range'  in kwargs.keys() else [0.0, 1.0]
         low_speed_cutoff = kwargs['low_speed_cutoff'] if 'low_speed_cutoff' in kwargs.keys() else {'training': True, 'testing': True}
-
+        cond = (self.metric['spatial_bit_spike'] >= min_bit) & \
+               (self.metric['peak_rate'] >= min_peak_rate) & \
+               (self.metric['avg_rate'] >= min_avg_rate)
+            
         N = self.pos.shape[0]
         fig, ax = plt.subplots(1,2,figsize=(11,5))
         ax[0].plot(self.pos[int(N*training_range[0]):int(N*training_range[1]),0], 
@@ -1005,7 +1008,6 @@ class place_field(Dataset):
                           testing_range=testing_range,
                           low_speed_cutoff=low_speed_cutoff)
             dec.verbose = verbose
-            cond = (self.metric['spatial_bit_spike'] >= min_bit) & (self.metric['peak_rate'] >= min_peak_rate)
             self.drop_idx = (cond==0).nonzero()[0]
             if first_unit_is_noise:
                 self.drop_idx = np.append(0, self.drop_idx)
@@ -1020,7 +1022,6 @@ class place_field(Dataset):
 
         if type == 'NN':
             # select units
-            cond = (self.metric['spatial_bit_spike'] > min_bit) & (self.metric['peak_rate'] > min_peak_rate)
             neuron_idx = (cond > 0).nonzero()[0]
             print(f'{neuron_idx.shape[0]} neurons are selected')
             
@@ -1046,6 +1047,8 @@ class place_field(Dataset):
             ncells, nsamples = scv.shape[1], scv.shape[0]
             X = scv[int(nsamples*training_range[0]):int(nsamples*training_range[1])]
             y = pos[int(nsamples*training_range[0]):int(nsamples*training_range[1])]
+            # X = np.vstack((X[1:], (X[1:] + X[:-1])*0.5))
+            # y = np.vstack((y[1:], (y[1:] + y[:-1])*0.5))
             X_test = scv[int(nsamples*testing_range[0]):int(nsamples*testing_range[1])]
             y_test = pos[int(nsamples*testing_range[0]):int(nsamples*testing_range[1])]
             

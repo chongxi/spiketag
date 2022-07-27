@@ -461,7 +461,7 @@ class SineDec(nn.Module):
         # x = self.dropout(x)
 #         x = torch.sin(x)
         # x = self.fc1(x)    # to both place and speed prediction 
-        x = F.softmax(F.relu(torch.sin(x) + torch.sin(self.fc1(x)))) * x
+        x = F.relu(torch.sin(x) + torch.sin(self.fc1(x))) * x
         # x = F.softmax(F.relu(self.fc1(x))) * x
 
         if self.LSTM:
@@ -475,7 +475,7 @@ class SineDec(nn.Module):
         xv = self.olayer[2](xv) + xv
 #         xv = F.relu(xv)
 #         xv = torch.sin(xv)/(xv+1e-15)
-        xv = self.dropout(xv)
+        # xv = self.dropout(xv)
         v = self.fcx2v(xv)
 #         v2x, _ = self.v2x_lstm(v.view(len(v), 1, -1))
 #         v2x = self.ln2(v2x)
