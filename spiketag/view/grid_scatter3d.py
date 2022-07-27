@@ -11,7 +11,7 @@ except:
 
 import sys
 import numpy as np
-from ..view import scatter_3d_view
+from ..view.scatter_3d_view import scatter_3d_view
 from ..utils import Timer
 
 class grid_scatter3d(QtGui.QWidget):
@@ -70,7 +70,7 @@ class grid_scatter3d(QtGui.QWidget):
         '''
         The fet.bin
         '''
-        self.fet = np.fromfile(unit_packet_binfile, dtype=np.int32).reshape(-1,7)
+        self.fet = np.fromfile(unit_packet_binfile, dtype=np.int32).reshape(-1,8)
         self.load_units(self.fet)
 
 
