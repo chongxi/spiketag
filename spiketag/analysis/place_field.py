@@ -895,7 +895,7 @@ class place_field(Dataset):
             self.fa.fit(self.scv) #scv (spike count vector): (n_samples, n_units)
             self.reconstructed_scv = self.fa.reconstruct(self.scv) 
             self.resampled_scv = self.fa.sample_manifold(self.scv) 
-            self.scv = self.resampled_scv
+            self.scv = self.reconstructed_scv
         self.mua_count = self.scv.sum(axis=1)
         if B_bins is not None:
             self.scv = sliding_window_to_feature(self.scv, B_bins-1)
@@ -917,7 +917,6 @@ class place_field(Dataset):
         if t_window is None:
             t_window = self.t_step
         scv = self.get_scv(t_window, B_bins, FA_dim)
-        pos = smooth(self.pos, int(2/self.t_step)) * 1.1
         pos = self.pos
         hdv = smooth(self.pos_2_speed(pos), int(2/self.t_step))
         pos = self.pos[B_bins:]
@@ -1032,9 +1031,10 @@ class place_field(Dataset):
             # self.output_variables = ['scv', 'pos']
             # scv_full, pos_full = self[:]
             B_bins = int(t_window/t_step)
+            self.smooth_factor = int(t_smooth/t_step)
             n = B_bins - 1
             scv_full, pos_full, hdv_full = self.get_data(t_window=t_step, B_bins=B_bins, FA_dim=FA_dim)
-            # pos_full = smooth(pos_full, 30) * 1.1
+            pos_full = smooth(pos_full, self.smooth_factor) * 1.15
             v = np.linalg.norm(self.pos_2_speed(pos_full)/t_step, axis=1)
             scv_full = scv_full[v>min_speed]
             pos_full = pos_full[v>min_speed]
@@ -1049,7 +1049,7 @@ class place_field(Dataset):
             X_test = scv[int(nsamples*testing_range[0]):int(nsamples*testing_range[1])]
             y_test = pos[int(nsamples*testing_range[0]):int(nsamples*testing_range[1])]
             
-            # 2. initiate deepnet decoder
+            # ! 2. initiate deepnet decoder
             from spiketag.analysis.decoder import DeepOSC
             decoder = DeepOSC(input_dim=ncells, t_step=t_step, t_window=t_window, 
                               hidden_dim=[256, 256], output_dim=2, bn=True, LSTM=True)
@@ -1061,6 +1061,7 @@ class place_field(Dataset):
             decoder.test_y = y_test
             print(f'{X.shape[0]} training samples')
             print(f'{X_test.shape[0]} testing samples')
+            decoder.smooth_factor = self.smooth_factor
 
             # 3. training
             decoder.model.bn1.track_running_stats = False
@@ -1069,8 +1070,6 @@ class place_field(Dataset):
             max_noise = kwargs['max_noise'] if 'max_noise' in kwargs.keys() else 1
             max_epoch = kwargs['max_epoch'] if 'max_epoch' in kwargs.keys() else 3000
             lr = kwargs['lr'] if 'lr' in kwargs.keys() else 3e-4
-            self.smooth_factor = int(t_smooth/t_step)
-            decoder.smooth_factor = int(t_smooth/t_step)
             
             try:
                 decoder.fit(X, y, X_test, y_test, max_noise=max_noise, max_epoch=max_epoch, lr=lr, 
