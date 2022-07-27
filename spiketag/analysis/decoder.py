@@ -610,7 +610,7 @@ class DeepOSC(Decoder):
         '''
         pass
 
-    def fit(self, X, y, X_test, y_test, max_epoch=5000, smooth_factor=60, max_noise=1, 
+    def fit(self, X, y, X_test, y_test, max_epoch=5000, smooth_factor=30, max_noise=1, 
                                         early_stop_r2=0.82, lr=3e-4, weight_decay=0.01, cuda=True):
         '''
         training the deep neural network, using GPU if `cuda` == True
@@ -640,14 +640,14 @@ class DeepOSC(Decoder):
             self.model.train()
             self.optimizer.zero_grad()
             gain = 1 + 0.1*torch.randn(1, device='cuda')
-            std = 0.05 + np.abs(np.sin(epoch/500*3.14)) * max_noise
+            std = 0.00 + np.abs(np.sin(epoch/1000*3.14)) * max_noise
             # gausian noise with sqrt spike count
         #     noise_X = spike_noise_gaussian(X, noise_level=0,
         #                                   mean=0, std=std, gain=gain,
         #                                   IID=True, cuda=True)
             # bernoulli noise with spike count
             noise_X = spike_noise_bernoulli(
-                X, noise_level=std, p=0.5, gain=gain, cuda=True, IID=True)
+                X, noise_level=std, p=0.6, gain=1, cuda=True, IID=True)
             h, grid, _y, _v = self.model(noise_X)
             now_location = (y + 0.5*torch.rand_like(y, device='cuda')) 
             loss = F.mse_loss(now_location, _y) 
@@ -668,9 +668,9 @@ class DeepOSC(Decoder):
             self.optimizer.step()
         #     lrtim.step()
             if epoch > 1000:
-                self.set_learning_rate(lr/4)
+                self.set_learning_rate(lr/2)
             if epoch > 2000:
-                self.set_learning_rate(lr/8)
+                self.set_learning_rate(lr/4)
 
             if epoch % 10 == 0:
                 with torch.inference_mode():
