@@ -605,7 +605,7 @@ class place_field(Dataset):
         return f,ax
 
 
-    def get_fields(self, spk_time_dict=None, start=None, end=None, v_cutoff=None, rank=True):
+    def get_fields(self, N_fields=None, spk_time_dict=None, start=None, end=None, v_cutoff=None, rank=True):
         '''
         spk_time_dict is dictionary start from 0: (each spike train is a numpy array) 
         {0: spike trains for neuron 0
@@ -619,7 +619,11 @@ class place_field(Dataset):
         if spk_time_dict is None:
             spk_time_dict = self.spk_time_dict
 
-        self.n_fields = len(spk_time_dict.keys())
+        if N_fields is None:
+            self.n_fields = len(spk_time_dict.keys())
+        else:
+            self.n_fields = N_fields
+            
         self.n_units  = self.n_fields
         self.fields = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
         self.fields_sharp = np.zeros((self.n_fields, self.O.shape[0], self.O.shape[1]))
