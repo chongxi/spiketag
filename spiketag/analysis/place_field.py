@@ -634,14 +634,15 @@ class place_field(Dataset):
             self.v_cutoff = v_cutoff
             self.get_speed()    # ! critical for generating `low_speed_idx`
 
-        # print(spk_time_dict.keys())
-
-        for i in spk_time_dict.keys():
-            ### get place fields from neuron i
-            self.get_field(spk_time_dict, i, start, end)
-            self.fields_sharp[i] = self.FR
-            self.fields[i] = self.FR_smoothed
-            self.firing_pos_dict[i] = self.firing_pos
+        for i in range(self.n_fields):
+            if i in spk_time_dict.keys():
+                ### get place fields from neuron i
+                self.get_field(spk_time_dict, i, start, end)
+                self.fields_sharp[i] = self.FR
+                self.fields[i] = self.FR_smoothed
+                self.firing_pos_dict[i] = self.firing_pos
+            else:
+                self.firing_pos_dict[i] = np.array([]) # make sure self.firing_pos_dict[i].shape[0] == 0
 
         self.fields[self.fields==0] = 1e-25
 
