@@ -969,6 +969,7 @@ class place_field(Dataset):
     def to_dec(self, t_step=0.1, t_window=0.8, t_smooth=3, type='bayesian',  
                      first_unit_is_noise=True, min_speed=4, FA_dim=0, 
                      min_bit=0.1, min_peak_rate=1.5, min_avg_rate=0.5, firing_rate_modulation=True, 
+                     neuron_idx=None,
                      verbose=True, **kwargs):
         '''
         kwargs example:
@@ -984,9 +985,13 @@ class place_field(Dataset):
         valid_range    = kwargs['valid_range'] if 'valid_range'    in kwargs.keys() else [0.0, 1.0]
         testing_range  = kwargs['testing_range'] if 'testing_range'  in kwargs.keys() else [0.0, 1.0]
         low_speed_cutoff = kwargs['low_speed_cutoff'] if 'low_speed_cutoff' in kwargs.keys() else {'training': True, 'testing': True}
-        cond = (self.metric['spatial_bit_spike'] >= min_bit) & \
-               (self.metric['peak_rate'] >= min_peak_rate) & \
-               (self.metric['avg_rate'] >= min_avg_rate)
+
+        if neuron_idx is None:
+            cond = (self.metric['spatial_bit_spike'] >= min_bit) & \
+                (self.metric['peak_rate'] >= min_peak_rate) & \
+                (self.metric['avg_rate'] >= min_avg_rate)
+            neuron_idx = (cond > 0).nonzero()[0]
+        print(f'{neuron_idx.shape[0]} neurons are selected')
             
         N = self.pos.shape[0]
         fig, ax = plt.subplots(1,2,figsize=(11,5))
@@ -1020,11 +1025,7 @@ class place_field(Dataset):
             dec._score = score
             return dec, score
 
-        if type == 'NN':
-            # select units
-            neuron_idx = (cond > 0).nonzero()[0]
-            print(f'{neuron_idx.shape[0]} neurons are selected')
-            
+        if type == 'NN':            
             # 1. prepare training and test data
             self(t_step)
 
@@ -1055,7 +1056,7 @@ class place_field(Dataset):
             # ! 2. initiate deepnet decoder
             from spiketag.analysis.decoder import DeepOSC
             decoder = DeepOSC(input_dim=ncells, t_step=t_step, t_window=t_window, 
-                              hidden_dim=[256, 256], output_dim=2, bn=True, LSTM=True)
+                              hidden_dim=[256, 256], output_dim=2, bn=True, LSTM=False)
             decoder.connect_to(self)
             decoder.neuron_idx = neuron_idx
             decoder.train_X = X
