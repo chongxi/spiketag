@@ -604,8 +604,7 @@ class place_field(Dataset):
                     c=markercolor, alpha=alpha, markersize=markersize);
         return f,ax
 
-
-    def get_fields(self, N_fields=None, spk_time_dict=None, start=None, end=None, v_cutoff=None, rank=True):
+    def get_fields(self, spk_time_dict=None, start=None, end=None, v_cutoff=None, rank=True, N_fields=None):
         '''
         spk_time_dict is dictionary start from 0: (each spike train is a numpy array) 
         {0: spike trains for neuron 0
