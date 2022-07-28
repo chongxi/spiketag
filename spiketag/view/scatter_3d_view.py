@@ -96,6 +96,9 @@ class scatter_3d_view(scene.SceneCanvas):
         if size is not None:
             size = np.ones(self._n) * size
             self._size = size
+        else:
+            size = np.ones(self._n) * 5
+            self._size = size           
         self._render()
 
 
