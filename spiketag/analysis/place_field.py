@@ -776,7 +776,7 @@ class place_field(Dataset):
         return fig
 
 
-    def load_spkdf(self, df_file, fs=25000., start=None, end=None, replay_offset=0, show=False):
+    def load_spkdf(self, df_file, fs=25000., start=None, end=None, replay_offset=0, show=False, N_fields=None):
         '''
         core function: load spike dataframe in spktag folder (to get Spikes)
         This function also align ephys with behavior and compute the place fields of each found units in the `df_file`
@@ -818,7 +818,7 @@ class place_field(Dataset):
 
         print('3. Calculate the place field during [{},{}] secs\r\n    spatially bin the maze, calculate speed and occupation_map with {}cm bin_size\r\n    dump spikes when speed is lower than {}cm/secs\r\n'.format(start, end, self.bin_size, self.v_cutoff))                      
         self.initialize()
-        self.get_fields(self.spk_time_dict, start=start, end=end, rank=True)
+        self.get_fields(self.spk_time_dict, start=start, end=end, rank=True, N_fields=N_fields)
 
         try:
             self.df['spk']['x'] = np.interp(self.df['spk']['frame_id'], self.ts, self.pos[:,0])
