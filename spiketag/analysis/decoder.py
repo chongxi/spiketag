@@ -450,6 +450,8 @@ class SineDec(nn.Module):
         self.ln2 = nn.LayerNorm(hidden_dim[1])
         self.fcv2x = nn.Linear(output_dim, hidden_dim[1], bias=True)
         
+        self.scale = 1
+        
     def forward(self, X):
         x = self.encoder(X)  # input_dim -> hidden_dim[0]
         # x = self.ln1(x)
