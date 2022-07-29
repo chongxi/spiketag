@@ -996,14 +996,14 @@ class place_field(Dataset):
                 (self.metric['avg_rate'] >= min_avg_rate)
             neuron_idx = (cond > 0).nonzero()[0]
         print(f'{neuron_idx.shape[0]} neurons are selected')
-            
+        
         N = self.pos.shape[0]
         fig, ax = plt.subplots(1,2,figsize=(11,5))
         ax[0].plot(self.pos[int(N*training_range[0]):int(N*training_range[1]),0], 
-                   self.pos[int(N*training_range[0]):int(N*training_range[1]),1]);
+                   -self.pos[int(N*training_range[0]):int(N*training_range[1]),1]);
         ax[0].set_title(f'training_range: {training_range[0]}-{training_range[1]}')
         ax[1].plot(self.pos[int(N*testing_range[0]):int(N*testing_range[1]), 0], 
-                   self.pos[int(N*testing_range[0]):int(N*testing_range[1]), 1])
+                   -self.pos[int(N*testing_range[0]):int(N*testing_range[1]), 1])
         ax[1].set_title(f'testing_range: {testing_range[0]}-{testing_range[1]}')
         plt.show();
         
