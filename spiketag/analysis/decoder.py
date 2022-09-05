@@ -429,7 +429,7 @@ class SineDec(nn.Module):
         self.fc1  = nn.Linear(hidden_dim[0], hidden_dim[1])
         self.fc1xm = nn.Linear(hidden_dim[0], hidden_dim[1])
         self.fc2g = nn.Linear(hidden_dim[1], output_dim, bias=True)
-        self.fc2p = nn.Linear(hidden_dim[1], output_dim, bias=True)
+        self.fc2p = nn.Linear(hidden_dim[1], output_dim, bias=False)
         self.fc2  = nn.Linear(hidden_dim[1], output_dim, bias=True)
         # self.olayer1 = Olayer(hidden_dim)
         # self.olayer2 = Olayer(hidden_dim)
@@ -449,21 +449,19 @@ class SineDec(nn.Module):
         self.v2x_lstm = nn.LSTM(output_dim, hidden_dim[1], bias=True)
         self.ln2 = nn.LayerNorm(hidden_dim[1])
         self.fcv2x = nn.Linear(output_dim, hidden_dim[1], bias=True)
-        
         self.scale = 1
         
     def forward(self, X):
+        # x = self.dropout(X)
         x = self.encoder(X)  # input_dim -> hidden_dim[0]
         # x = self.ln1(x)
         if self.bn:
             x = self.bn1(x)      # 
 
-        x = self.dropout(x)
-
         # x = self.dropout(x)
 #         x = torch.sin(x)
         # x = self.fc1(x)    # to both place and speed prediction 
-        x = F.relu(torch.sin(x) + torch.sin(self.fc1(x))) * x
+        x = F.softmax(F.relu(self.fc1(x))) * x
         # x = F.softmax(F.relu(self.fc1(x))) * x
 
         if self.LSTM:
@@ -487,7 +485,7 @@ class SineDec(nn.Module):
         xg = self.olayer[3](xg) + xg
         xg = self.olayer[4](xg) + xg
         xg = self.olayer[5](xg) + xg
-        xg = self.olayer[6](xg) + xg
+        # xg = self.olayer[6](xg) + xg
         # xg = self.olayer[7](xg) + xg
         # xg = self.olayer[8](xg) + xg
         # xg = self.olayer[9](xg) + xg
@@ -502,7 +500,7 @@ class SineDec(nn.Module):
 #         xp = self.fc2p(xp)
         return x, xg, y, v
 
-    def predict(self, X, cuda=True, mode='eval', bn_momentum=0.1):
+    def predict(self, X, cuda=True, mode='eval', bn_momentum=0.1, target='pos'):
         if type(X) == np.ndarray:
             X = torch.from_numpy(X).float()
         if X.ndim == 1:
@@ -518,8 +516,16 @@ class SineDec(nn.Module):
         with torch.inference_mode():
             _, _, _yo, _vo = self.forward(X)
             _yo = _yo.cpu().detach().numpy()
-            # _vo = _vo.cpu().detach().numpy()
-        return np.nan_to_num(_yo)
+
+        if target == 'pos':
+            return np.nan_to_num(_yo)
+        if target == 'motion':
+            _mo = F.sigmoid(_vo.norm(dim=1)).cpu().detach().numpy().reshape(-1, 1)
+            return np.nan_to_num(_mo)
+        if target == 'vel':
+            _vo = _vo.cpu().detach().numpy()
+            return np.nan_to_num(_vo)
+            
     
     def predict_rt(self, X, neuron_idx, cuda, mode, bn_momentum):
         '''
@@ -613,7 +619,8 @@ class DeepOSC(Decoder):
         pass
 
     def fit(self, X, y, X_test, y_test, max_epoch=5000, smooth_factor=30, max_noise=1, 
-                                        early_stop_r2=0.82, lr=3e-4, weight_decay=0.01, cuda=True):
+                  early_stop_r2=0.82, lr=3e-4, weight_decay=0.01, cuda=True,
+                  target='pos'):
         '''
         training the deep neural network, using GPU if `cuda` == True
         '''
@@ -641,18 +648,22 @@ class DeepOSC(Decoder):
         for epoch in range(max_epoch):
             self.model.train()
             self.optimizer.zero_grad()
-            gain = 1 + 0.1*torch.randn(1, device='cuda')
-            std = 0.00 + np.abs(np.sin(epoch/1000*3.14)) * max_noise
+            gain = 1 + 0.05*torch.randn(1, device='cuda')
+            std = 0.00 + np.abs(np.sin(epoch/600*3.14)) * max_noise
             # gausian noise with sqrt spike count
-        #     noise_X = spike_noise_gaussian(X, noise_level=0,
-        #                                   mean=0, std=std, gain=gain,
-        #                                   IID=True, cuda=True)
+            # noise_X = spike_noise_gaussian(X, noise_level=1,
+            #                               mean=0, std=std, gain=1,
+            #                               IID=True, cuda=True)
             # bernoulli noise with spike count
             noise_X = spike_noise_bernoulli(
-                X, noise_level=std, p=0.6, gain=1, cuda=True, IID=True)
+                X, noise_level=std, p=0.5, gain=1, cuda=True, IID=True)
             h, grid, _y, _v = self.model(noise_X)
-            now_location = (y + 0.5*torch.rand_like(y, device='cuda')) 
-            loss = F.mse_loss(now_location, _y) 
+            if target == 'pos' or target=='vel': # regression for pos: y should be (N, 2)
+                # now_location = y # (y + 0.2*torch.rand_like(y, device='cuda')) 
+                loss = F.mse_loss(y, _y) 
+            elif target == 'motion': # binary classification for motion: y should be (N,), each value is either 0 or 1
+                move_or_not = _v.norm(dim=1) 
+                loss = F.binary_cross_entropy_with_logits(move_or_not, y) 
         #         loss = F.mse_loss(y[:-1] + _v[:-1], y[1:]) * 5
         #     loss += F.mse_loss(y[:-1] + _v[:-1], y[1:])
         #     loss += F.mse_loss(_v, v)
@@ -660,7 +671,7 @@ class DeepOSC(Decoder):
             norm_val = torch.norm(grid, p=1, dim=1).sum() * 1e-6 + \
                        torch.norm(grid, p=1, dim=0).sum() * 1e-6
             norm_h = torch.norm(h, p=1) * 1e-6
-            loss = loss + norm_val  # norm_h # + norm_val # + loss_g # + norm_val # + norm_h
+            # loss = loss + norm_val  # norm_h # + norm_val # + loss_g # + norm_val # + norm_h
         #     grid = nn.Dropout(0.6)(grid)
         #     grid_pos = self.model.fc2(grid)
         #     grid_pos_loss = F.mse_loss(grid_pos, now_location)
@@ -676,7 +687,7 @@ class DeepOSC(Decoder):
 
             if epoch % 10 == 0:
                 with torch.inference_mode():
-                    _yo = self.predict(X_test)
+                    _yo = self.predict(X_test, target=target)
                 dec_y = smooth(_yo, smooth_factor)
                 r2_p = r2_score(y_test.cpu().numpy(), dec_y)
                 self.test_r2.append(r2_p)
@@ -704,8 +715,8 @@ class DeepOSC(Decoder):
         fig.tight_layout()  # otherwise the right y-label is slightly clipped
         return fig
 
-    def predict(self, X, cuda=True, mode='eval', bn_momentum=0.1):
-        y = self.model.predict(X, cuda=cuda, mode=mode, bn_momentum=bn_momentum)
+    def predict(self, X, cuda=True, mode='eval', bn_momentum=0.1, target='pos'):
+        y = self.model.predict(X, cuda=cuda, mode=mode, bn_momentum=bn_momentum, target=target)
         return y
 
     def update_bn(self, cuda=True, bn_momentum=0.9):

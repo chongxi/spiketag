@@ -265,7 +265,7 @@ class place_field(Dataset):
     
     def real_pos_2_soft_pos(self, pos, kernel_size=7):
         binned_y = self.real_pos_2_binned_pos(pos)
-        Y = self.binned_pos_2_onehot(binned_y).reshape(-1, 1, self.O.shape[1], self.O.shape[0])
+        Y = self.binned_pos_2_onehot(binned_y).reshape(-1, 1, self.O.shape[0], self.O.shape[1])
         T = F.conv2d(input=torch.from_numpy(Y).float(),
                     weight=torch.from_numpy(self.gkern(kernel_size,1)).reshape(1,1,kernel_size,kernel_size).float(), 
                     padding=kernel_size//2).squeeze()
@@ -973,7 +973,7 @@ class place_field(Dataset):
     def to_dec(self, t_step=0.1, t_window=0.8, t_smooth=3, type='bayesian',  
                      first_unit_is_noise=True, min_speed=4, FA_dim=0, 
                      min_bit=0.1, min_peak_rate=1.5, min_avg_rate=0.5, firing_rate_modulation=True, 
-                     neuron_idx=None,
+                     neuron_idx=None, LSTM=True,
                      verbose=True, **kwargs):
         '''
         kwargs example:
@@ -991,11 +991,15 @@ class place_field(Dataset):
         low_speed_cutoff = kwargs['low_speed_cutoff'] if 'low_speed_cutoff' in kwargs.keys() else {'training': True, 'testing': True}
 
         if neuron_idx is None:
-            cond = (self.metric['spatial_bit_spike'] >= min_bit) & \
-                (self.metric['peak_rate'] >= min_peak_rate) & \
-                (self.metric['avg_rate'] >= min_avg_rate)
-            neuron_idx = (cond > 0).nonzero()[0]
-        print(f'{neuron_idx.shape[0]} neurons are selected')
+            self.neuron_idx = ((self.metric['spatial_bit_spike']>min_bit) & 
+                               (self.metric['peak_rate']>min_peak_rate) & 
+                               (self.metric['avg_rate']>min_avg_rate)).nonzero()[0]
+        else:
+            self.neuron_idx = neuron_idx
+        self.drop_neuron_idx = np.delete(np.arange(self.n_units), self.neuron_idx)
+        if first_unit_is_noise and 0 not in self.drop_neuron_idx:
+            self.drop_neuron_idx = np.append(0, self.drop_neuron_idx)
+        print(f'{self.neuron_idx.shape[0]} out of {self.n_units} neurons are selected, {self.drop_neuron_idx.shape[0]} neurons are dropped')
         
         N = self.pos.shape[0]
         fig, ax = plt.subplots(1,2,figsize=(11,5))
@@ -1017,12 +1021,7 @@ class place_field(Dataset):
                           testing_range=testing_range,
                           low_speed_cutoff=low_speed_cutoff)
             dec.verbose = verbose
-            self.drop_idx = (cond==0).nonzero()[0]
-            if first_unit_is_noise:
-                self.drop_idx = np.append(0, self.drop_idx)
-                dec.drop_neuron(self.drop_idx)   # drop the neuron with id 0 which is noise with those fire at super low frequency
-            else:
-                dec.drop_neuron([0])
+            dec.drop_neuron(self.drop_neuron_idx)   # drop the neuron with id 0 which is noise with those fire at super low frequency
             self.smooth_factor = int(t_smooth/t_step)
             dec.smooth_factor = int(t_smooth/t_step)
             score = dec.score(t_smooth=t_smooth, firing_rate_modulation=firing_rate_modulation)
@@ -1039,14 +1038,18 @@ class place_field(Dataset):
             B_bins = int(t_window/t_step)
             self.smooth_factor = int(t_smooth/t_step)
             n = B_bins - 1
+            scv_full_for_test, _, _ = self.get_data(t_window=t_step, B_bins=B_bins, FA_dim=0)
             scv_full, pos_full, hdv_full = self.get_data(t_window=t_step, B_bins=B_bins, FA_dim=FA_dim)
             pos_full = smooth(pos_full, self.smooth_factor) * 1.15
             v = np.linalg.norm(self.pos_2_speed(pos_full)/t_step, axis=1)
             scv_full = scv_full[v>min_speed]
+            scv_full_for_test = scv_full_for_test[v>min_speed]
             pos_full = pos_full[v>min_speed]
-            scv_full = np.sqrt(scv_full)  # square root spike count for training and testing
+            scv_full = np.sqrt(scv_full)  # square root spike count for training
+            scv_full_for_test = np.sqrt(scv_full_for_test)  # square root spike count for testing
             
             scv = scv_full[:, :, neuron_idx].reshape(scv_full.shape[0], -1) # training data format
+            scv_4_test = scv_full_for_test[:, :, neuron_idx].reshape(scv_full_for_test.shape[0], -1) # testing data format
             pos = pos_full
             
             ncells, nsamples = scv.shape[1], scv.shape[0]
@@ -1054,13 +1057,13 @@ class place_field(Dataset):
             y = pos[int(nsamples*training_range[0]):int(nsamples*training_range[1])]
             # X = np.vstack((X[1:], (X[1:] + X[:-1])*0.5))
             # y = np.vstack((y[1:], (y[1:] + y[:-1])*0.5))
-            X_test = scv[int(nsamples*testing_range[0]):int(nsamples*testing_range[1])]
+            X_test = scv_4_test[int(nsamples*testing_range[0]):int(nsamples*testing_range[1])]
             y_test = pos[int(nsamples*testing_range[0]):int(nsamples*testing_range[1])]
             
             # ! 2. initiate deepnet decoder
             from spiketag.analysis.decoder import DeepOSC
             decoder = DeepOSC(input_dim=ncells, t_step=t_step, t_window=t_window, 
-                              hidden_dim=[256, 256], output_dim=2, bn=True, LSTM=False)
+                              hidden_dim=[256, 256], output_dim=2, bn=True, LSTM=LSTM)
             decoder.connect_to(self)
             decoder.neuron_idx = neuron_idx
             decoder.train_X = X
@@ -1099,5 +1102,7 @@ class place_field(Dataset):
             decoder._score = score
             
             # 6. To deploy the model - set to cpu mode
+            # decoder.predict(X, mode='train', bn_momentum=0.9); # update bn again
             decoder.model.cpu();
+
             return decoder, score
