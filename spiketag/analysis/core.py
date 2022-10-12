@@ -11,6 +11,28 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
+def acorr(X, norm=False):
+    '''
+    FFT-based autocorrelation function for 1D or higher dimensional time series.
+    When X is 1D, the autocorrelation return same results as `scipy.signal.correlate(X, X)` or `np.convolve(X, np.conj(X)[::-1])`
+    Input:
+        X: n by d (n time points, each has d dimension)
+        norm: if True, normalize the autocorrelation that its maximum is 1
+    Output:
+        ACF (AutoCorrelation Function): a n-point sequence that represents the degree of similarity 
+                                        between X and a lagged version of X over successive n time points.
+    '''
+    from numpy.fft import fft, ifft
+    if X.ndim == 1:
+        X = X.reshape(-1,1)
+    FT = fft(X.T, n=len(X)*2 + 1)
+    ACF = ifft(FT*np.conj(FT)).sum(axis=0).real
+    ACF = np.roll(ACF, len(X))
+    if ACF[0] < 1e-6 or ACF[-1] < 1e-6:
+        ACF = ACF[1:-1] # the first and last number is zero
+    if norm:
+        ACF = ACF/ACF.max()
+    return ACF
 
 def softmax(X):
     X = torch.tensor(X).double()
