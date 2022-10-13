@@ -21,6 +21,11 @@ def acorr(X, norm=False):
     Output:
         ACF (AutoCorrelation Function): a n-point sequence that represents the degree of similarity 
                                         between X and a lagged version of X over successive n time points.
+
+    Note: this is function different from what was described in 
+          https://stackoverflow.com/questions/4503325/autocorrelation-of-a-multidimensional-array-in-numpy
+          our acorr function truly treat time series as ND array that the correlation between a d-dimension signal (a row) 
+          and their lagged version (at different rows) are calculated.  
     '''
     from numpy.fft import fft, ifft
     if X.ndim == 1:
