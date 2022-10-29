@@ -405,7 +405,7 @@ def butter_lowpass(cutoff, fs=25000, order=5):
     return b, a
 
 
-def get_LFP(bf, t0, t1, ch, mua_fs=25000, lfp_fs=1000, cutoff=300):
+def get_LFP(bf, t0, t1, ch, mua_fs=25000, lfp_fs=1000, cutoff=400):
     from ..base import mua_kernel
     # step 1: wiener deconvolution (25000 Hz) to reconstruct raw waveform
     offset = 10000
@@ -420,7 +420,7 @@ def get_LFP(bf, t0, t1, ch, mua_fs=25000, lfp_fs=1000, cutoff=300):
     # step 3: low-pass filter to get lfp (also remove the ultra-low frequency)
     b, a = butter_lowpass(cutoff, fs=lfp_fs, order=5)
     lfp = signal.filtfilt(b, a, raw_wav, padlen=1000)
-    tlfp = np.linspace(t0, t1, lfp.shape[0], endpoint=False)
+    tlfp = np.linspace(t0, t1-offset/mua_fs, lfp.shape[0], endpoint=False)
 #     b, a = signal.iirnotch(1, 200, fs)
 #     lfp = signal.filtfilt(b, a, lfp, padlen=1000)
     lfp = signal.detrend(lfp)
