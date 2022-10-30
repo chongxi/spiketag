@@ -87,7 +87,11 @@ class UNIT(object):
             self.df['time'] /= self.sampling_rate
             self.df['group_id'] = self.df['group_id'].astype('int')
             self.df['spike_id'] = self.df['spike_id'].astype('int')
-        
+
+        error_idx = np.where(self.df.time.diff()<0)[0] # find the first point that time is not increasing
+        if error_idx.shape[0] > 0:
+            self.df = self.df.iloc[:error_idx[0]]
+
         self.labels = self.df.spike_id.sort_values().unique()
 
         self.assign_fet()
