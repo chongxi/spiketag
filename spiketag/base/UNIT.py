@@ -112,6 +112,25 @@ class UNIT(object):
         self.fet.clu = clu_dict
         self.label = label
 
+    def __repr__(self):
+        return self.df.__repr__()
+
+    @property
+    def n_units(self):
+        return self.df.spike_id.unique().shape[0]
+
+    @property
+    def spike_time(self):
+        return self.df.time.to_numpy()
+
+    @property
+    def spike_id(self):
+        return self.df.spike_id.to_numpy()
+
+    @property
+    def bin_ts(self):
+        return self.bin_index*self.bin_len
+
     @property
     def bin_len(self):
         return self._bin_len
