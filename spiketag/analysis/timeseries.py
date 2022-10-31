@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from scipy.stats import zscore
+from scipy.signal import find_peaks
 
 # define a time series class
 class TimeSeries(object):
@@ -50,11 +51,40 @@ class TimeSeries(object):
         self.t = t
         self.data = data
         self.name = name
-        self.fs = 1/(t[1]-t[0])
+        # self.fs = 1/(t[1]-t[0])
+        self.ndim = self.data.ndim
+        if self.ndim == 1:
+            self.data = self.data.reshape(-1, 1)
+        self.nch = self.data.shape[1]
 
     def between(self, start_time, end_time):
         idx = np.where((self.t >= start_time) & (self.t <= end_time))[0]
         return TimeSeries(self.t[idx], self.data[idx], self.name)
+    
+    def find_peaks(self, z_high=None, z_low=1, **kwargs):
+        peaks, left, right = {}, {}, {}
+        for ch in range(self.nch):
+            if z_high is not None:
+                self.threshold = np.median(self.data[:,ch]) + z_high * np.std(self.data[:,ch])
+                _peaks_idx, _ = find_peaks(self.data[:,ch], height=self.threshold, **kwargs)
+            else:
+                _peaks_idx, _ = find_peaks(self.data, **kwargs)
+            _left_idx, _right_idx = self.find_left_right_nearest(
+                np.where(self.data[:, ch] < z_low * np.std(self.data[:, ch]))[0][:-1], _peaks_idx)
+            peaks[ch] = TimeSeries(self.t[_peaks_idx], self.data[_peaks_idx], self.name+'_peaks_'+str(ch))
+            left[ch]  = TimeSeries(self.t[_left_idx], self.data[_left_idx], self.name+'_left_'+str(ch))
+            right[ch] = TimeSeries(self.t[_right_idx], self.data[_right_idx], self.name+'_right_'+str(ch))
+        return peaks, left, right
+
+    def find_left_right_nearest(self, x_idx, v_idx):
+        """
+        Find the adjacent index of v_idx (N,) in x_idx (return the N left index of a, and N right index of a)
+        """
+        _idx_right = np.searchsorted(x_idx, v_idx)
+        _idx_left = np.searchsorted(x_idx, v_idx) - 1
+        left = x_idx[_idx_left] - 1
+        right = x_idx[_idx_right] 
+        return left, right
 
     def plot(self, ax=None, **kwargs):
         if ax is None:
