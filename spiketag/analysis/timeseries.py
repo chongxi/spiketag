@@ -2,7 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from scipy.stats import zscore
-from scipy.signal import find_peaks
+from scipy import signal
+from ..analysis import smooth
 
 # define a time series class
 class TimeSeries(object):
@@ -66,9 +67,9 @@ class TimeSeries(object):
         for ch in range(self.nch):
             if z_high is not None:
                 self.threshold = np.median(self.data[:,ch]) + z_high * np.std(self.data[:,ch])
-                _peaks_idx, _ = find_peaks(self.data[:,ch], height=self.threshold, **kwargs)
+                _peaks_idx, _ = signal.find_peaks(self.data[:,ch], height=self.threshold, **kwargs)
             else:
-                _peaks_idx, _ = find_peaks(self.data, **kwargs)
+                _peaks_idx, _ = signal.find_peaks(self.data, **kwargs)
             _left_idx, _right_idx = self.find_left_right_nearest(
                 np.where(self.data[:, ch] < z_low * np.std(self.data[:, ch]))[0][:-1], _peaks_idx)
             peaks[ch] = TimeSeries(self.t[_peaks_idx], self.data[_peaks_idx], self.name+'_peaks_'+str(ch))
@@ -85,6 +86,39 @@ class TimeSeries(object):
         left = x_idx[_idx_left] - 1
         right = x_idx[_idx_right] 
         return left, right
+
+    def filtfilt(self, N=20, Wn=[100, 300], type='bp', fs=None, show=False):
+        if fs is None:
+            fs = 1/(self.t[1]-self.t[0])
+
+        b, a = signal.butter(N, Wn, btype=type, fs=fs)
+        y = signal.filtfilt(b, a, self.data, axis=0)
+
+        if show is True:
+            import matplotlib.pyplot as plt
+            w, h = signal.freqz(b, a, fs=fs)
+            plt.plot(w, 20 * np.log10(abs(h)))
+            plt.axvspan(Wn[0], Wn[1], alpha=0.5)
+            plt.title('Butterworth filter frequency response')
+            plt.xlabel('Frequency [Hz]')
+            plt.ylabel('Amplitude [dB]')
+        return TimeSeries(self.t, y, self.name+'_filtered'+str(Wn))
+
+    def hilbert(self, **kwargs):
+        '''
+        self.data must be 1-d numpy array
+        '''
+        amplitude_envelope = np.abs(signal.hilbert(self.data.ravel(), **kwargs))
+        return TimeSeries(self.t, amplitude_envelope , self.name+'_hilbert')
+
+    def zscore(self, **kwargs):
+        return TimeSeries(self.t, zscore(self.data, **kwargs), self.name+'_zscore')
+    
+    def smooth(self, n=5):
+        return TimeSeries(self.t, smooth(self.data, n), self.name+'_smooth')
+
+    def mean_subtract(self):
+        return TimeSeries(self.t, self.data - np.mean(self.data, axis=0), self.name+'_mean_subtract')
 
     def plot(self, ax=None, **kwargs):
         if ax is None:
