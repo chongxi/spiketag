@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from scipy.stats import zscore
 from scipy import signal
-from ..analysis import smooth
+from ..analysis import smooth, get_cwt
 
 # define a time series class
 class TimeSeries(object):
@@ -119,6 +119,15 @@ class TimeSeries(object):
 
     def mean_subtract(self):
         return TimeSeries(self.t, self.data - np.mean(self.data, axis=0), self.name+'_mean_subtract')
+
+    def get_cwt(self, fmin=0, fmax=128, dj=1/100, show=False):
+        cwtmatr = get_cwt(self.t, self.data.ravel(), fmin=fmin, fmax=fmax, dj=dj)
+        if show is True:
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots(2,1,figsize=(16,8), sharex=True)
+            self.plot(ax = ax[0]);
+            ax[1].pcolormesh(cwtmatr.t, cwtmatr.freq, cwtmatr.magnitude, cmap='viridis');
+        return cwtmatr
 
     def plot(self, ax=None, **kwargs):
         if ax is None:
