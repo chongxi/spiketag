@@ -313,3 +313,27 @@ class CWT(nn.Module):
             # )
             output = conv2d_same(x, self._kernel, stride=self.stride)
             return torch.transpose(output, 1, 2)
+
+    def pcolormesh(self, ax=None, figsize=(12,5), **kwargs):
+        """Plot the CWT using matplotlib
+
+        Returns:
+            matplotlib.figure.Figure: Figure object
+        """
+        if ax is None:
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots(figsize=figsize)
+        ax.pcolormesh(
+            self.t,
+            self.freq,
+            self.magnitude,
+            cmap="viridis", **kwargs
+        )
+        ax.set_ylabel("Frequency");
+        ax.set_xlabel("Time (s)");
+        return ax
+
+    @property
+    def max_freq(self):
+        self._max_freq = self.freq[self.magnitude.mean(axis=1).argmax()]
+        return self._max_freq
