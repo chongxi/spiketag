@@ -1,3 +1,4 @@
+from matplotlib.gridspec import GridSpec
 import numpy as np
 import torch
 import torch.nn as nn
@@ -314,7 +315,7 @@ class CWT(nn.Module):
             output = conv2d_same(x, self._kernel, stride=self.stride)
             return torch.transpose(output, 1, 2)
 
-    def pcolormesh(self, ax=None, figsize=(12,5), **kwargs):
+    def pcolormesh(self, ax=None, figsize=(12,5), ylog=False, **kwargs):
         """Plot the CWT using matplotlib
 
         Returns:
@@ -329,9 +330,33 @@ class CWT(nn.Module):
             self.magnitude,
             cmap="viridis", **kwargs
         )
-        ax.set_ylabel("Frequency");
+        ax.set_ylabel("Frequency (Hz)");
         ax.set_xlabel("Time (s)");
+
+        if ylog:
+            plt.yscale('log', basey=2)
+            from matplotlib.ticker import ScalarFormatter
+            ax.yaxis.set_major_formatter(ScalarFormatter())          
         return ax
+
+    def show(self, figsize=(15, 5), ylog=False):
+        import matplotlib.pyplot as plt
+        fig = plt.figure(figsize=figsize)
+        gs = GridSpec(1, 3, figure=fig)
+        ax1 = fig.add_subplot(gs[:, :2])
+        ax2 = fig.add_subplot(gs[:, 2])
+
+        self.pcolormesh(figsize=(12, 5), ax=ax1)
+        ax2.plot(self.magnitude.max(axis=1), self.freq)
+        ax2.axhline(self.max_freq, c='r', ls='--')
+        ax2.text(100, self.max_freq+0.5, f'{self.max_freq:.2f}Hz')
+        ax1.get_shared_y_axes().join(ax1, ax2)
+
+        if ylog:
+            plt.yscale('log', basey=2)
+            from matplotlib.ticker import ScalarFormatter
+            ax1.yaxis.set_major_formatter(ScalarFormatter())
+            ax2.yaxis.set_major_formatter(ScalarFormatter())
 
     @property
     def max_freq(self):
