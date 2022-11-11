@@ -57,6 +57,7 @@ class TimeSeries(object):
         if self.ndim == 1:
             self.data = self.data.reshape(-1, 1)
         self.nch = self.data.shape[1]
+        assert(len(self.t) == self.data.shape[0]), 'time and data length do not match'
 
     def between(self, start_time, end_time):
         idx = np.where((self.t >= start_time) & (self.t <= end_time))[0]
