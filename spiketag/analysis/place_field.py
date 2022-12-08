@@ -12,7 +12,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset
 import torchvision
-from .core import pos2speed, argmax_2d_tensor, spk_time_to_scv, firing_pos_from_scv, smooth
+from .core import pos2speed, argmax_2d_tensor, spk_time_to_scv, firing_pos_from_scv, smooth, get_corr_field
 from .core import sliding_window_to_feature
 from .manifold import FA
 from ..base import SPKTAG
@@ -648,6 +648,30 @@ class place_field(Dataset):
 
         if rank is True:
             self.rank_fields(metric_name='spatial_bit_smoothed_spike')
+
+    def get_corr_field(self, pv):
+        '''
+        Calculate the correlation field of a population vector and a rate vector for each position in a maze.
+        Args:
+            pv (np.ndarray): The population vector of shape (N,). e.g., pc.scv[20]
+
+        Internal variables in or to the function get_corr_field:
+            fields (np.ndarray): The place fields of shape (N, M, M), where M is the size of the maze. pc.fields in spiketag can
+                                be used here. e.g., pc.fields
+            The rate vector (rv = pc.fields[:, x, y]) is a 1-dimensional array of shape (N,) that represents the firing rate of each
+            neuron at a specific position in the maze. 
+
+        Returns:
+        np.ndarray: The correlation field of shape (M, M) containing the correlation coefficients between pv and rv for each
+                     position in the maze.
+
+        Example:
+        i = 20 # the frame number
+        cf = pc.get_corr_field(pc.scv[i])
+        plt.imshow(cf, vmin=0, vmax=1)
+        plt.plot(binned_pos[i, 0], binned_pos[i, 1], 'C3o', ms=20);
+        '''
+        return get_corr_field(pv, self.fields)
 
     @property
     def max_firing_rate(self):
