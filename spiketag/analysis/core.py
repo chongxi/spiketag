@@ -224,9 +224,10 @@ def get_corr_field(pv, fields):
 
     with njit, this function takes 7.5 ms (20x faster than the pure python version)
     '''
-    cf = np.zeros((40, 40))
-    for i in range(40):
-        for j in range(40):
+    J, I = fields.shape[1], fields.shape[2]
+    cf = np.zeros((J, I))
+    for i in range(I):
+        for j in range(J):
             rv = fields[:, j, i]
             cf[j, i] = np.corrcoef(pv, rv)[0, 1]
     return cf

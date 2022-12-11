@@ -750,7 +750,7 @@ class place_field(Dataset):
         ax.set_title('neuron {0}: max firing rate {1:.2f}Hz, {2:.3f} bits'.format(neuron_id, p_rate, n_bits))
         return f,ax
 
-    def plot_fields_image(self, fields, show=True, invert_y=True):
+    def plot_fields_image(self, fields, cmap='hot', show=True, invert_y=True):
         fields = torch.from_numpy(fields).unsqueeze(1) # N, C, H, W
         if invert_y:
             fields = torch.flip(fields, dims=(2,)) # invert the H axis (since our data is inverted in y-axis)
@@ -758,7 +758,7 @@ class place_field(Dataset):
                                                normalize=True,
                                                scale_each=True).mean(axis=0)
         fig, ax = plt.subplots(1,1, figsize=(8,8))
-        ax.imshow(fields_img.numpy(), cmap=cm.hot);
+        ax.imshow(fields_img.numpy(), cmap=cmap);
         plt.axis(False);
         return fig
         
