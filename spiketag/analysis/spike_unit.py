@@ -1,14 +1,25 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 class spike_unit(object):
     """
     a unit of spike train
     """
     def __init__(self, spk_id, spk_time):
         self.id = spk_id
-        self.spk_time = spk_time
+        self.t = spk_time
+
+    def __len__(self):
+        '''
+        number of spikes
+        '''
+        return len(self.t)
+
+    def isi(self):
+        '''
+        inter spike interval
+        '''
+        return np.diff(self.t)
 
     def align_by(self, event_time):
         """
@@ -20,7 +31,7 @@ class spike_unit(object):
         """
         self.event_time = event_time
         self.n_events = len(event_time)
-        self.spk_time_algined = self.spk_time - self.event_time.reshape(-1, 1)
+        self.spk_time_algined = self.t - self.event_time.reshape(-1, 1)
         assert(self.spk_time_algined.shape[0] == self.n_events)
         return self.spk_time_algined
 
@@ -86,38 +97,11 @@ class spike_unit(object):
         plt.title('unit %d firing rate PETH' % self.id)
         plt.show()
 
-
-class spike_train(object):
-    """
-    This class is used for spike train analysis.
-
-    Args:
-
-    spike_info: a numpy array of spike times of N neurons (first row:spk_time, second row:spk_id)
-    For example:
-        array([[ 0.   ,  0.   ,  0.   , ...,  0.398,  0.398,  0.399],
-               [41.   , 43.   , 71.   , ..., 70.   , 77.   , 10.   ]],
-        dtype=float32)
-
-    Attributes:
-        spike_time: a numpy array of spike times of N neurons (spk_time in #samples)
-        spike_id  : a numpy array of spike id    of N neurons
-        unit: a dictionary of spike_unit
-        unit[i] is the spike_unit of neuron i
-        unit[i].id: the id of neuron i
-        unit[i].spk_time: the spike time of neuron i
-    """
-    
-    def __init__(self, spike_info):
-        """
-        This class is used for spike train analysis.
-        """
-        self.spike_time = spike_info[0]
-        self.spike_id = spike_info[1]
-        self.unit = {}
-        for i in np.unique(self.spike_id):
-            self.unit[i] = spike_unit(spk_id = i, 
-                                      spk_time = self.spike_time[self.spike_id == i])
-    
-    def __getitem__(self, i):
-        return self.unit[i]
+    def to_neo(self, time_units='sec', t_start=None, t_stop=None):
+        import neo
+        if t_start is None:
+            t_start = self.t[0]
+        if t_stop is None:
+            t_stop = self.t[-1]
+        neo_st = neo.SpikeTrain(self.t, units=time_units, t_start=t_start, t_stop=t_stop)
+        return neo_st

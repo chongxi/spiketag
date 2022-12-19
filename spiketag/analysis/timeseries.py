@@ -3,7 +3,11 @@ import torch
 import torch.nn as nn
 from scipy.stats import zscore
 from scipy import signal
-from ..analysis import smooth, get_cwt
+from ..analysis import smooth, get_cwt, spike_unit, rank_array
+from scipy.ndimage import gaussian_filter1d
+from spiketag.view.color_scheme import palette
+import matplotlib.colors as colors
+from matplotlib.ticker import ScalarFormatter, MultipleLocator
 
 # define a time series class
 class TimeSeries(object):
@@ -59,8 +63,15 @@ class TimeSeries(object):
         self.nch = self.data.shape[1]
         assert(len(self.t) == self.data.shape[0]), 'time and data length do not match'
 
+    def select(self, feature_idx):
+        return TimeSeries(self.t, self.data[:, feature_idx], self.name)
+
     def between(self, start_time, end_time):
         idx = np.where((self.t >= start_time) & (self.t <= end_time))[0]
+        return TimeSeries(self.t[idx], self.data[idx], self.name)
+    
+    def exclude(self, start_time, end_time):
+        idx = np.where((self.t < start_time) | (self.t > end_time))[0]
         return TimeSeries(self.t[idx], self.data[idx], self.name)
     
     def find_peaks(self, z_high=None, z_low=1, **kwargs):
@@ -70,7 +81,7 @@ class TimeSeries(object):
                 self.threshold = np.median(self.data[:,ch]) + z_high * np.std(self.data[:,ch])
                 _peaks_idx, _ = signal.find_peaks(self.data[:,ch], height=self.threshold, **kwargs)
             else:
-                _peaks_idx, _ = signal.find_peaks(self.data, **kwargs)
+                _peaks_idx, _ = signal.find_peaks(self.data[:, ch], **kwargs)
             _left_idx, _right_idx = self.find_left_right_nearest(
                 np.where(self.data[:, ch] < z_low * np.std(self.data[:, ch]))[0][:-1], _peaks_idx)
             peaks[ch] = TimeSeries(self.t[_peaks_idx], self.data[_peaks_idx], self.name+'_peaks_'+str(ch))
@@ -115,8 +126,26 @@ class TimeSeries(object):
     def zscore(self, **kwargs):
         return TimeSeries(self.t, zscore(self.data, **kwargs), self.name+'_zscore')
     
-    def smooth(self, n=5):
-        return TimeSeries(self.t, smooth(self.data, n), self.name+'_smooth')
+    def smooth(self, n=5, type='gaussian'):
+        '''
+        - for gaussian, n is sigma
+        - for boxcar,   n is window length
+        '''
+        if type=='boxcar':
+            data = smooth(self.data.astype(np.float32), n)
+            return TimeSeries(self.t, data, self.name+f'_smooth_{n}')
+        elif type=='gaussian':
+            data = gaussian_filter1d(self.data.astype(np.float32), sigma=n, axis=0, mode='constant')
+            return TimeSeries(self.t, data, self.name+f'_gaussian_smooth_{n}')
+    
+    def sum(self):
+        return TimeSeries(self.t, self.data.sum(axis=1), self.name+'_sum')
+
+    def min_subtract(self):
+        return TimeSeries(self.t, self.data - np.min(self.data, axis=0), self.name+'_mean_subtract')
+
+    def max_subtract(self):
+        return TimeSeries(self.t, self.data - np.max(self.data, axis=0), self.name+'_mean_subtract')
 
     def mean_subtract(self):
         return TimeSeries(self.t, self.data - np.mean(self.data, axis=0), self.name+'_mean_subtract')
@@ -143,6 +172,10 @@ class TimeSeries(object):
             fig, ax = plt.subplots(1,1,figsize=(12,5))
         ax.scatter(self.t, self.data, **kwargs)
         return ax
+
+    @property
+    def shape(self):
+        return self.data.shape
 
     def __getitem__(self, idx):
         return TimeSeries(self.t[idx], self.data[idx], self.name)
@@ -249,3 +282,220 @@ class TimeSeries(object):
     def __irshift__(self, other):
         self.data >>= other.data
         return self
+
+class spike_train(TimeSeries):
+    """
+    This class is used for spike train analysis.
+
+    Args:
+
+    spike_time: a numpy array of spike times of N neurons.
+    spike_id  : a numpy array of spike id    of N neurons.
+    For example, stack time and id into one matrix (of two rows, first row is time, second row is id):
+        array([[ 0.   ,  0.   ,  0.   , ...,  0.398,  0.398,  0.399],
+               [41.   , 43.   , 71.   , ..., 70.   , 77.   , 10.   ]],
+        dtype=float32)
+
+    Attributes:
+        spike_time: a numpy array of spike times of N neurons (spk_time in #samples)
+        spike_id  : a numpy array of spike id    of N neurons
+        unit: a dictionary of spike_unit
+        unit[i] is the spike_unit of neuron i
+        unit[i].id: the id of neuron i
+        unit[i].spk_time: the spike time of neuron i
+    """
+
+    def __init__(self, spike_time, spike_id, name=None):
+        """
+        This class is used for spike train analysis.
+        """
+        self.spike_time = spike_time
+        self.spike_id = spike_id
+        self.unit = {}
+        for i in np.unique(self.spike_id):
+            self.unit[i] = spike_unit(spk_id=i,
+                                      spk_time=self.spike_time[self.spike_id == i])
+        super(spike_train, self).__init__(self.spike_time, self.spike_id, name)
+        
+        # estimiate mua
+        tmin = self.t.min()*10//10
+        tmax = self.t.max()*10//10
+        self.mua = self.get_mua_fr(tmin, tmax, t_step=25e-3, std=25e-3) 
+
+    def between(self, start_time, end_time):
+        idx = np.where((self.t >= start_time) & (self.t <= end_time))[0]
+        return spike_train(self.t[idx], self.data[idx].ravel(), self.name)
+    
+    def exclude(self, start_time, end_time):
+        idx = np.where((self.t < start_time) | (self.t > end_time))[0]
+        return spike_train(self.t[idx], self.data[idx].ravel(), self.name)
+
+    def select(self, neuron_idx):
+        '''
+        return a new spike_train object with only the selected neurons
+        '''
+        return spike_train(self.t[np.isin(self.data.ravel(), neuron_idx)], 
+                           self.data.ravel()[np.isin(self.data.ravel(), neuron_idx)], self.name)
+
+    def sort(self, sorted_idx='ascending'):
+        '''
+        Returns a new spike_train object with the sorted spike-id is the rank of the original spike-id. Resulting the np.unique(spike_id) in a continuous sequence.
+
+        - The original unique spike ids may not be continuous and may have gaps, such as [3, 5, 11, 28, 234, 248].
+        - This method assign each spike ID a rank and returns a new spike_train object with the ranked IDs, such that the new unique spike rank-id starts
+          from 0 and is continuous. 
+
+        The original spike-id is useful for accessing representation/analysis
+        The ranked spike-id is useful for ordering in sequences, visualization etc., which are better in a continuous id space. 
+
+        if sorted_idx == ascending, it returns the ranked spike-id according to how big the spike id is. 
+        if sorted_idx is a numpy array, it returens the ranked spike-id in the sorted_idx using np.searchsorted. 
+        '''
+        if sorted_idx == "ascending":
+            self.spike_id_rank = rank_array(self.data.ravel())
+        if type(sorted_idx) == np.ndarray:
+            self.spike_id_rank = np.searchsorted(sorted_idx, self.data.ravel())
+
+        if self.name is not None:
+            return spike_train(self.t, self.spike_id_rank, self.name+'_ranked')
+        else:
+            return spike_train(self.t, self.spike_id_rank, 'spike_train_ranked')
+
+    def __len__(self):
+        return len(self.t)
+
+    def __getitem__(self, i):
+        return self.unit[i]
+
+    @property
+    def neuron_idx(self):
+        return np.unique(self.spike_id)
+
+    @property
+    def n_units(self):
+        return len(self.neuron_idx)
+
+    @property
+    def max_unit_id(self):
+        return max(self.neuron_idx)
+
+    def get_scv(self, start_time, end_time, t_step=100e-3):
+        '''
+        when t_step=100e-3, this function should produce the same result as bmi_scv_full[:, -1, :], bmi_scv_full = np.fromfile('./scv.bin').reshape(-1, B_bins, n_units) 
+        '''
+        ts = np.arange(start_time-t_step, end_time, t_step-1e-15)
+        spike_time = self.t
+        spike_id = self.data.ravel()
+        self.scv = np.vstack([np.histogram(spike_time[spike_id==i], ts)[0] for i in self.neuron_idx]).T
+        return ts[1:], self.scv
+
+    def get_sua_mean_fr(self, start_time=None, end_time=None):
+        '''
+        mean firing rate is total spike count of a neuron divided by the total time of the spike train
+        each unit should have the same time length (end_time - start_time) using behavior time !!!
+        '''
+        if start_time is None:
+            start_time = self.t.min()
+        if end_time is None:
+            end_time = self.t.max()
+        _spk = self.between(start_time, end_time)
+        mean_spike_rate = np.array([np.sum(_spk.data.ravel() == i) for i in self.neuron_idx])/(end_time - start_time)
+        return mean_spike_rate
+
+    def get_sua_fr(self, start_time=None, end_time=None, t_step=100e-3, std=100e-3, zscore=False):
+        '''
+        std: the std for gaussian smoothing window, using the same time unit as t_step 
+        '''
+        if start_time is None:
+            start_time = self.t.min()
+        if end_time is None:
+            end_time = self.t.max()
+        ts, scv = self.get_scv(start_time, end_time, t_step)       # spike count vector
+        scv_rate  = TimeSeries(t=ts, data=scv/t_step, name='scv')  # spike count vector / t_step = spike count rate
+        sigma = std/t_step
+        units_firing_rates = scv_rate.smooth(sigma)                  # smooth using a gaussian window with std sigma length
+        if zscore:                                          
+            units_firing_rates = units_firing_rates.zscore()       # z-score the rate (if zscore is true)
+        return units_firing_rates
+
+    def get_mua_fr(self, start_time=None, end_time=None, t_step=100e-3, std=1, zscore=False):
+        '''
+        std: the std for gaussian smoothing window
+        '''
+        if start_time is None:
+            start_time = self.t.min()
+        if end_time is None:
+            end_time = self.t.max()
+        ts, scv = self.get_scv(start_time, end_time, t_step)
+        scv_fr  = TimeSeries(t=ts, data=scv/t_step, name='scv')    
+        sigma = std/t_step    
+        mua_fr = scv_fr.sum().smooth(sigma)
+        if zscore:
+            mua_fr = mua_fr.zscore()
+        return mua_fr
+
+    def to_neo(self, start_time=None, end_time=None):
+        '''
+        convert to a list of neo spike trains
+        https://neo.readthedocs.io/en/stable/core.html
+
+        neo statistic method can be direcly applied
+        https://elephant.readthedocs.io/en/latest/tutorials/statistics.html
+        '''
+        if start_time is None:
+            start_time = self.t.min()
+        if end_time is None:
+            end_time = self.t.max()
+
+        _spk = self.between(start_time, end_time)
+        neo_spike_train = []
+        for i in self.neuron_idx:
+            neo_spike_train.append(_spk[i].to_neo(time_units='sec', t_start=start_time, t_stop=end_time))
+        return neo_spike_train
+
+    def eventplot(self, figsize=(8,3), unit_id_label_freq=1, start_time=None, end_time=None):
+        if start_time is None:
+            start_time = 0
+        if end_time is None:
+            end_time = self.t[-1]
+        _spk = self.between(start_time, end_time)
+
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(1,1,figsize=figsize)
+        ax.eventplot([_spk[i].t for i in _spk.neuron_idx], linelengths=0.75, lineoffsets=_spk.neuron_idx, color='black')
+        ax.yaxis.set_major_locator(MultipleLocator(unit_id_label_freq))
+        return ax
+
+    def show(self, start_time=None, end_time=None, ax=None, fig_height=5, fig_width=2, unit_id_label_freq=50, s=5, marker='|', t_step=25e-3, std=25e-3, **kwargs):
+        '''
+        return two axes:
+        ax[0]: raster plot of spike trains (scatter)
+        ax[1]: line plot of mua rate (plot)
+
+        use
+        ax[0].get_figure() to get fig
+        '''
+        if start_time is None:
+            start_time = self.t.min()
+        if end_time is None:
+            end_time   = self.t.max()
+        if ax is None:
+            import matplotlib.pyplot as plt
+            # fig, ax = plt.subplots(2,1,figsize=(12,5))
+            fig = plt.figure(constrained_layout=False, figsize=(fig_width*3, fig_height*3))
+            gs1 = fig.add_gridspec(nrows=fig_height, ncols=1, hspace=0.05)
+            ax0 = fig.add_subplot(gs1[:-1, :]) # raster plot of spikes
+            ax0.set_facecolor((0.0, 0.0, 0.0))
+            ax0.yaxis.set_major_locator(MultipleLocator(unit_id_label_freq))
+            ax1 = fig.add_subplot(gs1[-1, :])  # plot mua 
+            ax = [ax0, ax1]
+        _spk = self.between(start_time, end_time)
+        _mua = self.get_mua_fr(self.t.min(), self.t.max(), t_step=t_step, std=std).between(start_time, end_time) # get mua to plot the population firing rate
+        ax[0].scatter(_spk.t, _spk.data.ravel(), c=_spk.data.ravel(), s=s, marker=marker, cmap=colors.ListedColormap(palette), **kwargs)
+        ax[0].set_xticks([])
+        ax[0].set_ylim(0, self.max_unit_id+1)
+        ax[1].plot(_mua.t, _mua.data.ravel())
+        ax[0].set_xlim(start_time, end_time)
+        ax[1].set_xlim(start_time, end_time)
+        # ax[1].set_xlabel('Time (s)')
+        return ax

@@ -6,6 +6,7 @@ from .FET import FET
 from .CLU import CLU
 from ..view import scatter_3d_view, grid_scatter3d, raster_view
 
+
 class UNIT(object):
     """
     UNIT class load, visualize and analyze unit structured data
@@ -116,8 +117,12 @@ class UNIT(object):
         return self.df.__repr__()
 
     @property
+    def neuron_idx(self):
+        return self.df.spike_id.unique()
+
+    @property
     def n_units(self):
-        return self.df.spike_id.unique().shape[0]
+        return self.neuron_idx.shape[0]
 
     @property
     def spike_time(self):
@@ -155,18 +160,33 @@ class UNIT(object):
         ts = np.arange(self.df.bin_end_time.iloc[0] - t_step, self.df.bin_end_time.iloc[-1], t_step)
         return ts
     
-    def get_scv(self, start_time=None, end_time=None):
-        from spiketag.analysis import spk_time_to_scv
+    def get_scv(self, t_step=100e-3, start_time=None, end_time=None):
+        '''
+        when t_step=100e-3, this function should produce the same result as bmi_scv_full[:, -1, :], bmi_scv_full = np.fromfile('./scv.bin').reshape(-1, B_bins, n_units) 
+        '''
         if start_time is None and end_time is None:
             start_time, end_time = self.df.bin_end_time.iloc[0], self.df.bin_end_time.iloc[-1]
         self.spk_time_dict = {i: self.df[ (self.df.spike_id == i) & 
-                                          (self.df.time >  start_time) & 
+                                          (self.df.time >  start_time - t_step) & 
                                           (self.df.time <= end_time) ].time.to_numpy() 
-                for i in np.sort(self.df.spike_id.unique())} 
-        t_step = self.bin_len
-        ts = np.arange(start_time - t_step, end_time, t_step)
-        self.scv = spk_time_to_scv(self.spk_time_dict, ts=ts, t_window = self.bin_len*self.nbins)
-        return self.scv
+                              for i in np.sort(self.neuron_idx)} 
+        ts = np.arange(start_time-t_step, end_time, t_step-1e-15)
+        # self.scv = spk_time_to_scv(self.spk_time_dict, ts=ts, t_window = self.bin_len*self.nbins)
+        self.scv = np.vstack([np.histogram(self.spk_time_dict[i], ts)[0] for i in np.arange(self.n_units)]).T
+        return ts[1:], self.scv
+
+    def to_spiketrain(self, start_time=0, end_time=None, neuron_idx=None, name=' '):
+        if end_time is None:
+            end_time = self.ts[-1]
+            
+        from spiketag.analysis import spike_train as ST
+        if neuron_idx is None:
+            spk = ST(self.spike_time[self.spike_id>0],  
+                     self.spike_id[self.spike_id>0], name=name)
+        else:
+            spk = ST(self.spike_time[np.isin(self.spike_id, neuron_idx)], 
+                     self.spike_id[np.isin(self.spike_id, neuron_idx)], name=name)
+        return spk
 
     def assign_bin(self):
         '''
