@@ -379,6 +379,8 @@ class spike_train(TimeSeries):
     def max_unit_id(self):
         return max(self.neuron_idx)
 
+    ### get statistics/varibles ### 
+
     def get_scv(self, start_time, end_time, t_step=100e-3):
         '''
         when t_step=100e-3, this function should produce the same result as bmi_scv_full[:, -1, :], bmi_scv_full = np.fromfile('./scv.bin').reshape(-1, B_bins, n_units) 
@@ -434,6 +436,8 @@ class spike_train(TimeSeries):
             mua_fr = mua_fr.zscore()
         return mua_fr
 
+    ### API to other libraries ###
+
     def to_neo(self, start_time=None, end_time=None):
         '''
         convert to a list of neo spike trains
@@ -452,6 +456,8 @@ class spike_train(TimeSeries):
         for i in self.neuron_idx:
             neo_spike_train.append(_spk[i].to_neo(time_units='sec', t_start=start_time, t_stop=end_time))
         return neo_spike_train
+
+    ### visualization methods ###
 
     def eventplot(self, figsize=(8,3), unit_id_label_freq=1, start_time=None, end_time=None):
         if start_time is None:
