@@ -370,6 +370,15 @@ class place_field(Dataset):
         gkern2d /= gkern2d.sum()
         return gkern2d
 
+    def _get_firing_pos(self, spk_times):
+        spk_ts_idx = np.searchsorted(self.ts, spk_times) - 1
+        spk_ts_idx = spk_ts_idx[spk_ts_idx>0]
+        # idx = np.array([_ for _ in spk_ts_idx if _ not in self.low_speed_idx], dtype=np.int)
+        idx = spk_ts_idx[~np.in1d(spk_ts_idx, self.low_speed_idx)]
+        # idx = np.setdiff1d(spk_ts_idx, self.low_speed_idx)
+        firing_ts  = self.ts[idx]
+        firing_pos = self.pos[idx]
+        return firing_pos
 
     def _get_field(self, spk_times):
         '''
@@ -381,13 +390,7 @@ class place_field(Dataset):
 
         Used by `get_fields` method to calculate the place fields for all neurons in pc.spk_time_dict.
         '''
-        spk_ts_idx = np.searchsorted(self.ts, spk_times) - 1
-        spk_ts_idx = spk_ts_idx[spk_ts_idx>0]
-        # idx = np.array([_ for _ in spk_ts_idx if _ not in self.low_speed_idx], dtype=np.int)
-        idx = spk_ts_idx[~np.in1d(spk_ts_idx, self.low_speed_idx)]
-        # idx = np.setdiff1d(spk_ts_idx, self.low_speed_idx)
-        self.firing_ts  = self.ts[idx]
-        self.firing_pos = self.pos[idx]        
+        self.firing_pos = self._get_firing_pos(spk_times)     
         self.firing_map, x_edges, y_edges = np.histogram2d(x=self.firing_pos[:,0], y=self.firing_pos[:,1], 
                                                            bins=self.nbins, range=self.maze_range)
         self.firing_map = self.firing_map.T
