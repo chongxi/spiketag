@@ -46,6 +46,37 @@ def softmax(X):
     _softmax = X_exp / partition # The broadcast mechanism is applied here
     return _softmax.numpy()
 
+def softmax2D(arr, beta):
+    '''
+    arr is a 2D image
+    '''
+    arr = arr * beta
+    arr = arr - np.max(arr)
+    arr = np.exp(arr)
+    arr_sum = np.sum(arr)
+    arr = arr / arr_sum
+    return arr
+
+def rank_array(arr):
+    '''
+    this function returns an array of ranks for the elements in arr. 
+    The elements in the returned array will be in the range 0 to len(values) - 1, 
+    with lower ranks corresponding to smaller values and higher ranks corresponding to larger values.
+    
+    For example:
+    arr:     np.array([5 2 8 2 1 9])
+    ranks:   np.array([2 1 3 1 0 4])
+    
+    The same value will be assign to same rank. This function is robust to arrray of interger (such array of some sort of id)
+    '''
+    # The np.unique function is used to find the unique values in arr
+    values = np.unique(arr)
+    # The np.searchsorted function is used to find the ranks of the elements in arr. 
+    # It does this by searching for the position in values where each element in arr would be inserted to maintain the sorted order of values.
+    # The returned rank starts from 0
+    ranks = np.searchsorted(values, arr)
+    return ranks
+
 def pos2speed(pos, ts=None):
     '''
     input:
