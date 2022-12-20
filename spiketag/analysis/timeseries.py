@@ -327,7 +327,45 @@ class spike_train(TimeSeries):
         return spike_train(self.t[idx], self.data[idx].ravel(), self.name)
     
     def exclude(self, start_time, end_time):
-        idx = np.where((self.t < start_time) | (self.t > end_time))[0]
+        """Exclude spikes between start_time and end_time.
+
+        Parameters
+        ----------
+        start_time : float or numpy array
+            Start time(s) of the time interval(s) to exclude.
+        end_time : float or numpy array
+            End time(s) of the time interval(s) to exclude.
+
+        Returns
+        -------
+        spike_train
+            A new spike_train object with the spikes between start_time and end_time excluded.
+
+        Examples
+        --------
+        spk.between(1290, 1400).exclude(1295, 1335).exclude(1360, 1369).scatter(s=1);
+        spk.between(1290, 1400).exclude([1295, 1360], [1335, 1369]).scatter(s=1);
+
+        Should be the same, but the second one is way faster.
+
+        """
+        start_time = np.array(start_time)
+        end_time = np.array(end_time)
+        if start_time.ndim == 0:
+            start_time = start_time.reshape(1)
+        if end_time.ndim == 0:
+            end_time = end_time.reshape(1)
+
+        # the code iterates over the elements of start_time and end_time, and selects the elements of 
+        # self.t and self.data that are outside the corresponding time interval.
+        # The np.intersect1d() function is used to intersect the indices of the selected elements, 
+        # so that only the spikes that are outside all the time intervals are excluded.
+        # Finally, the selected elements are used to create a new spike_train object.
+
+        idx = np.arange(len(self.t))
+        for i in range(len(start_time)):
+            _idx = np.where((self.t < start_time[i]) | (self.t > end_time[i]))[0]
+            idx = np.intersect1d(idx, _idx)  
         return spike_train(self.t[idx], self.data[idx].ravel(), self.name)
 
     def select(self, neuron_idx):
@@ -420,7 +458,7 @@ class spike_train(TimeSeries):
             units_firing_rates = units_firing_rates.zscore()       # z-score the rate (if zscore is true)
         return units_firing_rates
 
-    def get_mua_fr(self, start_time=None, end_time=None, t_step=100e-3, std=1, zscore=False):
+    def get_mua_fr(self, start_time=None, end_time=None, t_step=25e-3, std=25e-3, zscore=False):
         '''
         std: the std for gaussian smoothing window
         '''
@@ -435,6 +473,42 @@ class spike_train(TimeSeries):
         if zscore:
             mua_fr = mua_fr.zscore()
         return mua_fr
+
+    def get_mua_bursts(self, start_time=None, end_time=None, t_step=25e-3, std=25e-3, zscore=True, height=2, z_low=1):
+        '''
+        Get the time periods of mua bursts, where the mua firing rate is above the threshold
+        returns the start and end time of each population burst, in the format that can be used in spike_train.exclude(start_time, end_time)
+
+        Parameters:
+        ----------
+            # - start_time: start time of the period to be analyzed
+            # - end_time: end time of the period to be analyzed
+            # - t_step: time step for calculating the mua firing rate
+            # - std: std for gaussian smoothing window
+            # - zscore: if true, zscore the mua firing rate before detecting bursts
+            # - threshold: threshold for detecting bursts, in z-scored or raw mua firing rate
+            # - z_low: threshold for detecting the start and the end of a burst, in z-score of standard deviation of mua firing rate (default: 1)
+
+        Returns:
+        ----------
+            # - burst_start_time: a numpy array of start time of each burst
+            # - burst_end_time: a numpy array of end time of each burst
+            # - burst_peak_time: a numpy array of peak time of each burst
+        '''
+        tmin = self.t.min()*10//10
+        tmax = self.t.max()*10//10
+        if start_time is None:
+            start_time = tmin
+        if end_time is None:
+            end_time = tmax
+        mua_fr = self.get_mua_fr(start_time, end_time, t_step, std, zscore)
+        peak_idx, left_idx, right_idx = mua_fr.find_peaks(height=height, z_low=1)
+        peak_idx, left_idx, right_idx = peak_idx[0], left_idx[0], right_idx[0]
+        self.mua_left_time = left_idx.t
+        self.mua_right_time = right_idx.t
+        self.mua_peak_time = peak_idx.t
+        
+        return self.mua_left_time, self.mua_right_time, self.mua_peak_time
 
     ### API to other libraries ###
 
@@ -505,3 +579,23 @@ class spike_train(TimeSeries):
         ax[1].set_xlim(start_time, end_time)
         # ax[1].set_xlabel('Time (s)')
         return ax
+
+    def plot_mua_bursts(self, ax):
+        '''
+        assume self.mua_left_time, self.mua_right_time, self.mua_peak_time are already computed
+        self.get_mua_bursts() should be called before this function
+        '''
+
+        # plot mua bursts in a list of axes
+        if ax is not None and type(ax) is list:
+            for _ax in ax:
+                _ax_t_start, _ax_t_end = _ax.get_xlim()
+                for mua_burst_idx in np.where((self.mua_peak_time < _ax_t_end) & (self.mua_peak_time > _ax_t_start))[0]:
+                    _ax.axvspan(
+                        self.mua_left_time[mua_burst_idx], self.mua_right_time[mua_burst_idx], alpha=0.3)
+        # plot mua bursts in one axis
+        elif ax is not None and type(ax) is not list:
+            _ax_t_start, _ax_t_end = ax.get_xlim()
+            for mua_burst_idx in np.where((self.mua_peak_time < _ax_t_end) & (self.mua_peak_time > _ax_t_start))[0]:
+                ax.axvspan(
+                    self.mua_left_time[mua_burst_idx], self.mua_right_time[mua_burst_idx], alpha=0.3)
