@@ -11,6 +11,41 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
+def exclude_periods(t, start, end):
+    """Exclude periods from an array of timestamps.
+
+    This function returns the indices of the elements of `t` that are not within any
+    of the periods specified by the `start` and `end` arrays.
+
+    Parameters
+    ----------
+    t : array-like
+        An array of timestamps.
+    start : array-like
+        An array of start times for the periods to exclude.
+    end : array-like
+        An array of end times for the periods to exclude.
+
+    Returns
+    -------
+    idx : ndarray
+        An array of indices of the elements of `t` that are not within any of the
+        periods specified by `start` and `end`.
+
+    Examples
+    --------
+    >>> t = np.array([1, 2, 3, 4, 5, 6])
+    >>> start = np.array([2, 4])
+    >>> end = np.array([3, 5])
+    >>> exclude_periods(t, start, end)
+    array([0, 5])
+    """
+    mask = np.ones(t.shape, dtype=bool)
+    for i in range(len(start)):
+        mask[np.where((t >= start[i]) & (t <= end[i]))[0]] = False
+    idx = np.where(mask)[0]
+    return idx
+
 def acorr(X, norm=False):
     '''
     FFT-based autocorrelation function for 1D or higher dimensional time series.
