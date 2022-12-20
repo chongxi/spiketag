@@ -27,6 +27,24 @@ def plot_hist2d(jedi, bmi_pos):
         ax[k].set_aspect('equal', 'box')
     return fig
 
+def plot_boxes(dist_dict, figsize=(2.5,5)):
+    '''
+    use a dictionary to plot boxplot of distances
+
+    Example:
+    --------
+    dist_dict = {'wi PBEs': dist_to_goals,
+                 'wo PBEs': dist2, 
+                 'shuffled goal': dist_to_shuffled_goals}
+    plot_boxes(dist_dict);
+    '''
+    fig, ax = plt.subplots(figsize=figsize)
+    sns.boxplot(data=list(dist_dict.values()), showfliers=False, ax=ax)
+    ax.set_ylabel('distance to goal (cm)')
+    ax.set_xticklabels(list(dist_dict.keys()), rotation=15)
+    plt.xticks(rotation=18)
+    return fig
+
 def plot_two_boxes(dist1, dist2, dist1_name, dist2_name):
     dist_df = pd.DataFrame({dist1_name: dist1,
                             dist2_name: dist2})
@@ -39,7 +57,6 @@ def plot_two_boxes(dist1, dist2, dist1_name, dist2_name):
     p_value = stats.ttest_ind(dist1, dist2)[1]
     
     return fig, p_value
-
 
 class JEDI(object):
     def __init__(self, file_name):
@@ -250,5 +267,4 @@ class JEDI(object):
 
         fig, p = plot_two_boxes(
             dist1, dist2, dist1_name='to goals', dist2_name='to shuffled goals')
-        return fig, p
-
+        return dist1, dist2, p
