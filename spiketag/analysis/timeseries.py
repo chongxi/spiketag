@@ -285,30 +285,54 @@ class TimeSeries(object):
 
 class spike_train(TimeSeries):
     """
-    This class is used for spike train analysis.
+    This class is used for analyzing and visualizing spike train data. It is inherited from the TimeSeries class and has additional methods and attributes specific to spike train data.
 
     Args:
-
-    spike_time: a numpy array of spike times of N neurons.
-    spike_id  : a numpy array of spike id    of N neurons.
-    For example, stack time and id into one matrix (of two rows, first row is time, second row is id):
-        array([[ 0.   ,  0.   ,  0.   , ...,  0.398,  0.398,  0.399],
-               [41.   , 43.   , 71.   , ..., 70.   , 77.   , 10.   ]],
-        dtype=float32)
+        spike_time (numpy array): a numpy array of spike times of N neurons.
+        spike_id (numpy array): a numpy array of spike IDs of N neurons. The spike times and IDs should be stacked into one matrix, with the first row being the times and the second row being the IDs. For example:
+            array([[ 0.   ,  0.   ,  0.   , ...,  0.398,  0.398,  0.399],
+                   [41.   , 43.   , 71.   , ..., 70.   , 77.   , 10.   ]],
+            dtype=float32)
 
     Attributes:
-        spike_time: a numpy array of spike times of N neurons (spk_time in #samples)
-        spike_id  : a numpy array of spike id    of N neurons
-        unit: a dictionary of spike_unit
-        unit[i] is the spike_unit of neuron i
-        unit[i].id: the id of neuron i
-        unit[i].spk_time: the spike time of neuron i
+        spike_time (numpy array): a numpy array of spike times of N neurons (in # samples).
+        spike_id (numpy array): a numpy array of spike IDs of N neurons.
+
+        t (numpy array): a numpy array of spike times of N neurons (in seconds), same as spike_time. 
+        data (numpy array): a numpy array of spike IDs of N neurons, same as spike_id.
+
+        unit (dict): a dictionary of spike_unit objects, where unit[i] is the `spike_unit` object for neuron i. 
+            The `spike_unit` object has two attributes along with PETH method of its own implemenation:
+                id (float): the ID of neuron i.
+                spk_time (numpy array): the spike times of neuron i.
+
+        mua (TimeSeries): an estimate of the multiunit activity (MUA) firing rate over a given time interval with a given time step and standard deviation.
+
+    Methods:
+        1. Basic methods overrided:
+        between(tmin, tmax): returns a new spike_train object with spikes between tmin and tmax.
+        exclude(tmin, tmax): returns a new spike_train object with spikes outside tmin and tmax.
+        select(spike_idx): returns a new spike_train object with spikes from the selected neurons.
+        
+        2. Specific methods for spike train (fr: firing rate):
+        sort(): returns a new spike_train object with spikes with ranked spike-ids.
+        get_scv(): returns the spike count vector (SCV) of the spike train.
+        get_sua_mean_fr(): returns the mean firing rate of each single unit.
+        get_sua_fr(): returns the firing rate of each single unit over a given time interval with a given time step.
+        get_mua_fr(): returns the firing rate of the multiunit activity (MUA) over a given time interval with a given time step.
+        get_mua_bursts(): returns the start, end and peak time of bursts of the multiunit activity (MUA). 
+
+        3. API to neo:
+        to_neo(): returns a neo.SpikeTrain object.
+
+        4. Visualizing methods:
+        scatter(s=1): raster plot
+        eventplot(unit_id_label_freq): event plot with arbitrary unit IDs density
+        show(ax=[ax0, ax1]): show the raster plot and mua in two axis.
+        plot_mua_bursts(ax=[ax0, ax1, ax2, ...]): plot (axvspan) the mua bursts in axes (assuming with the same ax.get_xlim()).
     """
 
     def __init__(self, spike_time, spike_id, name=None):
-        """
-        This class is used for spike train analysis.
-        """
         self.spike_time = spike_time
         self.spike_id = spike_id
         self.unit = {}
