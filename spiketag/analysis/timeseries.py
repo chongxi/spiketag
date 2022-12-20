@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from scipy.stats import zscore
 from scipy import signal
-from ..analysis import smooth, get_cwt, spike_unit, rank_array
+from ..analysis import smooth, get_cwt, spike_unit, rank_array, exclude_periods
 from scipy.ndimage import gaussian_filter1d
 from spiketag.view.color_scheme import palette
 import matplotlib.colors as colors
@@ -296,7 +296,8 @@ class spike_train(TimeSeries):
 
     Attributes:
         spike_time (numpy array): a numpy array of spike times of N neurons (in # samples).
-        spike_id (numpy array): a numpy array of spike IDs of N neurons.
+        spike_id (numpy array): a numpy array of spike IDs of N neurons. (doesn't need to be from 0,1,..N-1)
+        # - spike_id can be from dec.neuron_idx in which many units were excluded, or just the first unit (noisy unit) were excluded
 
         t (numpy array): a numpy array of spike times of N neurons (in seconds), same as spike_time. 
         data (numpy array): a numpy array of spike IDs of N neurons, same as spike_id.
@@ -379,17 +380,8 @@ class spike_train(TimeSeries):
             start_time = start_time.reshape(1)
         if end_time.ndim == 0:
             end_time = end_time.reshape(1)
-
-        # the code iterates over the elements of start_time and end_time, and selects the elements of 
-        # self.t and self.data that are outside the corresponding time interval.
-        # The np.intersect1d() function is used to intersect the indices of the selected elements, 
-        # so that only the spikes that are outside all the time intervals are excluded.
-        # Finally, the selected elements are used to create a new spike_train object.
-
-        idx = np.arange(len(self.t))
-        for i in range(len(start_time)):
-            _idx = np.where((self.t < start_time[i]) | (self.t > end_time[i]))[0]
-            idx = np.intersect1d(idx, _idx)  
+        idx = exclude_periods(self.t, start_time, end_time)
+        self._excluded_time_idx = idx
         return spike_train(self.t[idx], self.data[idx].ravel(), self.name)
 
     def select(self, neuron_idx):
@@ -441,16 +433,36 @@ class spike_train(TimeSeries):
     def max_unit_id(self):
         return max(self.neuron_idx)
 
+    @property
+    def only_noise_unit0_excluded(self):
+        '''
+        only when the unit 0 was excluded as noise, this function returns True
+        '''
+        first_unit_id = self.neuron_idx.min()
+        biggest_unit_id_gap = np.unique(np.diff(self.neuron_idx)).max()
+        # first_unit_id == 1: unit id start from 1 because the unit 0 was removed as noise
+        # biggest_unit_id_gap == 1: unit id is continuous meaning no other units were removed
+        if biggest_unit_id_gap == 1 and first_unit_id == 1: 
+            return True
+        else:
+            return False
+
     ### get statistics/varibles ### 
 
     def get_scv(self, start_time, end_time, t_step=100e-3):
         '''
         when t_step=100e-3, this function should produce the same result as bmi_scv_full[:, -1, :], bmi_scv_full = np.fromfile('./scv.bin').reshape(-1, B_bins, n_units) 
+        Note: when spike_train was generated from unit.to_spiketrain(), 
+              we need to check `noise_unit0_removed` to make sure that the unit id aligned with `fet.bin`
+              if it was removed then we need to append a zero column back to scv matrix. 
         '''
         ts = np.arange(start_time-t_step, end_time, t_step-1e-15)
         spike_time = self.t
         spike_id = self.data.ravel()
         self.scv = np.vstack([np.histogram(spike_time[spike_id==i], ts)[0] for i in self.neuron_idx]).T
+
+        if self.only_noise_unit0_excluded:
+            self.scv = np.hstack([np.zeros((self.scv.shape[0], 1)), self.scv])
         return ts[1:], self.scv
 
     def get_sua_mean_fr(self, start_time=None, end_time=None):
