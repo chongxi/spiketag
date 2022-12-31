@@ -74,16 +74,40 @@ class TimeSeries(object):
         idx = np.where((self.t < start_time) | (self.t > end_time))[0]
         return TimeSeries(self.t[idx], self.data[idx], self.name)
     
-    def find_peaks(self, z_high=None, z_low=1, **kwargs):
+    def find_peaks(self, high=None, low=None, beta_std=None, **kwargs):
+        """
+        This function identifies peak segments in a signal by identifying local maxima that exceed a specified height threshold. 
+        The height threshold is calculated as the mean of the signal plus a multiple of the standard deviation. 
+            - high_treshold = mean+beta_std*std
+            - height = high_treshold if beta_std is None
+        The start and end indices of each peak segment are then determined by finding the first point on either side of the peak 
+        that falls below a second threshold, which is calculated as the mean minus a multiple of the standard deviation.
+            - low_threshold = mean-beta_std*std
+            - low_threshold = mean-std if beta_std is None
+
+        This function iterates over channels and returns dctionary where the keys are the channel id. 
+        
+        Parameters:
+        - beta_std (float, optional): A parameter that determines the peak segments. , 
+        - **kwargs: Additional keyword arguments to pass to the `signal.find_peaks()` function.
+        
+        Returns:
+        - peaks (dict): A dictionary where the keys are the channel indices and the values are TimeSeries objects containing the data at the peak indices.
+        - left (dict): A dictionary where the keys are the channel indices and the values are TimeSeries objects containing the data at the start indices of the segments.
+        - right (dict): A dictionary where the keys are the channel indices and the values are TimeSeries objects containing the data at the end indices of the segments.
+        """
         peaks, left, right = {}, {}, {}
         for ch in range(self.nch):
-            if z_high is not None:
-                self.threshold = np.median(self.data[:,ch]) + z_high * np.std(self.data[:,ch])
-                _peaks_idx, _ = signal.find_peaks(self.data[:,ch], height=self.threshold, **kwargs)
-            else:
-                _peaks_idx, _ = signal.find_peaks(self.data[:, ch], **kwargs)
-            _left_idx, _right_idx = self.find_left_right_nearest(
-                np.where(self.data[:, ch] < z_low * np.std(self.data[:, ch]))[0][:-1], _peaks_idx)
+            if beta_std is not None:
+                self.high_threshold = np.mean(self.data[:,ch]) + beta_std * np.std(self.data[:,ch])
+                self.low_threshold  = np.mean(self.data[:,ch]) - beta_std * np.std(self.data[:,ch])
+                _peaks_idx, _ = signal.find_peaks(self.data[:,ch], height=self.high_threshold, **kwargs)
+                _left_idx, _right_idx = self.find_left_right_nearest(
+                    np.where(self.data[:, ch] < self.low_threshold)[0], _peaks_idx)
+            elif high is not None and low is not None:
+                _peaks_idx, _ = signal.find_peaks(self.data[:, ch], height=high, **kwargs)
+                _left_idx, _right_idx = self.find_left_right_nearest(
+                    np.where(self.data[:, ch] < low)[0], _peaks_idx)
             peaks[ch] = TimeSeries(self.t[_peaks_idx], self.data[_peaks_idx], self.name+'_peaks_'+str(ch))
             left[ch]  = TimeSeries(self.t[_left_idx], self.data[_left_idx], self.name+'_left_'+str(ch))
             right[ch] = TimeSeries(self.t[_right_idx], self.data[_right_idx], self.name+'_right_'+str(ch))
@@ -93,12 +117,26 @@ class TimeSeries(object):
         """
         Find the adjacent index of v_idx (N,) in x_idx (return the N left index of a, and N right index of a)
         """
+        assert(len(x_idx) > 1), 'x_idx must contains more than one element'
         _idx_right = np.searchsorted(x_idx, v_idx)
         _idx_left = np.searchsorted(x_idx, v_idx) - 1
-        left = x_idx[_idx_left] - 1
+        left = x_idx[_idx_left] # - 1
         right = x_idx[_idx_right] 
         return left, right
 
+    def test_find_left_right_nearest(self):
+        x_idx = np.array([1, 3, 5, 7, 9])
+        v_idx = np.array([2, 4, 6])
+        expected_left = np.array([1, 3, 5])
+        expected_right = np.array([3, 5, 7])
+        
+        # Call the find_left_right_nearest method
+        left, right = self.find_left_right_nearest(x_idx, v_idx)
+        
+        # Assert that the output is as expected
+        np.testing.assert_array_equal(left, expected_left)
+        np.testing.assert_array_equal(right, expected_right)
+    
     def filtfilt(self, N=20, Wn=[100, 300], type='bp', fs=None, show=False):
         if fs is None:
             fs = 1/(self.t[1]-self.t[0])
@@ -476,6 +514,8 @@ class spike_train(TimeSeries):
             end_time = self.t.max()
         _spk = self.between(start_time, end_time)
         mean_spike_rate = np.array([np.sum(_spk.data.ravel() == i) for i in self.neuron_idx])/(end_time - start_time)
+        if self.only_noise_unit0_excluded: # consider adding the noise unit back to make the unit-id aligned with dec.neuron_idx
+            mean_spike_rate = np.hstack([0, mean_spike_rate])
         return mean_spike_rate
 
     def get_sua_fr(self, start_time=None, end_time=None, t_step=100e-3, std=100e-3, zscore=False):
@@ -489,7 +529,7 @@ class spike_train(TimeSeries):
         ts, scv = self.get_scv(start_time, end_time, t_step)       # spike count vector
         scv_rate  = TimeSeries(t=ts, data=scv/t_step, name='scv')  # spike count vector / t_step = spike count rate
         sigma = std/t_step
-        units_firing_rates = scv_rate.smooth(sigma)                  # smooth using a gaussian window with std sigma length
+        units_firing_rates = scv_rate.smooth(sigma)                # smooth using a gaussian window with std sigma length
         if zscore:                                          
             units_firing_rates = units_firing_rates.zscore()       # z-score the rate (if zscore is true)
         return units_firing_rates
@@ -510,7 +550,7 @@ class spike_train(TimeSeries):
             mua_fr = mua_fr.zscore()
         return mua_fr
 
-    def get_mua_bursts(self, start_time=None, end_time=None, t_step=25e-3, std=25e-3, zscore=True, height=2, z_low=1):
+    def get_mua_bursts(self, start_time=None, end_time=None, t_step=25e-3, std=25e-3, zscore=True, high=2, low=0, prominence=3, max_duration=0.5):
         '''
         Get the time periods of mua bursts, where the mua firing rate is above the threshold
         returns the start and end time of each population burst, in the format that can be used in spike_train.exclude(start_time, end_time)
@@ -538,11 +578,16 @@ class spike_train(TimeSeries):
         if end_time is None:
             end_time = tmax
         mua_fr = self.get_mua_fr(start_time, end_time, t_step, std, zscore)
-        peak_idx, left_idx, right_idx = mua_fr.find_peaks(height=height, z_low=1)
+        peak_idx, left_idx, right_idx = mua_fr.find_peaks(high=high, low=low, prominence=prominence)
         peak_idx, left_idx, right_idx = peak_idx[0], left_idx[0], right_idx[0]
         self.mua_left_time = left_idx.t
         self.mua_right_time = right_idx.t
         self.mua_peak_time = peak_idx.t
+
+        valid_mua_bursts = np.where((self.mua_right_time - self.mua_left_time)<=max_duration)[0]
+        self.mua_left_time  = self.mua_left_time[valid_mua_bursts]
+        self.mua_right_time = self.mua_right_time[valid_mua_bursts]
+        self.mua_peak_time  = self.mua_peak_time[valid_mua_bursts]
         
         return self.mua_left_time, self.mua_right_time, self.mua_peak_time
 
@@ -582,7 +627,7 @@ class spike_train(TimeSeries):
         ax.yaxis.set_major_locator(MultipleLocator(unit_id_label_freq))
         return ax
 
-    def show(self, start_time=None, end_time=None, ax=None, fig_height=5, fig_width=2, unit_id_label_freq=50, s=5, marker='|', t_step=25e-3, std=25e-3, **kwargs):
+    def show(self, start_time=None, end_time=None, ax=None, fig_height=5, fig_width=2, unit_id_label_freq=50, s=5, marker='|', t_step=25e-3, std=25e-3, mua_zscore=True, **kwargs):
         '''
         return two axes:
         ax[0]: raster plot of spike trains (scatter)
@@ -606,7 +651,7 @@ class spike_train(TimeSeries):
             ax1 = fig.add_subplot(gs1[-1, :])  # plot mua 
             ax = [ax0, ax1]
         _spk = self.between(start_time, end_time)
-        _mua = self.get_mua_fr(self.t.min(), self.t.max(), t_step=t_step, std=std).between(start_time, end_time) # get mua to plot the population firing rate
+        _mua = self.get_mua_fr(self.t.min(), self.t.max(), t_step=t_step, std=std, zscore=mua_zscore).between(start_time, end_time) # get mua to plot the population firing rate
         ax[0].scatter(_spk.t, _spk.data.ravel(), c=_spk.data.ravel(), s=s, marker=marker, cmap=colors.ListedColormap(palette), **kwargs)
         ax[0].set_xticks([])
         ax[0].set_ylim(0, self.max_unit_id+1)
