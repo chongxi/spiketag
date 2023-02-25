@@ -89,14 +89,28 @@ class TimeSeries(object):
         idx = np.searchsorted(self.t, ts, side=side)
         return TimeSeries(self.t[idx], self.data[idx])
     
-    def sum(self):
-        return TimeSeries(self.t, self.data.sum(axis=1), self.name+'_sum')
+    def mean(self, axis=1):
+        return TimeSeries(self.t, self.data.mean(axis=axis), self.name+'_mean')
+    
+    def std(self, axis=1):
+        return TimeSeries(self.t, self.data.std(axis=axis), self.name+'_std')
 
-    def diff(self):
-        return TimeSeries(self.t[1:], np.diff(self.data, axis=0), self.name+'_diff')
+    def sum(self, axis=1):
+        return TimeSeries(self.t, self.data.sum(axis=axis), self.name+'_sum')
 
-    def norm(self, ord=None):
-        return TimeSeries(self.t, np.linalg.norm(self.data, axis=1, ord=ord), self.name+'_norm')
+    def diff(self, axis=0):
+        '''
+        diff in time, not in feature (axis=0)
+        diff in feature, not in time (axis=1)
+        '''
+        return TimeSeries(self.t[1:], np.diff(self.data, axis=axis), self.name+'_diff')
+
+    def norm(self, axis=1, ord=None):
+        '''
+        norm in feature, not in time (axis=1)
+        norm in time, not in feature (axis=0)
+        '''
+        return TimeSeries(self.t, np.linalg.norm(self.data, axis=axis, ord=ord), self.name+'_norm')
 
     def min_subtract(self):
         return TimeSeries(self.t, self.data - np.min(self.data, axis=0), self.name+'_mean_subtract')

@@ -993,6 +993,49 @@ class place_field(Dataset):
         cb.set_label('speed (cm/sec)')
         return ax
 
+    def get_trials(self, speed_threshold_as_trial_start=5, goal_dist=15):
+        '''
+        we define a trial as a period of time with trial_start_t and trial_end_t,
+        trial_start_t is when the animal is moving at a speed above a threshold
+        trial_end_t is when the animal touch the goal cue
+
+        we use these variables to find out when each trial starts and ends:
+            pc.ts.shape, pc.pos.shape, pc.cue_ts.shape, pc.cue_pos.shape, pc.v_smoothed.shape
+        '''
+        from spiketag.analysis import TimeSeries as TS
+        pos_ts = TS(self.ts, self.pos)
+        speed_ts = TS(self.ts, self.v_smoothed)
+        cue_ts = TS(self.cue_ts, self.cue_pos[:, :2]).searchsorted(pos_ts.t)
+        # print(cue_ts.shape, pos_ts.shape, speed_ts.shape)
+        cue_to_cue_dist = cue_ts.diff().norm()
+        pos_to_cue_dist = (cue_ts - pos_ts).norm()[:-1]
+        # trial ends when the animal touch the goal cue (within goal_dist cm) and when the cue moves away from last cue position for more than 20 cm
+        trial_end_idx = np.where((cue_to_cue_dist.data>20) & (pos_to_cue_dist.data<=goal_dist))[0]
+        trial_end_t = pos_ts.t[trial_end_idx]
+        # trial starts when the animal's speed accorss a threshold the first time after last trial ends (the first "last trial end time" is 0)
+        toi = np.append(0, trial_end_t)
+        trial_start_t = []
+        for i in range(1, len(toi)):
+            _speed_ts = speed_ts.between(toi[i-1]+2, toi[i])
+            _trial_start = _speed_ts.t[np.argmax(_speed_ts.data.ravel() > 5)]
+            trial_start_t.append(_trial_start)
+        trial_start_t = np.array(trial_start_t)
+
+        self.trials = {}
+        self.trials['ani_pos'] = {}
+        self.trials['goal_pos'] = {}
+        self.trials['duration'] = {}
+        for i in range(len(trial_start_t)):
+            self.trials['ani_pos'][i] = pos_ts.between(trial_start_t[i], trial_end_t[i])
+            self.trials['goal_pos'][i] = cue_ts.between(trial_start_t[i], trial_end_t[i])
+            self.trials['duration'][i] = trial_end_t[i] - trial_start_t[i]
+        self.trial_duration = TS(None, np.array(list((self.trials['duration'].values()))))
+        print('total {} trials'.format(len(self.trials['ani_pos'])))
+        print('trial duration mean: {:.2f} secs'.format(self.trial_duration.data.mean()))
+        print('trial duration std: {:.2f} secs'.format(self.trial_duration.data.std()))
+        print('trial duration 95% CI: [{:.2f}, {:.2f}] secs'.format(self.trial_duration.ci()[0][0], self.trial_duration.ci()[1][0]))
+        return self.trials
+
     def to_file(self, filename):
         df_all_in_one = pd.concat([self.pos_df, self.spike_df], sort=True)
         df_all_in_one.to_pickle(filename+'.pd')
