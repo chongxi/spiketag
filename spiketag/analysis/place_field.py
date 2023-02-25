@@ -1067,7 +1067,7 @@ class place_field(Dataset):
             n = B_bins - 1
             scv_full_for_test, _, _ = self.get_data(t_window=t_step, B_bins=B_bins, FA_dim=0)
             scv_full, pos_full, hdv_full = self.get_data(t_window=t_step, B_bins=B_bins, FA_dim=FA_dim)
-            pos_full = smooth(pos_full, self.smooth_factor) * 1.15
+            pos_full = smooth(pos_full, self.smooth_factor) * 1.00
             v = np.linalg.norm(self.pos_2_speed(pos_full)/t_step, axis=1)
             scv_full = scv_full[v>min_speed]
             scv_full_for_test = scv_full_for_test[v>min_speed]

@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import scipy.stats as stats
 from scipy.stats import zscore
 from scipy import signal
 from ..analysis import smooth, get_cwt, spike_unit, rank_array, exclude_periods
@@ -52,10 +53,10 @@ class TimeSeries(object):
     fig.tight_layout()
     ---------
     '''
-    def __init__(self, t, data, name=None):
-        self.t = t
-        self.data = data
-        self.name = name
+    def __init__(self, t=None, data=None, name=None):
+        self.t = t if t is not None else np.arange(data.shape[0])
+        self.data = data if data is not None else np.zeros_like(self.t)
+        self.name = name if name is not None else ''
         # self.fs = 1/(t[1]-t[0])
         self.ndim = self.data.ndim
         if self.ndim == 1:
@@ -73,7 +74,51 @@ class TimeSeries(object):
     def exclude(self, start_time, end_time):
         idx = np.where((self.t < start_time) | (self.t > end_time))[0]
         return TimeSeries(self.t[idx], self.data[idx], self.name)
+
+    def searchsorted(self, ts, side='left'):
+        # subsample from current timeseries according to `ts`
+        # return a new timeseries object with the same length as ts, in which the data 
+        # occurs at self.t that is closest to ts
+        #
+        # ts can be a subset of self.t, and the returned index can be used to
+        # extract the corresponding data from self.data that happens at the closest time to ts
+        # That being said, self.t and ts do not have to be the same length, but
+        # for each time in ts, there should be a corresponding time in self.t
+        # usually self.t has higher sampling rate than ts
+        # then we can use searchsorted to specifically subsample according to ts
+        idx = np.searchsorted(self.t, ts, side=side)
+        return TimeSeries(self.t[idx], self.data[idx])
     
+    def sum(self):
+        return TimeSeries(self.t, self.data.sum(axis=1), self.name+'_sum')
+
+    def diff(self):
+        return TimeSeries(self.t[1:], np.diff(self.data, axis=0), self.name+'_diff')
+
+    def norm(self, ord=None):
+        return TimeSeries(self.t, np.linalg.norm(self.data, axis=1, ord=ord), self.name+'_norm')
+
+    def min_subtract(self):
+        return TimeSeries(self.t, self.data - np.min(self.data, axis=0), self.name+'_mean_subtract')
+
+    def max_subtract(self):
+        return TimeSeries(self.t, self.data - np.max(self.data, axis=0), self.name+'_mean_subtract')
+
+    def mean_subtract(self):
+        return TimeSeries(self.t, self.data - np.mean(self.data, axis=0), self.name+'_mean_subtract')
+
+    def ci(self, alpha=0.95, func=stats.t):
+        '''
+        calculate the confidence interval of the data, by default use t distribution
+        can alsue us func=stats.norm for normal distribution
+        '''
+        # by default use t distribution, t distribution is good when sample size is small
+        # but when sample size is large, t distribution is close to normal distribution
+        ci = func.interval(alpha=alpha, df=len(self.data)-1,
+                           loc=np.mean(self.data), 
+                           scale=stats.sem(self.data))
+        return ci
+
     def find_peaks(self, high=None, low=None, beta_std=None, **kwargs):
         """
         This function identifies peak segments in a signal by identifying local maxima that exceed a specified height threshold. 
@@ -175,18 +220,6 @@ class TimeSeries(object):
         elif type=='gaussian':
             data = gaussian_filter1d(self.data.astype(np.float32), sigma=n, axis=0, mode='constant')
             return TimeSeries(self.t, data, self.name+f'_gaussian_smooth_{n}')
-    
-    def sum(self):
-        return TimeSeries(self.t, self.data.sum(axis=1), self.name+'_sum')
-
-    def min_subtract(self):
-        return TimeSeries(self.t, self.data - np.min(self.data, axis=0), self.name+'_mean_subtract')
-
-    def max_subtract(self):
-        return TimeSeries(self.t, self.data - np.max(self.data, axis=0), self.name+'_mean_subtract')
-
-    def mean_subtract(self):
-        return TimeSeries(self.t, self.data - np.mean(self.data, axis=0), self.name+'_mean_subtract')
 
     def get_cwt(self, fmin=0, fmax=128, dj=1/100, show=False):
         cwtmatr = get_cwt(self.t, self.data.ravel(), fmin=fmin, fmax=fmax, dj=dj)
