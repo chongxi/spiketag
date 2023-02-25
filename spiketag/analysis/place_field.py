@@ -12,6 +12,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset
 import torchvision
+from ipywidgets import interact
 from .core import pos2speed, argmax_2d_tensor, spk_time_to_scv, firing_pos_from_scv, smooth, get_corr_field
 from .core import sliding_window_to_feature
 from .manifold import FA
@@ -19,7 +20,6 @@ from ..base import SPKTAG
 from ..utils import colorbar
 from ..utils.plotting import colorline
 from ..realtime import bmi_packet
-
 
 
 def info_bits(Fr, P):
@@ -32,6 +32,102 @@ def info_sparcity(Fr, P):
     Fr[Fr==0] = 1e-25
     MFr = sum(P.ravel()*Fr.ravel())
     return sum(P.ravel()*Fr.ravel()**2/MFr**2)
+
+def plot_goal(ax, goal_center, goal_radius=15, color='k', fill=False, alpha=1, linewidth=3):
+    goal_region = plt.Circle(goal_center, goal_radius, color=color, fill=fill, alpha=alpha, linewidth=linewidth)
+    ax.add_patch(goal_region)
+
+def plot_2d_trajectory(ax, ts, pos, speed, goal_center, goal_radius=15, markersize=15):
+    '''
+    plot 2D trajectory of the animal, along with possible goal region
+    if speed is not None, use speed to color the trajectory, otherwise use time stamps to color the trajectory
+    if goal_center is not None, plot the goal region
+
+    Parameters
+    ----------
+    ax : matplotlib axis
+    ts : time stamps: (N,)
+    pos : 2D position of the animal: (N, 2)
+    speed : speed of the animal: (N,)
+    goal_center : center of the goal region: (2,)
+    goal_radius : radius of the goal region: (float)
+    markersize : size of the marker indicating the animal position
+    '''
+    if speed is None:
+        ax.scatter(pos[:, 0], pos[:, 1], c=ts, s=markersize, cmap=plt.cm.jet)
+    else:
+        ax.scatter(pos[:, 0], pos[:, 1], c=speed, s=markersize, cmap=plt.cm.jet)
+    if goal_center is not None:
+        plot_goal(ax, goal_center=goal_center, goal_radius=goal_radius)
+
+def _get_toi(cue_ts, pos_ts, speed_ts):
+    '''
+    find the time that cue transition while the animal is within 15 cm of the cue
+    return a vector of time of interest (toi)
+
+    Parameters
+    ----------
+    cue_ts : TimeSeries that stores the cue position with timestamps
+    pos_ts : TimeSeries that stores the animal position with timestamps
+    speed_ts : TimeSeries that stores the animal speed with timestamps
+
+    Returns
+    -------
+    toi : a vector of time of interest (toi) that is used to find the trial start and end time
+    '''
+    cue_to_cue_dist = cue_ts.diff().norm()
+    pos_to_cue_dist = (cue_ts - pos_ts).norm()[:-1]
+    trial_end_idx = np.where((cue_to_cue_dist.data>15) & (pos_to_cue_dist.data<=15))[0]
+    trial_end_t = pos_ts.t[trial_end_idx]
+    toi = np.append(0, trial_end_t)
+    return toi
+
+
+def _get_trial_time(pos_ts, cue_ts, speed_ts):
+    '''
+    first get toi (time of interest), which is the time when the cue transition while the animal is within 15 cm of the cue, which is very close to the true trial end time. 
+    We need to further process toi to get the true trial start and end time. To understand why:
+    In preBMI, cue transition can happen after the animal has already entered the cue zone, we need to find the time when the animal is within 15 cm of the cue zone.
+    In preBMI, animal could wait long before starting another trial, we need to find the time when the animal is moving faster than 4 cm/s, and use that as the trial start time.
+
+    Therefre, use following method:
+        1 - get toi, which is the time when the cue transition while the animal is within 15 cm of the cue
+        2 - iterate through toi and find the time when the animal is moving faster than 4 cm/s, defined as trial start
+        3 - iterate through last three seconds of toi and find the time when the animal just touches the cue, defined as trial end
+
+    Parameters
+    ----------
+    pos_ts : TimeSeries that stores the animal position with timestamps
+    cue_ts : TimeSeries that stores the cue position with timestamps
+    speed_ts : TimeSeries that stores the animal speed with timestamps
+
+    Returns
+    -------
+    trial_time : a 2D array of trial start and end time, (N, 2), N is the number of trials, each row is a trial.
+    '''
+    # step 1: get toi
+    toi = _get_toi(cue_ts, pos_ts, speed_ts)
+
+    trial_start_t = []
+    trial_end_t   = []
+    for i in range(1, len(toi)):
+        # step 2: find the time when the animal is moving faster than 4 cm/s, defined as trial start
+        _speed_ts = speed_ts.between(toi[i-1]+5, toi[i])
+        _trial_start = _speed_ts.t[np.argmax(_speed_ts.data.ravel() > 4)]
+        trial_start_t.append(_trial_start)
+
+        # step 3: find the time when the animal just touches the cue, defined as trial end
+        t_last_3_seconds_before_trial_end = np.arange(toi[i]-3, toi[i], 0.1)
+        new_trial_end = t_last_3_seconds_before_trial_end[np.argmax((pos_ts.searchsorted(t_last_3_seconds_before_trial_end) -
+                                                                     cue_ts.searchsorted(t_last_3_seconds_before_trial_end)).norm().data < 14)] 
+        trial_end_t.append(new_trial_end)
+
+    trial_start_t = np.array(trial_start_t)
+    trial_end_t = np.array(trial_end_t)
+
+    trial_time = np.vstack((trial_start_t, trial_end_t)).T
+    return trial_time
+
 
 
 class place_field(Dataset):
@@ -954,46 +1050,46 @@ class place_field(Dataset):
         hdv = hdv[B_bins:]
         return scv, pos, hdv
 
-    def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'wo'], markersize=15, alpha=.5, cmap=None, legend_loc=None):
-        '''
-        plot trajactory within time_range: [[a0,b0],[a1,b1]...]
-        with color code indicate the speed.  
-        '''
+    # def plot_epoch(self, time_range, figsize=(5,5), marker=['ro', 'wo'], markersize=15, alpha=.5, cmap=None, legend_loc=None):
+    #     '''
+    #     plot trajactory within time_range: [[a0,b0],[a1,b1]...]
+    #     with color code indicate the speed.  
+    #     '''
         
-        gs = dict(height_ratios=[20,1])
-        fig, ax = plt.subplots(2,1,figsize=(5, 5), gridspec_kw=gs)
+    #     gs = dict(height_ratios=[20,1])
+    #     fig, ax = plt.subplots(2,1,figsize=(5, 5), gridspec_kw=gs)
 
-        for i, _time_range in enumerate(time_range):  # ith epoches
-            epoch = np.where((self.ts<_time_range[1]) & (self.ts>=_time_range[0]))[0]
+    #     for i, _time_range in enumerate(time_range):  # ith epoches
+    #         epoch = np.where((self.ts<_time_range[1]) & (self.ts>=_time_range[0]))[0]
             
-            if cmap is None:
-                cmap = mpl.cm.cool
-            norm = mpl.colors.Normalize(vmin=self.v_smoothed.min(), vmax=self.v_smoothed.max())
+    #         if cmap is None:
+    #             cmap = mpl.cm.cool
+    #         norm = mpl.colors.Normalize(vmin=self.v_smoothed.min(), vmax=self.v_smoothed.max())
 
-            ax[0] = colorline(x=self.pos[epoch, 0], y=self.pos[epoch, 1], 
-                              z=self.v_smoothed[epoch]/self.v_smoothed.max(), #[0,1] 
-                              cmap=cmap, ax=ax[0])
-            if i ==0:
-                ax[0].plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, alpha=alpha, label='end')
-                ax[0].plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], marker[1], markersize=markersize, alpha=alpha, label='start')
-            else:
-                ax[0].plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, alpha=alpha)
-                ax[0].plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], marker[1], markersize=markersize, alpha=alpha)                
+    #         ax[0] = colorline(x=self.pos[epoch, 0], y=self.pos[epoch, 1], 
+    #                           z=self.v_smoothed[epoch]/self.v_smoothed.max(), #[0,1] 
+    #                           cmap=cmap, ax=ax[0])
+    #         if i ==0:
+    #             ax[0].plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, alpha=alpha, label='end')
+    #             ax[0].plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], marker[1], markersize=markersize, alpha=alpha, label='start')
+    #         else:
+    #             ax[0].plot(self.pos[epoch[-1], 0], self.pos[epoch[-1], 1], marker[0], markersize=markersize, alpha=alpha)
+    #             ax[0].plot(self.pos[epoch[0], 0], self.pos[epoch[0], 1], marker[1], markersize=markersize, alpha=alpha)                
 
-        ax[0].set_xlim(self.maze_range[0]);
-        ax[0].set_ylim(self.maze_range[1]);
+    #     ax[0].set_xlim(self.maze_range[0]);
+    #     ax[0].set_ylim(self.maze_range[1]);
 
-        # ax[0].set_title('trajectory in [{0:.2f},{1:.2f}] secs'.format(_time_range[0], _time_range[1]))
-        if legend_loc is not None:
-            ax[0].legend(loc=legend_loc)
+    #     # ax[0].set_title('trajectory in [{0:.2f},{1:.2f}] secs'.format(_time_range[0], _time_range[1]))
+    #     if legend_loc is not None:
+    #         ax[0].legend(loc=legend_loc)
         
-        cb = mpl.colorbar.ColorbarBase(ax[1], cmap=cmap,
-                                        norm=norm,
-                                        orientation='horizontal')
-        cb.set_label('speed (cm/sec)')
-        return ax
+    #     cb = mpl.colorbar.ColorbarBase(ax[1], cmap=cmap,
+    #                                     norm=norm,
+    #                                     orientation='horizontal')
+    #     cb.set_label('speed (cm/sec)')
+    #     return ax
 
-    def get_trials(self, speed_threshold_as_trial_start=5, goal_dist=15):
+    def get_trial_time(self, speed_threshold_as_trial_start=5, goal_dist=15):
         '''
         we define a trial as a period of time with trial_start_t and trial_end_t,
         trial_start_t is when the animal is moving at a speed above a threshold
@@ -1007,34 +1103,44 @@ class place_field(Dataset):
         speed_ts = TS(self.ts, self.v_smoothed)
         cue_ts = TS(self.cue_ts, self.cue_pos[:, :2]).searchsorted(pos_ts.t)
         # print(cue_ts.shape, pos_ts.shape, speed_ts.shape)
-        cue_to_cue_dist = cue_ts.diff().norm()
-        pos_to_cue_dist = (cue_ts - pos_ts).norm()[:-1]
-        # trial ends when the animal touch the goal cue (within goal_dist cm) and when the cue moves away from last cue position for more than 20 cm
-        trial_end_idx = np.where((cue_to_cue_dist.data>20) & (pos_to_cue_dist.data<=goal_dist))[0]
-        trial_end_t = pos_ts.t[trial_end_idx]
-        # trial starts when the animal's speed accorss a threshold the first time after last trial ends (the first "last trial end time" is 0)
-        toi = np.append(0, trial_end_t)
-        trial_start_t = []
-        for i in range(1, len(toi)):
-            _speed_ts = speed_ts.between(toi[i-1]+2, toi[i])
-            _trial_start = _speed_ts.t[np.argmax(_speed_ts.data.ravel() > 5)]
-            trial_start_t.append(_trial_start)
-        trial_start_t = np.array(trial_start_t)
+        trial_time = _get_trial_time(pos_ts, cue_ts, speed_ts)
+        return trial_time
 
-        self.trials = {}
-        self.trials['ani_pos'] = {}
-        self.trials['goal_pos'] = {}
-        self.trials['duration'] = {}
-        for i in range(len(trial_start_t)):
-            self.trials['ani_pos'][i] = pos_ts.between(trial_start_t[i], trial_end_t[i])
-            self.trials['goal_pos'][i] = cue_ts.between(trial_start_t[i], trial_end_t[i])
-            self.trials['duration'][i] = trial_end_t[i] - trial_start_t[i]
-        self.trial_duration = TS(None, np.array(list((self.trials['duration'].values()))))
-        print('total {} trials'.format(len(self.trials['ani_pos'])))
-        print('trial duration mean: {:.2f} secs'.format(self.trial_duration.data.mean()))
-        print('trial duration std: {:.2f} secs'.format(self.trial_duration.data.std()))
-        print('trial duration 95% CI: [{:.2f}, {:.2f}] secs'.format(self.trial_duration.ci()[0][0], self.trial_duration.ci()[1][0]))
-        return self.trials
+    def plot_duration(self, t0, t1, goal_radius=15, markersize=15, color_as_speed=True):
+        from spiketag.analysis import TimeSeries as TS
+        fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+
+        pos_ts = TS(self.ts, self.pos)
+        speed_ts = TS(self.ts, self.v_smoothed)
+        _pos_ts = pos_ts.between(t0, t1)
+        _speed_ts = speed_ts.between(t0, t1)
+        
+        # check if there exists self.cue_ts and self.cue_pos, if not, plot only the animal trajectory, if yes, plot the goal position
+        if not hasattr(self, 'cue_ts') or not hasattr(self, 'cue_pos'):
+            goal_pos = None
+            if color_as_speed:
+                plot_2d_trajectory(ax, _pos_ts.t, _pos_ts.data, _speed_ts.data, goal_pos, goal_radius=goal_radius, markersize=markersize)
+            else:
+                plot_2d_trajectory(ax, _pos_ts.t, _pos_ts.data, None,           goal_pos, goal_radius=goal_radius, markersize=markersize)
+        else:
+            cue_ts = TS(self.cue_ts, self.cue_pos[:, :2]).searchsorted(pos_ts.t) # goal position is stored in self.cue_pos[:, :2]
+            _cue_ts = cue_ts.between(t0, t1)
+            goal_pos = _cue_ts.data[-1]
+            if color_as_speed:
+                plot_2d_trajectory(ax, _pos_ts.t, _pos_ts.data, _speed_ts.data, goal_pos, goal_radius=goal_radius, markersize=markersize)
+            else:
+                plot_2d_trajectory(ax, _pos_ts.t, _pos_ts.data, None,           goal_pos, goal_radius=goal_radius, markersize=markersize)
+
+            # if there is a goal, we also show the distance between the animal and the goal and the speed of the animal entering the goal region
+            # print(goal_pos.shape, _pos_ts.data.shape)
+            current_distance = np.sqrt(np.sum((_pos_ts.data[-1] - goal_pos)**2))
+            current_speed = _speed_ts.data[-1][0]
+            ax.set_title(f'{t0:.1f} - {t1:.1f} s, distance: {current_distance:.1f} cm, last speed: {current_speed:.1f} cm/s', fontsize=12)
+
+        ax.set_xlim(self.maze_range[0]);
+        ax.set_ylim(self.maze_range[1]);
+        ax.set_aspect('equal')
+        return fig, ax
 
     def to_file(self, filename):
         df_all_in_one = pd.concat([self.pos_df, self.spike_df], sort=True)
