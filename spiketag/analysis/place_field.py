@@ -83,7 +83,7 @@ def _get_toi(cue_ts, pos_ts, speed_ts):
     return toi
 
 
-def _get_trial_time(pos_ts, cue_ts, speed_ts):
+def _get_trial_time(pos_ts, cue_ts, speed_ts, speed_threshold_to_start_trial=1, goal_radius=15):
     '''
     first get toi (time of interest), which is the time when the cue transition while the animal is within 15 cm of the cue, which is very close to the true trial end time. 
     We need to further process toi to get the true trial start and end time. To understand why:
@@ -112,15 +112,19 @@ def _get_trial_time(pos_ts, cue_ts, speed_ts):
     trial_end_t   = []
     for i in range(1, len(toi)):
         # step 2: find the time when the animal is moving faster than 4 cm/s, defined as trial start
-        _speed_ts = speed_ts.between(toi[i-1]+5, toi[i])
-        _trial_start = _speed_ts.t[np.argmax(_speed_ts.data.ravel() > 4)]
-        trial_start_t.append(_trial_start)
+        try:
+            _speed_ts = speed_ts.between(toi[i-1] + 2, toi[i]) # give animal 5 seconds to have reward
+            _trial_start = _speed_ts.t[np.argmax(_speed_ts.data.ravel() > speed_threshold_to_start_trial)]
 
-        # step 3: find the time when the animal just touches the cue, defined as trial end
-        t_last_3_seconds_before_trial_end = np.arange(toi[i]-3, toi[i], 0.1)
-        new_trial_end = t_last_3_seconds_before_trial_end[np.argmax((pos_ts.searchsorted(t_last_3_seconds_before_trial_end) -
-                                                                     cue_ts.searchsorted(t_last_3_seconds_before_trial_end)).norm().data < 14)] 
-        trial_end_t.append(new_trial_end)
+            # step 3: find the time when the animal just touches the cue, defined as trial end
+            t_last_3_seconds_before_trial_end = np.arange(toi[i]-2, toi[i], 0.1)
+            new_trial_end = t_last_3_seconds_before_trial_end[np.argmax((pos_ts.searchsorted(t_last_3_seconds_before_trial_end) -
+                                                                         cue_ts.searchsorted(t_last_3_seconds_before_trial_end)).norm().data < goal_radius)] 
+            if new_trial_end - _trial_start > 2:
+                trial_start_t.append(_trial_start)
+                trial_end_t.append(new_trial_end)
+        except:
+            pass
 
     trial_start_t = np.array(trial_start_t)
     trial_end_t = np.array(trial_end_t)
@@ -1089,7 +1093,7 @@ class place_field(Dataset):
     #     cb.set_label('speed (cm/sec)')
     #     return ax
 
-    def get_trial_time(self, speed_threshold_as_trial_start=5, goal_dist=15):
+    def get_trial_time(self, speed_threshold_to_start_trial=5, goal_radius=15):
         '''
         we define a trial as a period of time with trial_start_t and trial_end_t,
         trial_start_t is when the animal is moving at a speed above a threshold
@@ -1097,18 +1101,60 @@ class place_field(Dataset):
 
         we use these variables to find out when each trial starts and ends:
             pc.ts.shape, pc.pos.shape, pc.cue_ts.shape, pc.cue_pos.shape, pc.v_smoothed.shape
+        
+        Parameters
+        ----------
+        speed_threshold_to_start_trial : int, optional
+            DESCRIPTION. The default is 5.
+        goal_radius : int, optional
+            DESCRIPTION. The default is 15.
+
+        Returns
+        -------
+        trial_time : (N_trials, 2) array, each row is a trial time: [trial_start_t, trial_end_t]
         '''
         from spiketag.analysis import TimeSeries as TS
         pos_ts = TS(self.ts, self.pos)
         speed_ts = TS(self.ts, self.v_smoothed)
         cue_ts = TS(self.cue_ts, self.cue_pos[:, :2]).searchsorted(pos_ts.t)
         # print(cue_ts.shape, pos_ts.shape, speed_ts.shape)
-        trial_time = _get_trial_time(pos_ts, cue_ts, speed_ts)
+        trial_time = _get_trial_time(pos_ts, cue_ts, speed_ts, speed_threshold_to_start_trial, goal_radius)
+
+        trial_duration = np.diff(trial_time, axis=1).ravel()
+        trial_duration = TS(None, trial_duration)
+        trial_duration_ci_lower, trial_duration_ci_upper = trial_duration.ci()
+        trial_duration_mean, trial_duration_std = trial_duration.data.mean(), trial_duration.data.std()
+        print('trial duration: mean={0:.2f}+/-{1:.2f} secs, ci=[{2:.2f},{3:.2f}]'.format(trial_duration_mean, 
+                                                                                         trial_duration_std, 
+                                                                                         trial_duration_ci_lower[0], 
+                                                                                         trial_duration_ci_upper[0]))
+
         return trial_time
 
-    def plot_duration(self, t0, t1, goal_radius=15, markersize=15, color_as_speed=True):
+    def plot_duration(self, t0, t1, goal_radius=15, markersize=15, color_as_speed=True, ax=None, verbose=True):
+        '''
+        plot the trajectory between t0 and t1, with color code indicate the speed or time (depending on color_as_speed)
+        if there exists self.cue_ts and self.cue_pos, plot the goal position
+
+        Parameters
+        ----------
+        t0 : float, start time
+        t1 : float, end time
+        goal_radius : int, optional
+            DESCRIPTION. The default is 15.
+        markersize : int, optional
+            DESCRIPTION. The default is 15.
+        color_as_speed : bool, optional
+            DESCRIPTION. The default is True.
+        ax : matplotlib.axes._subplots.AxesSubplot, optional
+            DESCRIPTION. The default is None.
+        verbose : bool, optional, if true, print the trial start/end, current distance, current speed. 
+            DESCRIPTION. The default is True.
+        '''
         from spiketag.analysis import TimeSeries as TS
-        fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(5, 5))
 
         pos_ts = TS(self.ts, self.pos)
         speed_ts = TS(self.ts, self.v_smoothed)
@@ -1133,14 +1179,58 @@ class place_field(Dataset):
 
             # if there is a goal, we also show the distance between the animal and the goal and the speed of the animal entering the goal region
             # print(goal_pos.shape, _pos_ts.data.shape)
-            current_distance = np.sqrt(np.sum((_pos_ts.data[-1] - goal_pos)**2))
-            current_speed = _speed_ts.data[-1][0]
-            ax.set_title(f'{t0:.1f} - {t1:.1f} s, distance: {current_distance:.1f} cm, last speed: {current_speed:.1f} cm/s', fontsize=12)
+            if verbose:
+                current_distance = np.sqrt(np.sum((_pos_ts.data[-1] - goal_pos)**2))
+                current_speed = _speed_ts.data[-1][0]
+                ax.set_title(f'{t0:.1f} - {t1:.1f} s, distance: {current_distance:.1f} cm, last speed: {current_speed:.1f} cm/s', fontsize=12)
 
         ax.set_xlim(self.maze_range[0]);
         ax.set_ylim(self.maze_range[1]);
         ax.set_aspect('equal')
-        return fig, ax
+        return ax
+
+    def plot_all_trials(self, N=6, goal_radius=15, markersize=15, color_as_speed=True, speed_threshold_to_start_trial=5):
+        '''
+        Usage
+        -----
+        fig = pc.plot_all_trials(N=6, goal_radius=15, markersize=20, color_as_speed=False)
+
+        Function
+        --------
+        plot all trials, each trial is a subplot, each row has N subplots
+        call self.plot_duration() to plot each trial, see self.plot_duration() for more details
+
+        Parameters
+        ----------
+        N : int, optional
+            number of subplots in each row. The default is 6.
+        goal_radius : int, optional
+            DESCRIPTION. The default is 15.
+        markersize : int, optional
+            DESCRIPTION. The default is 15.
+        color_as_speed : bool, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        Fig
+        '''
+        trial_time = self.get_trial_time(speed_threshold_to_start_trial=speed_threshold_to_start_trial)
+        n_trials = len(trial_time)
+        n_rows, n_cols = n_trials//N+1, N
+        fig, ax = plt.subplots(n_rows, n_cols, figsize=(n_cols*2, n_rows*2))
+        for k in range(n_trials):
+            t0, t1 = trial_time[k]
+            _ax = ax[k//n_cols, k % n_cols]
+            self.plot_duration(t0, t1, goal_radius=goal_radius, markersize=markersize,
+                               color_as_speed=color_as_speed, ax=_ax, verbose=False)
+            # set axis markers invisible
+            _ax.axes.yaxis.set_visible(False)
+            _ax.axes.xaxis.set_visible(False)
+            _ax.set_title(f'trial{k+1}: {t1-t0:.1f} s', fontsize=12)
+            # minimize the margin between subplots
+            plt.subplots_adjust(wspace=0.2, hspace=0.2)
+        return fig
 
     def to_file(self, filename):
         df_all_in_one = pd.concat([self.pos_df, self.spike_df], sort=True)
