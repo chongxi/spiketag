@@ -121,6 +121,19 @@ class TimeSeries(object):
     def mean_subtract(self):
         return TimeSeries(self.t, self.data - np.mean(self.data, axis=0), self.name+'_mean_subtract')
 
+    def interp1d(self, dt=10e-3):
+        from scipy.interpolate import interp1d
+        assert(self.t.shape[0] == self.data.ravel().shape[0])
+        f = interp1d(self.t, self.data.ravel(), fill_value="interpolate")
+        new_t = np.arange(self.t[0], self.t[-1], dt)
+        new_data = f(new_t)
+        return TimeSeries(new_t, new_data.reshape(-1, 1), self.name+'_interp1d')
+    
+    def moving_sum_1d(self, window_size=10, axis=0):
+        # use np.convolve to calculate moving average, remove .ravel will cause error
+        new_data = np.convolve(self.data.ravel(), np.ones(window_size), mode='same')
+        return TimeSeries(self.t, new_data, self.name+'_moving_sum')
+
     def ci(self, alpha=0.95, func=stats.t):
         '''
         calculate the confidence interval of the data, by default use t distribution
